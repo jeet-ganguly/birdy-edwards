@@ -15,7 +15,7 @@
 
 **AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency.**
 
-[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer)
+[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer) . [Contributing](#contributing)
 
 <img src="app/icons/demo.png" alt="BIRDY-EDWARDS Web UI" width="100%"/>
 
@@ -252,6 +252,7 @@ Contributions are welcome. Please follow these guidelines to keep the project cl
 
 ## Acknowledgements
 
+- Inspired by [Sherlock](https://github.com/sherlock-project/sherlock)
 - Inspired by the OSINT and threat intelligence research community
 - [SeleniumBase](https://github.com/seleniumbase/SeleniumBase) — Undetected Chrome automation
 - [Ollama](https://ollama.com) — Local LLM inference engine
