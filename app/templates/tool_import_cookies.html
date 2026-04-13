@@ -1,0 +1,622 @@
+{% extends 'base.html' %}
+{% block title %}Import Session Cookies — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+<a href="{{ url_for('home') }}" class="back-btn">← Home</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    font-family: 'Inter','Google Sans',-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    box-sizing: border-box;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+
+  /* ── Page header ── */
+  .page-head {
+    margin-bottom: 28px;
+  }
+  .page-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .page-sub {
+    font-size: 16px;
+    color: #ffffff;
+  }
+  .rec-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 20px;
+    background: rgba(16,185,129,0.12);
+    color: #10b981;
+    border: 1px solid rgba(16,185,129,0.3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── Steps card ── */
+  .steps-card {
+    background: #000000;
+    border: 1px solid rgba(60, 180, 178, 0.22);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .steps-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #6cf9e9;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: -4px;
+    width: 1px;
+    background: rgba(6, 2, 14, 0.011);
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(5, 3, 10, 0.15);
+    border: 1px solid rgba(92, 246, 228, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 900;
+    color: #ffffff;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-body {
+    padding-bottom: 20px;
+    flex: 1;
+  }
+  .step-head {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .step-desc {
+    font-size: 14px;
+    color: #ffffff;
+    line-height: 1.6;
+    margin-bottom: 6px;
+  }
+  .step-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(56,189,248,0.25);
+    background: rgba(56,189,248,0.06);
+    transition: all 0.2s;
+  }
+  .step-link:hover {
+    background: rgba(56,189,248,0.12);
+    border-color: rgba(56,189,248,0.4);
+  }
+  .step-img-hint {
+    font-size: 13px;
+    color: #f59e0b;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-top: 6px;
+    display: inline-block;
+  }
+  .step-code {
+    font-size: 13px;
+    font-family: 'Google Sans',sans-serif;
+    color: #dbdbdb;
+    background: rgba(1, 0, 2, 0.1);
+    border: 1px solid rgba(99,60,180,0.2);
+    border-radius: 5px;
+    padding: 4px 10px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  /* ── Import card ── */
+  .import-card {
+    background: #0d0b1e;
+    border: 1px solid rgba(99,60,180,0.22);
+    border-radius: 14px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .import-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .import-textarea {
+    width: 100%;
+    min-height: 160px;
+    background: #060414;
+    border: 1px solid rgba(99,60,180,0.3);
+    border-radius: 10px;
+    color: #ffffff;
+    font-family: monospace !important;
+    font-size: 14px;
+    padding: 14px 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  .import-textarea:focus {
+    border-color: rgba(92, 246, 208, 0.6);
+  }
+  .import-textarea::placeholder {
+    color: #206052;
+  }
+  .import-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .import-btn {
+    padding: 11px 28px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #28d9cd, #4f46e5);
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(109,40,217,0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .import-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(40, 217, 182, 0.5);
+  }
+  .import-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .clear-btn {
+    padding: 11px 18px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid rgba(99,60,180,0.3);
+    color: #4a9088;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover {
+    border-color: rgba(60, 148, 180, 0.5);
+    color: #90d0cd;
+  }
+
+  /* ── Result states ── */
+  .import-result {
+    display: none;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .result-ok {
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: #10b981;
+  }
+  .result-err {
+    background: rgba(244,63,94,0.08);
+    border: 1px solid rgba(244,63,94,0.25);
+    color: #f43f5e;
+  }
+  .result-ok-sub {
+    font-size: 13px;
+    color: #059669;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* ── Verify section ── */
+  .verify-card {
+    background: #0d0b1e;
+    border: 1px solid rgba(99,60,180,0.22);
+    border-radius: 14px;
+    padding: 24px 32px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .verify-card.show { display: block; }
+  .verify-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #90d0c6;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .verify-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .verify-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .vs-checking {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: #f59e0b;
+  }
+  .vs-checking .verify-dot {
+    background: #f59e0b;
+    animation: blink 0.8s infinite;
+  }
+  .vs-ok {
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: #10b981;
+  }
+  .vs-ok .verify-dot { background: #10b981; box-shadow: 0 0 6px #10b981; }
+  .vs-err {
+    background: rgba(244,63,94,0.08);
+    border: 1px solid rgba(244,63,94,0.25);
+    color: #f43f5e;
+  }
+  .vs-err .verify-dot { background: #f43f5e; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .verify-sub {
+    font-size: 13px;
+    color: #ffffff;
+    margin-top: 8px;
+    font-weight: 600;
+  }
+  .go-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    color: #10b981;
+    font-size: 15px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .go-home-btn:hover {
+    background: rgba(16,185,129,0.18);
+    transform: translateX(3px);
+  }
+
+  /* ── Alt option ── */
+  .alt-card {
+    background: #080514;
+    border: 1px solid rgba(99,60,180,0.15);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .alt-icon { font-size: 24px; flex-shrink: 0; }
+  .alt-body { flex: 1; }
+  .alt-title { font-size: 15px; font-weight: 700; color: #eeeeee; margin-bottom: 2px; }
+  .alt-desc  { font-size: 13px; color: #4a9089; }
+  .alt-link  {
+    font-size: 13px; font-weight: 700; color: #8bfafa;
+    text-decoration: none; white-space: nowrap;
+    padding: 6px 14px; border-radius: 6px;
+    border: 1px solid rgba(139,92,246,0.3);
+    transition: all 0.2s;
+  }
+  .alt-link:hover {
+    background: rgba(92, 172, 246, 0.1);
+    border-color: rgba(92, 246, 226, 0.5);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+
+  <!-- ── Page header ── -->
+  <div class="page-head">
+    <div class="page-title">
+      🍪 Import Session Cookies
+      <span class="rec-badge">★ Recommended</span>
+    </div>
+    <div class="page-sub">Use Cookie-Editor browser extension to import your Facebook session — works on all platforms, no Selenium needed</div>
+  </div>
+
+  <!-- ── Step by step guide ── -->
+  <div class="steps-card">
+    <div class="steps-title">Step-by-Step Setup Guide</div>
+    <div class="steps-list">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-head">Install Cookie-Editor Extension</div>
+          <div class="step-desc">Install the free Cookie-Editor extension in your browser. Available for Chrome, Firefox, and Edge.</div>
+          <a href="https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm" target="_blank" class="step-link">
+            Chrome Web Store ↗
+          </a>
+          &nbsp;
+          <a href="https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/" target="_blank" class="step-link">
+            Firefox Add-ons ↗
+          </a>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-head">Open Facebook and Log In</div>
+          <div class="step-desc">Go to <strong style="color:#fff;">facebook.com</strong> in your browser and log into your Facebook account normally. Make sure you are fully logged in and can see your feed.</div>
+          <div class="step-img-hint">⚠️ Do not log out after this step</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-head">Open Cookie-Editor on Facebook</div>
+          <div class="step-desc">While on facebook.com, click the Cookie-Editor icon in your browser toolbar. The extension will open showing all Facebook cookies.</div>
+          <div class="step-code">📍 Must be on facebook.com when you click the extension</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-head">Export Cookies as JSON</div>
+          <div class="step-desc">In the Cookie-Editor panel, click the <strong style="color:#fff;">Export</strong> button at the bottom. Select <strong style="color:#fff;">"Export as JSON"</strong>. The cookies will be copied to your clipboard automatically.</div>
+          <div class="step-img-hint">💡 The JSON is now in your clipboard — ready to paste</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-head">Paste Below and Import</div>
+          <div class="step-desc">Paste the copied JSON into the text area below and click <strong style="color:#fff;">Import Cookies</strong>. BIRDY-EDWARDS will validate and save your session.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Import textarea ── -->
+  <div class="import-card">
+    <div class="import-title">Paste Cookie JSON Here</div>
+    <textarea
+      id="cookie-json"
+      class="import-textarea"
+      placeholder='Paste your Cookie-Editor JSON export here...
+
+Example format:
+[
+  {
+    "name": "c_user",
+    "value": "100012345678",
+    "domain": ".facebook.com",
+    ...
+  },
+  ...
+]'
+    ></textarea>
+
+    <div class="import-actions">
+      <button class="import-btn" id="import-btn" onclick="importCookies()">
+        🍪 Import Cookies
+      </button>
+      <button class="clear-btn" onclick="clearForm()">Clear</button>
+      <span id="char-count" style="font-size:11px;color:#3a2060;"></span>
+    </div>
+
+    <div class="import-result" id="import-result"></div>
+  </div>
+
+  <!-- ── Verify result ── -->
+  <div class="verify-card" id="verify-card">
+    <div class="verify-title">Session Verification</div>
+    <div class="verify-status vs-checking" id="verify-status">
+      <div class="verify-dot"></div>
+      <span id="verify-text">Verifying session...</span>
+    </div>
+    <div class="verify-sub" id="verify-sub"></div>
+    <a href="{{ url_for('home') }}" class="go-home-btn" id="go-home-btn" style="display:none;">
+      ✓ Go to Home →
+    </a>
+  </div>
+
+  <!-- ── Alternative option ── -->
+  <div class="alt-card">
+    <div class="alt-icon">🔄</div>
+    <div class="alt-body">
+      <div class="alt-title">Prefer the old method?</div>
+      <div class="alt-desc">Use Selenium-based cookie refresh — opens a browser window for manual login (Linux only)</div>
+    </div>
+    <a href="{{ url_for('refresh_cookies') }}" class="alt-link">Refresh Cookies →</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const textarea = document.getElementById('cookie-json');
+  const charCount = document.getElementById('char-count');
+
+  // Character counter
+  textarea.addEventListener('input', () => {
+    const len = textarea.value.length;
+    charCount.textContent = len > 0 ? `${len.toLocaleString()} characters` : '';
+  });
+
+  function clearForm() {
+    textarea.value = '';
+    charCount.textContent = '';
+    document.getElementById('import-result').style.display = 'none';
+    document.getElementById('verify-card').classList.remove('show');
+    document.getElementById('import-btn').disabled = false;
+  }
+
+  function importCookies() {
+    const raw = textarea.value.trim();
+    if (!raw) {
+      showResult(false, 'Please paste your Cookie-Editor JSON first.');
+      return;
+    }
+
+    // Basic JSON validation
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch(e) {
+      showResult(false, 'Invalid JSON format. Make sure you copied the full export from Cookie-Editor.');
+      return;
+    }
+
+    if (!Array.isArray(parsed)) {
+      showResult(false, 'Expected a JSON array. Copy using "Export as JSON" in Cookie-Editor.');
+      return;
+    }
+
+    if (parsed.length === 0) {
+      showResult(false, 'Cookie array is empty. Make sure you are on facebook.com when exporting.');
+      return;
+    }
+
+    const btn = document.getElementById('import-btn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Importing...';
+
+    fetch('/api/tools/import-cookies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cookies: parsed })
+    })
+    .then(r => r.json())
+    .then(d => {
+      btn.innerHTML = '🍪 Import Cookies';
+
+      if (d.ok) {
+        showResult(true, `✓ ${d.message}`, 'Now verifying session with Facebook...');
+        verifySession();
+      } else {
+        btn.disabled = false;
+        showResult(false, d.error || 'Import failed');
+      }
+    })
+    .catch(e => {
+      btn.disabled = false;
+      btn.innerHTML = '🍪 Import Cookies';
+      showResult(false, 'Network error — please try again');
+    });
+  }
+
+  function showResult(ok, msg, sub) {
+    const el = document.getElementById('import-result');
+    el.className = 'import-result ' + (ok ? 'result-ok' : 'result-err');
+    el.innerHTML = msg + (sub ? `<div class="result-ok-sub">${sub}</div>` : '');
+    el.style.display = 'block';
+  }
+
+  function verifySession() {
+    const card = document.getElementById('verify-card');
+    const status = document.getElementById('verify-status');
+    const text = document.getElementById('verify-text');
+    const sub = document.getElementById('verify-sub');
+    const goBtn = document.getElementById('go-home-btn');
+
+    card.classList.add('show');
+    status.className = 'verify-status vs-checking';
+    text.textContent = 'Verifying session with Facebook...';
+    sub.textContent = 'This may take 10-15 seconds';
+    goBtn.style.display = 'none';
+
+    fetch('/api/check-cookies')
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) {
+          status.className = 'verify-status vs-ok';
+          text.textContent = '✓ Session verified — cookies are active';
+          sub.textContent = d.reason || 'Ready to start investigations';
+          goBtn.style.display = 'inline-flex';
+        } else {
+          status.className = 'verify-status vs-err';
+          text.textContent = '❌ Session verification failed';
+          sub.textContent = d.reason || 'Try exporting cookies again while logged into Facebook';
+          document.getElementById('import-btn').disabled = false;
+        }
+      })
+      .catch(() => {
+        status.className = 'verify-status vs-ok';
+        text.textContent = '✓ Cookies saved — could not verify (network issue)';
+        sub.textContent = 'Cookies were imported. Try starting an investigation.';
+        goBtn.style.display = 'inline-flex';
+      });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,1260 @@
+{% extends 'base.html' %}
+{% block title %}{{ batch.label or batch.batch_id }} — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_actions %}
+<span class="npill np-live" id="nav-status-pill">Gathering</span>
+<a href="{{ url_for('serve_pdf_batch', batch_id=batch_id) }}" class="pdf-btn" id="pdf-btn" style="display:none;">PDF Report</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  box-sizing: border-box;
+}
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 62px);
+  padding: 16px 20px;
+  gap: 16px;
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+/* ROW 1 — Batch info + Stats */
+.row1 {
+  display: flex;
+  gap: 16px;
+  height: 110px;
+  flex-shrink: 0;
+}
+
+/* ROW 2 — Map + Network + Growth */
+.row2 {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 380px;
+}
+
+/* ROW 3 — Interactors + Top7 + Country pie */
+.row3 {
+  display: flex;
+  gap: 16px;
+  height: 340px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CARD BASE
+   ══════════════════════════════════════════════════════════════ */
+.card {
+  background: #141414;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: #333;
+}
+
+.card-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid #262626;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.card-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #e63946;
+}
+
+.card-body {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BATCH INFO CARD
+   ══════════════════════════════════════════════════════════════ */
+.batch-card {
+  flex: 1.8;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 20px;
+  cursor: pointer;
+  overflow: visible !important;
+  transition: all 0.25s ease;
+}
+
+.batch-card:hover {
+  transform: translateY(-2px);
+  border-color: #e63946;
+  box-shadow: 0 8px 32px rgba(230, 57, 70, 0.15);
+}
+
+.batch-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  border: 1px solid #e63946;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #e63946;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 20px rgba(230, 57, 70, 0.2);
+}
+
+.batch-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.batch-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-meta {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.batch-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tag-c { background: rgba(230, 57, 70, 0.1); color: #e63946; border: 1px solid rgba(230, 57, 70, 0.25); }
+.tag-a { background: rgba(255, 183, 77, 0.1); color: #ffb74d; border: 1px solid rgba(255, 183, 77, 0.25); }
+.tag-g { background: rgba(102, 187, 106, 0.1); color: #66bb6a; border: 1px solid rgba(102, 187, 106, 0.25); }
+.tag-v { background: rgba(171, 71, 188, 0.1); color: #ab47bc; border: 1px solid rgba(171, 71, 188, 0.25); }
+
+.batch-expand-hint {
+  font-size: 10px;
+  color: #444;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STAT CARDS
+   ══════════════════════════════════════════════════════════════ */
+.stat-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #333;
+}
+
+.stat-n {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+}
+
+.stat-l {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.stat-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0 0 12px 12px;
+}
+
+.sc-posts .stat-l { color: #e63946; }
+.sc-posts .stat-bar { background: linear-gradient(90deg, #c1121f, #e63946); }
+
+.sc-faces .stat-l { color: #4fc3f7; }
+.sc-faces .stat-bar { background: linear-gradient(90deg, #0288d1, #4fc3f7); }
+
+.sc-comments .stat-l { color: #ffb74d; }
+.sc-comments .stat-bar { background: linear-gradient(90deg, #f57c00, #ffb74d); }
+
+.sc-network .stat-l { color: #66bb6a; }
+.sc-network .stat-bar { background: linear-gradient(90deg, #388e3c, #66bb6a); }
+
+/* ══════════════════════════════════════════════════════════════
+   MAP CARD
+   ══════════════════════════════════════════════════════════════ */
+.map-card {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  min-width: 380px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NETWORK CARD
+   ══════════════════════════════════════════════════════════════ */
+.net-card {
+  flex: 1.3;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GROWTH CARD
+   ══════════════════════════════════════════════════════════════ */
+.growth-card {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMMENTORS TABLE
+   ══════════════════════════════════════════════════════════════ */
+.commentors-card {
+  flex: 1.4;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.ctbl-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+}
+
+.ctbl-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scroll-behavior: smooth;
+}
+
+.ctbl-scroll::-webkit-scrollbar { width: 4px; }
+.ctbl-scroll::-webkit-scrollbar-track { background: #1a1a1a; }
+.ctbl-scroll::-webkit-scrollbar-thumb { background: #e63946; border-radius: 2px; }
+
+.ctbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ctbl th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: #666;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #262626;
+  background: #141414;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ctbl td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1a1a1a;
+  color: #999;
+}
+
+.ctbl tr:hover td {
+  background: rgba(230, 57, 70, 0.03);
+}
+
+.ctbl-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ctbl-avatar svg {
+  width: 14px;
+  height: 14px;
+}
+
+.p-link {
+  color: #e63946;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.p-link:hover {
+  color: #ff6b6b;
+  text-decoration: underline;
+}
+
+.scroll-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(transparent, #141414);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.sdots {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.sdot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e63946;
+  opacity: 0.4;
+  animation: sdp 1.5s ease-in-out infinite;
+}
+
+.sdot:nth-child(2) { animation-delay: 0.2s; }
+.sdot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes sdp {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOP 7 CARD
+   ══════════════════════════════════════════════════════════════ */
+.top7-card {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.top7-card:hover {
+  transform: translateY(-2px);
+  border-color: #e63946;
+}
+
+.top7-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cn-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cn-icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cn-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+  border: 2px solid #e63946;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(230, 57, 70, 0.2);
+}
+
+.cn-rank {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #e63946;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+.cn-view-profile {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #999;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cn-view-profile:hover {
+  background: #e63946;
+  border-color: #e63946;
+  color: #fff;
+}
+
+.cn-info { flex: 1; min-width: 0; }
+
+.cn-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.cn-sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.cn-score {
+  font-size: 22px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.cn-hr {
+  border: none;
+  border-top: 1px solid #262626;
+  margin: 8px 0;
+}
+
+.cn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+  flex: 1;
+}
+
+.cn-full { grid-column: 1 / -1; }
+
+.cn-f {
+  font-size: 10px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cn-f span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  display: block;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.cn-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+.cndot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.cndot-on {
+  background: #e63946;
+  box-shadow: 0 0 8px #e63946;
+  width: 18px;
+  border-radius: 3px;
+}
+
+.cndot-off { background: #262626; }
+
+.cn-pause-hint {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e63946;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.top7-card.lifted .cn-pause-hint { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════
+   COUNTRY PIE CARD
+   ══════════════════════════════════════════════════════════════ */
+.intel-card {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.pie-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pie-legend {
+  width: 100%;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: 80px;
+  flex-shrink: 0;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.pie-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pie-legend-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: #888;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pie-legend-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BLUR OVERLAY + LIFT MODAL
+   ══════════════════════════════════════════════════════════════ */
+.blur-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 200;
+  cursor: pointer;
+}
+
+.blur-overlay.active { display: block; }
+
+.batch-card.lifted,
+.top7-card.lifted {
+  transform: translateY(-14px) scale(1.02) !important;
+  box-shadow: 0 24px 64px rgba(230, 57, 70, 0.3), 0 0 0 1px #e63946 !important;
+  z-index: 400 !important;
+  background: #1a1a1a !important;
+  border-color: #e63946 !important;
+  overflow: visible !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LOADING STATE
+   ══════════════════════════════════════════════════════════════ */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  width: 100%;
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.spin {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #262626;
+  border-top-color: #e63946;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LEAFLET OVERRIDES
+   ══════════════════════════════════════════════════════════════ */
+#leaflet-map { width: 100%; height: 100%; }
+.leaflet-container { background: #0a0a0a !important; }
+.leaflet-control-attribution { display: none !important; }
+.leaflet-control-zoom a {
+  background: #141414 !important;
+  color: #e63946 !important;
+  border-color: #262626 !important;
+  font-weight: 800 !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #1a1a1a !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash">
+
+  <!-- ROW 1 -->
+  <div class="row1">
+    <div class="card batch-card" id="batch-card" onclick="liftCard('batch-card')">
+      <div class="batch-icon" id="b-icon">{{ (batch.label or batch.batch_id)[:2].upper() }}</div>
+      <div class="batch-body">
+        <div class="batch-name">{{ batch.label or batch.batch_id }}</div>
+        <div class="batch-meta">Batch ID: {{ batch.batch_id }} &middot; {{ batch.created_at[:16] if batch.created_at else '—' }}</div>
+        <div class="batch-tags" id="b-tags">
+          <span class="tag tag-c" id="b-urls">Loading...</span>
+          <span class="tag tag-a" id="b-scan">Batch Analysis</span>
+          <span class="tag tag-g">SOCMINT</span>
+        </div>
+      </div>
+      <div class="batch-expand-hint">View More</div>
+    </div>
+
+    <div class="card stat-card sc-posts" onclick="goDetail('posts')">
+      <div class="stat-n" id="sn-posts"><span class="spin" style="width:16px;height:16px;border-width:2px;"></span></div>
+      <div class="stat-l">Posts</div>
+      <div class="stat-bar"></div>
+    </div>
+    <div class="card stat-card sc-comments" onclick="goDetail('interactions')">
+      <div class="stat-n" id="sn-comments"><span class="spin" style="width:16px;height:16px;border-width:2px;"></span></div>
+      <div class="stat-l">Interactions</div>
+      <div class="stat-bar"></div>
+    </div>
+    <div class="card stat-card sc-network" onclick="goDetail('network')">
+      <div class="stat-n" id="sn-network"><span class="spin" style="width:16px;height:16px;border-width:2px;"></span></div>
+      <div class="stat-l">Interactors</div>
+      <div class="stat-bar"></div>
+    </div>
+    <div class="card stat-card sc-faces">
+      <div class="stat-n" id="sn-langs"><span class="spin" style="width:16px;height:16px;border-width:2px;"></span></div>
+      <div class="stat-l">Analyzed</div>
+      <div class="stat-bar"></div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="row2">
+    <div class="card map-card">
+      <div class="card-head">
+        <div class="card-title">Interactors Country Distribution</div>
+        <div class="card-sub" id="map-sub">Analyzing...</div>
+      </div>
+      <div class="card-body" id="map-body">
+        <div class="loading"><div class="spin"></div>Analyzing Countries</div>
+      </div>
+    </div>
+
+    <div class="card net-card">
+      <div class="card-head">
+        <div class="card-title">Network Graph</div>
+        <div class="card-sub" id="net-sub">Building...</div>
+      </div>
+      <div class="card-body" id="net-body">
+        <div class="loading"><div class="spin"></div>Building network</div>
+      </div>
+    </div>
+
+    <div class="card growth-card">
+      <div class="card-head"><div class="card-title">Interaction Growth</div></div>
+      <div class="card-body" id="growth-body">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3 -->
+  <div class="row3">
+    <div class="card commentors-card">
+      <div class="card-head">
+        <div class="card-title">All Network Interactors</div>
+        <div class="card-sub" id="assoc-sub">—</div>
+      </div>
+      <div class="ctbl-wrapper">
+        <div class="ctbl-scroll" id="ctbl-scroll">
+          <div class="loading"><div class="spin"></div></div>
+        </div>
+        <div class="scroll-fade"></div>
+      </div>
+      <div class="sdots" id="sdots" style="display:none;">
+        <div class="sdot"></div>
+        <div class="sdot"></div>
+        <div class="sdot"></div>
+      </div>
+    </div>
+
+    <div class="card top7-card" id="top7-card" onclick="liftCard('top7-card')">
+      <div class="card-head">
+        <div class="card-title">Top 7 Close Network</div>
+        <div class="cn-pause-hint" id="cn-pause">Paused</div>
+      </div>
+      <div class="top7-body" id="top7-body">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <div class="card intel-card">
+      <div class="card-head">
+        <div class="card-title">Country Distribution</div>
+        <div class="card-sub" id="pie-sub">—</div>
+      </div>
+      <div class="pie-body" id="pie-body">
+        <div class="loading"><div class="spin"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="blur-overlay" id="blur-overlay"></div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const BATCH_ID = '{{ batch_id }}';
+const TIER_COLORS = {'Strong Supporter':'#66bb6a','Supporter':'#4fc3f7','Neutral':'#888','Low Interaction':'#ffb74d','Critical Voice':'#e63946'};
+const COUNTRY_COORDS = {
+  'Pakistan': [30.3753, 69.3451], 'India': [20.5937, 78.9629], 'Bangladesh': [23.685, 90.3563],
+  'Nepal': [28.3949, 84.124], 'Sri Lanka': [7.8731, 80.7718], 'Bhutan': [27.5142, 90.4336],
+  'Maldives': [3.2028, 73.2207], 'Afghanistan': [33.9391, 67.7099],
+  'Saudi Arabia': [23.8859, 45.0792], 'United Arab Emirates': [23.4241, 53.8478],
+  'Kuwait': [29.3117, 47.4818], 'Iran': [32.4279, 53.688], 'Iraq': [33.2232, 43.6793],
+  'Oman': [21.4735, 55.9754], 'Qatar': [25.3548, 51.1839], 'Bahrain': [26.0667, 50.5577],
+  'Yemen': [15.5527, 48.5164], 'Jordan': [30.5852, 36.2384], 'Lebanon': [33.8547, 35.8623],
+  'Syria': [34.8021, 38.9968], 'Israel': [31.0461, 34.8516], 'Turkey': [38.9637, 35.2433],
+  'China': [35.8617, 104.1954], 'Japan': [36.2048, 138.2529], 'South Korea': [35.9078, 127.7669],
+  'Mongolia': [46.8625, 103.8467], 'Vietnam': [14.0583, 108.2772], 'Thailand': [15.87, 100.9925],
+  'Malaysia': [4.2105, 101.9758], 'Indonesia': [-0.7893, 113.9213], 'Philippines': [12.8797, 121.774],
+  'Singapore': [1.3521, 103.8198], 'Myanmar': [21.9162, 95.956], 'Cambodia': [12.5657, 104.991],
+  'Laos': [19.8563, 102.4955], 'Taiwan': [23.6978, 120.9605],
+  'Kazakhstan': [48.0196, 66.9237], 'Uzbekistan': [41.3775, 64.5853],
+  'Azerbaijan': [40.1431, 47.5769], 'Georgia': [42.3154, 43.3569],
+  'Russia': [61.524, 105.3188], 'Germany': [51.1657, 10.4515], 'France': [46.2276, 2.2137],
+  'United Kingdom': [55.3781, -3.436], 'Italy': [41.8719, 12.5674], 'Spain': [40.4637, -3.7492],
+  'Poland': [51.9194, 19.1451], 'Ukraine': [48.3794, 31.1656], 'Romania': [45.9432, 24.9668],
+  'Netherlands': [52.1326, 5.2913], 'Belgium': [50.5039, 4.4699], 'Sweden': [60.1282, 18.6435],
+  'Norway': [60.472, 8.4689], 'Denmark': [56.2639, 9.5018], 'Finland': [61.9241, 25.7482],
+  'Switzerland': [46.8182, 8.2275], 'Austria': [47.5162, 14.5501], 'Portugal': [39.3999, -8.2245],
+  'Greece': [39.0742, 21.8243], 'Czech Republic': [49.8175, 15.473], 'Hungary': [47.1625, 19.5033],
+  'Bulgaria': [42.7339, 25.4858], 'Serbia': [44.0165, 21.0059], 'Croatia': [45.1, 15.2],
+  'Belarus': [53.7098, 27.9534], 'Ireland': [53.1424, -7.6921],
+  'Nigeria': [9.082, 8.6753], 'Egypt': [26.8206, 30.8025], 'Ethiopia': [9.145, 40.4897],
+  'South Africa': [-30.5595, 22.9375], 'Kenya': [-0.0236, 37.9062], 'Tanzania': [-6.369, 34.889],
+  'Ghana': [7.9465, -1.0232], 'Uganda': [1.3733, 32.2903], 'Cameroon': [7.3697, 12.3547],
+  'Senegal': [14.4974, -14.4524], 'Somalia': [5.1521, 46.1996], 'Sudan': [12.8628, 30.2176],
+  'Morocco': [31.7917, -7.0926], 'Algeria': [28.0339, 1.6596], 'Tunisia': [33.8869, 9.5375],
+  'Libya': [26.3351, 17.2283], 'Angola': [-11.2027, 17.8739], 'Mozambique': [-18.665, 35.5296],
+  'Madagascar': [-18.766, 46.8691], 'Ivory Coast': [7.54, -5.5471], 'Zimbabwe': [-19.0154, 29.1549],
+  'United States': [37.0902, -95.7129], 'Canada': [56.1304, -106.3468],
+  'Mexico': [23.6345, -102.5528], 'Brazil': [-14.235, -51.9253], 'Argentina': [-38.4161, -63.6167],
+  'Colombia': [4.5709, -74.2973], 'Chile': [-35.6751, -71.543], 'Peru': [-9.19, -75.0152],
+  'Venezuela': [6.4238, -66.5897], 'Ecuador': [-1.8312, -78.1834], 'Bolivia': [-16.2902, -63.5887],
+  'Australia': [-25.2744, 133.7751], 'New Zealand': [-40.9006, 174.886], 'Fiji': [-17.7134, 178.065],
+  'Turkmenistan': [38.9697, 59.5563], 'Kyrgyzstan': [41.2044, 74.7661], 'Tajikistan': [38.861, 71.2761],
+  'Armenia': [40.0691, 45.0382], 'Palestine': [31.9522, 35.2332], 'North Korea': [40.3399, 127.5101],
+  'Hong Kong': [22.3193, 114.1694], 'Macau': [22.1987, 113.5439], 'Brunei': [4.5353, 114.7277],
+  'Timor-Leste': [-8.8742, 125.7275], 'Iceland': [64.9631, -19.0208], 'Slovakia': [48.669, 19.699],
+  'Slovenia': [46.1512, 14.9955], 'Bosnia': [43.9159, 17.6791], 'Albania': [41.1533, 20.1683],
+  'North Macedonia': [41.6086, 21.7453], 'Kosovo': [42.6026, 20.903], 'Montenegro': [42.7087, 19.3744],
+  'Moldova': [47.4116, 28.3699], 'Estonia': [58.5953, 25.0136], 'Latvia': [56.8796, 24.6032],
+  'Lithuania': [55.1694, 23.8813], 'Luxembourg': [49.8153, 6.1296], 'Malta': [35.9375, 14.3754],
+  'Cyprus': [35.1264, 33.4299], 'Monaco': [43.7384, 7.4246], 'Liechtenstein': [47.166, 9.5554],
+  'Andorra': [42.5063, 1.5218], 'San Marino': [43.9424, 12.4578], 'Vatican': [41.9029, 12.4534],
+  'Zambia': [-13.1339, 27.8493], 'Malawi': [-13.2543, 34.3015], 'Rwanda': [-1.9403, 29.8739],
+  'Botswana': [-22.3285, 24.6849], 'Namibia': [-22.9576, 18.4904], 'Paraguay': [-23.4425, -58.4438],
+  'Uruguay': [-32.5228, -55.7658], 'Cuba': [21.5218, -77.7812], 'Haiti': [18.9712, -72.2852],
+  'Dominican Republic': [18.7357, -70.1627], 'Guatemala': [15.7835, -90.2308],
+  'Honduras': [15.2, -86.2419], 'El Salvador': [13.7942, -88.8965], 'Nicaragua': [12.8654, -85.2072],
+  'Costa Rica': [9.7489, -83.7534], 'Panama': [8.538, -80.7821], 'Jamaica': [18.1096, -77.2975],
+  'Trinidad': [10.6918, -61.2225], 'Guyana': [4.8604, -58.9302], 'Suriname': [3.9193, -56.0278],
+  'Belize': [17.1899, -88.4976], 'Barbados': [13.1939, -59.5432],
+  'Papua New Guinea': [-6.315, 143.9555], 'Samoa': [-13.759, -172.1046],
+  'Tonga': [-21.1789, -175.1982], 'Vanuatu': [-15.3767, 166.9592], 'Solomon Islands': [-9.6457, 160.1562]
+};
+const FLAGS = {
+  'India': '🇮🇳', 'Pakistan': '🇵🇰', 'Bangladesh': '🇧🇩', 'Nepal': '🇳🇵',
+  'Sri Lanka': '🇱🇰', 'Afghanistan': '🇦🇫', 'Maldives': '🇲🇻', 'Bhutan': '🇧🇹',
+  'Myanmar': '🇲🇲', 'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Philippines': '🇵🇭',
+  'Indonesia': '🇮🇩', 'Malaysia': '🇲🇾', 'Singapore': '🇸🇬', 'Cambodia': '🇰🇭',
+  'Laos': '🇱🇦', 'Brunei': '🇧🇳', 'Timor-Leste': '🇹🇱',
+  'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷', 'North Korea': '🇰🇵',
+  'Taiwan': '🇹🇼', 'Mongolia': '🇲🇳', 'Hong Kong': '🇭🇰', 'Macau': '🇲🇴',
+  'Saudi Arabia': '🇸🇦', 'UAE': '🇦🇪', 'Iran': '🇮🇷', 'Iraq': '🇮🇶',
+  'Turkey': '🇹🇷', 'Israel': '🇮🇱', 'Jordan': '🇯🇴', 'Kuwait': '🇰🇼',
+  'Qatar': '🇶🇦', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲', 'Yemen': '🇾🇪',
+  'Syria': '🇸🇾', 'Lebanon': '🇱🇧', 'Palestine': '🇵🇸',
+  'Kazakhstan': '🇰🇿', 'Uzbekistan': '🇺🇿', 'Turkmenistan': '🇹🇲',
+  'Kyrgyzstan': '🇰🇬', 'Tajikistan': '🇹🇯', 'Azerbaijan': '🇦🇿',
+  'Armenia': '🇦🇲', 'Georgia': '🇬🇪',
+  'Russia': '🇷🇺', 'United Kingdom': '🇬🇧', 'Germany': '🇩🇪', 'France': '🇫🇷',
+  'Italy': '🇮🇹', 'Spain': '🇪🇸', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱',
+  'Belgium': '🇧🇪', 'Switzerland': '🇨🇭', 'Austria': '🇦🇹', 'Poland': '🇵🇱',
+  'Czech Republic': '🇨🇿', 'Slovakia': '🇸🇰', 'Hungary': '🇭🇺', 'Romania': '🇷🇴',
+  'Bulgaria': '🇧🇬', 'Greece': '🇬🇷', 'Sweden': '🇸🇪', 'Norway': '🇳🇴',
+  'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Iceland': '🇮🇸', 'Ireland': '🇮🇪',
+  'Ukraine': '🇺🇦', 'Belarus': '🇧🇾', 'Serbia': '🇷🇸', 'Croatia': '🇭🇷',
+  'Slovenia': '🇸🇮', 'Bosnia': '🇧🇦', 'Albania': '🇦🇱', 'North Macedonia': '🇲🇰',
+  'Kosovo': '🇽🇰', 'Montenegro': '🇲🇪', 'Moldova': '🇲🇩', 'Estonia': '🇪🇪',
+  'Latvia': '🇱🇻', 'Lithuania': '🇱🇹', 'Luxembourg': '🇱🇺', 'Malta': '🇲🇹',
+  'Cyprus': '🇨🇾', 'Monaco': '🇲🇨', 'Liechtenstein': '🇱🇮', 'Andorra': '🇦🇩',
+  'San Marino': '🇸🇲', 'Vatican': '🇻🇦',
+  'Nigeria': '🇳🇬', 'Egypt': '🇪🇬', 'South Africa': '🇿🇦', 'Kenya': '🇰🇪',
+  'Ethiopia': '🇪🇹', 'Ghana': '🇬🇭', 'Tanzania': '🇹🇿', 'Uganda': '🇺🇬',
+  'Algeria': '🇩🇿', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Libya': '🇱🇾',
+  'Sudan': '🇸🇩', 'Somalia': '🇸🇴', 'Senegal': '🇸🇳', 'Cameroon': '🇨🇲',
+  'Ivory Coast': '🇨🇮', 'Angola': '🇦🇴', 'Mozambique': '🇲🇿', 'Zambia': '🇿🇲',
+  'Zimbabwe': '🇿🇼', 'Madagascar': '🇲🇬', 'Malawi': '🇲🇼', 'Rwanda': '🇷🇼',
+  'Botswana': '🇧🇼', 'Namibia': '🇳🇦',
+  'United States': '🇺🇸', 'Canada': '🇨🇦', 'Mexico': '🇲🇽', 'Brazil': '🇧🇷',
+  'Argentina': '🇦🇷', 'Colombia': '🇨🇴', 'Chile': '🇨🇱', 'Peru': '🇵🇪',
+  'Venezuela': '🇻🇪', 'Ecuador': '🇪🇨', 'Bolivia': '🇧🇴', 'Paraguay': '🇵🇾',
+  'Uruguay': '🇺🇾', 'Cuba': '🇨🇺', 'Haiti': '🇭🇹', 'Dominican Republic': '🇩🇴',
+  'Guatemala': '🇬🇹', 'Honduras': '🇭🇳', 'El Salvador': '🇸🇻', 'Nicaragua': '🇳🇮',
+  'Costa Rica': '🇨🇷', 'Panama': '🇵🇦', 'Jamaica': '🇯🇲', 'Trinidad': '🇹🇹',
+  'Guyana': '🇬🇾', 'Suriname': '🇸🇷', 'Belize': '🇧🇿', 'Barbados': '🇧🇧',
+  'Australia': '🇦🇺', 'New Zealand': '🇳🇿', 'Fiji': '🇫🇯', 'Papua New Guinea': '🇵🇬',
+  'Samoa': '🇼🇸', 'Tonga': '🇹🇴', 'Vanuatu': '🇻🇺', 'Solomon Islands': '🇸🇧',
+  'Unknown': ''
+};
+const PIN_COLORS = ['#e63946','#4fc3f7','#ffb74d','#66bb6a','#ab47bc','#ff6b6b','#26c6da','#ffa726'];
+
+let map=null, cnIndex=0, cnData=[], cnPaused=false, cnInterval=null;
+let numbersShown=false, analysisShown=false, networkShown=false;
+let pollInterval=null, autoScrollTimer=null, autoScrollPaused=false, currentModal=null;
+
+function pollStatus() {
+  fetch(`/api/status/batch/${BATCH_ID}`)
+    .then(r=>r.json()).then(s=>{
+      updatePill(s.phase);
+      if (s.urls)  window._batchUrls  = s.urls;
+      if (s.label) window._batchLabel = s.label;
+      const set=(id,v)=>{const el=document.getElementById(id);if(el&&(v||v===0))el.textContent=v;};
+      set('sn-posts',    s.posts_count    || 0);
+      set('sn-comments', s.comments_count || 0);
+      set('sn-network',  s.commentors_count || 0);
+      if (s.posts_count) {
+        const u=document.getElementById('b-urls');
+        if(u) u.textContent=`${s.posts_count} URL${s.posts_count>1?'s':''} Data Gathered`;
+      }
+      if (s.numbers_ready && !numbersShown) { numbersShown=true; fetchData(s); }
+      if (s.analysis_done && !analysisShown) { analysisShown=true; fetchData(s); }
+      if (s.network_done  && !networkShown)  { networkShown=true;  fetchData(s); }
+      if ((s.phase==='complete' || s.report_done) && !networkShown) {
+        numbersShown=analysisShown=networkShown=true;
+        fetchData(s);
+      }
+      if (s.report_done) {
+        const b=document.getElementById('pdf-btn');
+        if(b) b.style.display='inline-flex';
+        clearInterval(pollInterval);
+      }
+      if (s.phase==='error') clearInterval(pollInterval);
+    }).catch(e=>console.warn('poll error',e));
+}
+
+function updatePill(phase) {
+  const p=document.getElementById('nav-status-pill');
+  const m={gathering:'Gathering',analyzing:'Analyzing',building:'Building',report:'Report',complete:'Complete',error:'Error'};
+  p.textContent=m[phase]||'Processing';
+  p.className=phase==='complete'?'npill np-done':phase==='error'?'npill np-err':'npill np-live';
+}
+
+function fetchData(status) {
+  fetch(`/api/data/batch/${BATCH_ID}`)
+    .then(r=>r.json()).then(d=>{
+      if (d.stats)     renderStats(d.stats);
+      if (d.batch)     renderBatchInfo(d.batch, d.stats);
+      if (d.commentors && d.commentors.length) renderCommentors(d.commentors);
+      if (d.countries  && d.countries.length)  { renderMap(d.countries); renderCountryPie(d.countries); }
+      if (d.top7       && d.top7.length)        renderTop7(d.top7);
+      if (d.activity   && d.activity.length)    renderGrowth(d.activity);
+      if (status.network_done) renderNetGraph(d.top7||[], d.commentors||[]);
+    }).catch(e=>console.error(e));
+}
+
+function renderStats(s) {
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v||0; };
+  set('sn-posts',    s.posts_count);
+  set('sn-comments', s.comments_count);
+  set('sn-network',  s.commentors_count);
+  set('sn-langs',    s.analyzed_count||s.comments_count||0);
+  const urlEl=document.getElementById('b-urls');
+  if(urlEl && s.posts_count) urlEl.textContent=`${s.posts_count} URLs Data Gathered`;
+}
+
+function renderBatchInfo(batch, stats) {
+  const urlEl=document.getElementById('b-urls');
+  if (urlEl) urlEl.textContent=`${stats.posts_count||0} URLs Data Gathered`;
+}
+
+// ══ LEAFLET MAP ══
+function renderMap(countries) {
+  const body=document.getElementById('map-body'); if(!body) return;
+  if (!map) {
+    body.innerHTML='<div id="leaflet-map" style="width:100%;height:100%;"></div>';
+    map=L.map('leaflet-map',{
+      center:[20,0], zoom:1.5, minZoom:1, maxZoom:8,
+      zoomControl:true, attributionControl:false, scrollWheelZoom:true,
+      worldCopyJump:true, maxBounds:[[-85,-180],[85,180]], maxBoundsViscosity:0.5
+    });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16}).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,opacity:0.9}).addTo(map);
+    map.zoomControl.setPosition('topright');
+    const ds=document.createElement('style'); ds.textContent='.dark-popup .leaflet-popup-content-wrapper{background:transparent;border:none;box-shadow:none;padding:0}.dark-popup .leaflet-popup-tip{display:none}.dark-popup .leaflet-popup-content{margin:0}'; document.head.appendChild(ds);
+  }
+  map.eachLayer(l=>{ if(l instanceof L.Marker) map.removeLayer(l); });
+  let unknownCnt=0, bounds=[];
+  countries.forEach((c,i)=>{
+    if (!c.identified_country||c.identified_country.toLowerCase()==='unknown'){unknownCnt+=c.count;return;}
+    const coords=COUNTRY_COORDS[c.identified_country]; if(!coords){unknownCnt+=c.count;return;}
+    bounds.push(coords);
+    const col=PIN_COLORS[i%PIN_COLORS.length], flag=FLAGS[c.identified_country]||'';
+    const icon=L.divIcon({className:'',html:`<div style="display:flex;flex-direction:column;align-items:center;pointer-events:none;"><div style="background:#141414;border:1px solid ${col}99;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;color:${col};white-space:nowrap;font-family:Inter,sans-serif;box-shadow:0 4px 12px ${col}33;line-height:1.4;">${flag} ${c.count}</div><div style="width:1px;height:14px;background:${col};opacity:0.6;"></div><div style="width:10px;height:10px;border-radius:50%;background:${col};box-shadow:0 0 12px ${col};"></div></div>`,iconAnchor:[24,42],popupAnchor:[0,-46]});
+    const names=(window._commentorData||[]).filter(p=>p.identified_country===c.identified_country).slice(0,6).map(p=>`<div style="font-size:11px;color:#999;padding:2px 0;">${p.name||'?'}</div>`).join('');
+    L.marker(coords,{icon}).addTo(map).bindPopup(`<div style="background:#141414;border:1px solid ${col}55;border-radius:10px;padding:12px 16px;min-width:160px;font-family:Inter,sans-serif;"><div style="font-size:14px;font-weight:700;color:${col};margin-bottom:6px;">${flag} ${c.identified_country} — ${c.count}</div>${names}</div>`,{className:'dark-popup',maxWidth:240});
+  });
+  if (bounds.length>1) map.fitBounds(bounds,{padding:[30,30],maxZoom:4,animate:true});
+  else if (bounds.length===1) map.setView(bounds[0],3);
+  else map.setView([20,0],1.5);
+  const total=countries.reduce((s,c)=>s+c.count,0);
+  document.getElementById('map-sub').textContent=`${bounds.length} countries | ${total} persons`;
+}
+
+// ══ COUNTRY PIE ══
+function renderCountryPie(countries) {
+  const body=document.getElementById('pie-body'); if(!body) return;
+  const known=countries.filter(c=>c.identified_country&&c.identified_country.toLowerCase()!=='unknown');
+  if (!known.length) return;
+  const total=countries.reduce((s,c)=>s+c.count,0);
+  const sub=document.getElementById('pie-sub'); if(sub) sub.textContent=`${known.length} regions`;
+  const size=Math.min(body.offsetWidth||140,body.offsetHeight||140,130);
+  body.innerHTML=`<canvas id="pie-cv" width="${size}" height="${size}" style="flex-shrink:0;"></canvas><div id="pie-legend" class="pie-legend"></div>`;
+  const cv=document.getElementById('pie-cv'), ctx=cv.getContext('2d');
+  const cx=size/2,cy=size/2,outerR=size/2-6,innerR=outerR*0.6;
+  const PCOLS=['#e63946','#4fc3f7','#ffb74d','#66bb6a','#ab47bc','#ff6b6b','#26c6da','#ffa726'];
+  let start=-Math.PI/2;
+  known.forEach((c,i)=>{
+    const angle=(c.count/total)*Math.PI*2, col=PCOLS[i%PCOLS.length];
+    ctx.beginPath();
+    ctx.moveTo(cx+innerR*Math.cos(start+0.02),cy+innerR*Math.sin(start+0.02));
+    ctx.arc(cx,cy,outerR,start+0.02,start+angle-0.02);
+    ctx.arc(cx,cy,innerR,start+angle-0.02,start+0.02,true);
+    ctx.closePath(); ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=6; ctx.fill(); ctx.shadowBlur=0;
+    start+=angle;
+  });
+  ctx.fillStyle='#fff'; ctx.font='bold 16px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(known.length,cx,cy-6); ctx.fillStyle='#666'; ctx.font='500 9px Inter,sans-serif'; ctx.fillText('REGIONS',cx,cy+8);
+  document.getElementById('pie-legend').innerHTML=known.slice(0,5).map((c,i)=>`<div class="pie-legend-item"><span class="pie-legend-dot" style="background:${PCOLS[i%PCOLS.length]};"></span><span class="pie-legend-name">${FLAGS[c.identified_country]||''} ${c.identified_country}</span><span class="pie-legend-val" style="color:${PCOLS[i%PCOLS.length]};">${Math.round((c.count/total)*100)}%</span></div>`).join('');
+}
+
+// ══ NET GRAPH ══
+const _threatIcon = new Image();
+_threatIcon.src = '/icons/threat.png';
+
+function renderNetGraph(top7, allCommentors) {
+  const body=document.getElementById('net-body'); if(!body) return;
+  body.innerHTML='<canvas id="net-cv" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>';
+  const cv=document.getElementById('net-cv');
+  const W=body.offsetWidth||300, H=body.offsetHeight||300;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'), cx=W/2, cy=H/2;
+  const source=(allCommentors&&allCommentors.length)?allCommentors:(top7||[]);
+  const supporters=source.filter(p=>{ const t=p.tier||'',s=parseFloat(p.total_score||0); return t==='Strong Supporter'||t==='Supporter'||s>=0.1; }).slice(0,14);
+  if (!supporters.length) { ctx.fillStyle='#444'; ctx.font='12px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Scoring in progress...',W/2,H/2); return; }
+  const nodes=supporters.map((p,i)=>{
+    const isStrong=(p.tier==='Strong Supporter'||parseFloat(p.total_score||0)>=0.5);
+    const ring=isStrong?0.30:0.45;
+    const count=supporters.filter(x=>(x.tier==='Strong Supporter'||parseFloat(x.total_score||0)>=0.5)===isStrong).length;
+    const idx=supporters.filter((x,j)=>j<i&&((x.tier==='Strong Supporter'||parseFloat(x.total_score||0)>=0.5)===isStrong)).length;
+    const a=(idx/(count||1))*Math.PI*2-Math.PI/2, R=Math.min(W,H)*ring;
+    const sc=parseFloat(p.total_score||0);
+    return {x:cx+R*Math.cos(a),y:cy+R*Math.sin(a),r:isStrong?Math.max(14,Math.min(20,14+sc*4)):Math.max(10,Math.min(16,10+sc*3)),name:(p.name||'?').split(' ')[0],sc,col:isStrong?'#66bb6a':'#4fc3f7',isStrong};
+  });
+  nodes.forEach(n=>{ const g=ctx.createLinearGradient(cx,cy,n.x,n.y); g.addColorStop(0,n.col+'66'); g.addColorStop(1,n.col+'18'); ctx.strokeStyle=g; ctx.lineWidth=n.isStrong?2:1.2; ctx.setLineDash(n.isStrong?[]:[3,3]); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(n.x,n.y); ctx.stroke(); ctx.setLineDash([]); });
+  const tg=ctx.createRadialGradient(cx,cy,0,cx,cy,22); tg.addColorStop(0,'#e63946'); tg.addColorStop(1,'#c1121f');
+  ctx.fillStyle=tg; ctx.shadowColor='#e63946'; ctx.shadowBlur=20; ctx.beginPath(); ctx.arc(cx,cy,22,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='#e6394666'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,28,0,Math.PI*2); ctx.stroke();
+  if (_threatIcon.complete && _threatIcon.naturalWidth > 0) {
+    ctx.drawImage(_threatIcon, cx-14, cy-14, 28, 28);
+  } else {
+    ctx.fillStyle='#fff'; ctx.font='bold 8px Inter,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('TARGET', cx, cy);
+    _threatIcon.onload = () => renderNetGraph(top7, allCommentors);
+  }
+  nodes.forEach(n=>{ const gr=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*2); gr.addColorStop(0,n.col+'33'); gr.addColorStop(1,'transparent'); ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(n.x,n.y,n.r*2,0,Math.PI*2); ctx.fill(); ctx.shadowColor=n.col; ctx.shadowBlur=n.isStrong?12:8; ctx.fillStyle='#0a0a0a'; ctx.strokeStyle=n.col; ctx.lineWidth=n.isStrong?2:1.5; ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; ctx.fillStyle=n.col; ctx.font=`bold ${Math.max(8,Math.floor(n.r*0.62))}px Inter,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(n.name.substring(0,2).toUpperCase(),n.x,n.y); ctx.fillStyle='#888'; ctx.font='9px Inter,sans-serif'; ctx.textBaseline='alphabetic'; ctx.fillText(n.name.length>7?n.name.slice(0,6)+'…':n.name,n.x,n.y+n.r+10); ctx.fillStyle=n.col+'cc'; ctx.font='bold 8px Inter,sans-serif'; ctx.fillText(n.sc.toFixed(2),n.x,n.y+n.r+20); });
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  const ss_cnt=nodes.filter(n=>n.isStrong).length, s_cnt=nodes.filter(n=>!n.isStrong).length;
+  ctx.fillStyle='#66bb6a'; ctx.font='bold 10px Inter,sans-serif'; ctx.fillText(`Strong: ${ss_cnt}`,10,H-20);
+  ctx.fillStyle='#4fc3f7'; ctx.fillText(`Supporters: ${s_cnt}`,10,H-6);
+  document.getElementById('net-sub').textContent=`${ss_cnt} strong | ${s_cnt} supporters`;
+  let netTip=document.getElementById('net-tooltip');
+  if (!netTip) { netTip=document.createElement('div'); netTip.id='net-tooltip'; netTip.style.cssText='position:fixed;display:none;pointer-events:none;z-index:9999;background:#141414;border:1px solid #e63946;border-radius:10px;padding:10px 14px;min-width:180px;box-shadow:0 8px 32px rgba(230,57,70,0.3);'; document.body.appendChild(netTip); }
+  if (cv._ml) cv.removeEventListener('mousemove',cv._ml);
+  if (cv._ll) cv.removeEventListener('mouseleave',cv._ll);
+  cv._ml=e=>{ const br=cv.getBoundingClientRect(),mx=(e.clientX-br.left)*(W/br.width),my=(e.clientY-br.top)*(H/br.height); let f=false; for(const n of nodes){ if(Math.sqrt((mx-n.x)**2+(my-n.y)**2)<=n.r+4){ const p=supporters[nodes.indexOf(n)]; const sc=n.sc.toFixed(3),col=n.isStrong?'#66bb6a':'#4fc3f7',flag=FLAGS[p.identified_country]||''; const _city=(p.city&&p.city!=='—')?('<div style="font-size:10px;color:#666;margin-top:4px;">'+p.city+'</div>'):''; const _work=(p.work&&p.work!=='—')?('<div style="font-size:10px;color:#666;">'+p.work+'</div>'):''; netTip.innerHTML='<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">'+(p.name||'Unknown')+'</div><div style="font-size:11px;color:#888;margin-bottom:6px;">'+flag+' '+(p.identified_country||'— Unknown')+'</div><div style="font-size:11px;color:'+col+';font-weight:600;">'+sc+' | '+(p.tier||'—')+'</div>'+_city+_work; netTip.style.display='block'; netTip.style.left=Math.min(e.clientX+14,window.innerWidth-220)+'px'; netTip.style.top=Math.max(e.clientY-60,10)+'px'; cv.style.cursor='pointer'; f=true; break; } } if(!f){netTip.style.display='none';cv.style.cursor='default';} };
+  cv._ll=()=>{netTip.style.display='none';cv.style.cursor='default';};
+  cv.addEventListener('mousemove',cv._ml); cv.addEventListener('mouseleave',cv._ll);
+}
+
+// ══ GROWTH ══
+function renderGrowth(activity) {
+  const body=document.getElementById('growth-body'); if(!body) return;
+  body.innerHTML='<canvas id="growth-cv" style="width:100%;height:100%;display:block;"></canvas>';
+  const cv=document.getElementById('growth-cv'); cv.width=body.offsetWidth; cv.height=body.offsetHeight;
+  const dated=activity.filter(a=>a.date_text&&a.date_text!=='Unknown'&&a.total>0);
+  dated.sort((a,b)=>(a.date_text||'').localeCompare(b.date_text||''));
+  let cum=0; const data=dated.map(a=>{cum+=a.total||0;return cum;});
+  new Chart(cv,{type:'line',data:{labels:dated.map(a=>a.date_text),datasets:[{data,borderColor:'#e63946',backgroundColor:'rgba(230,57,70,0.08)',borderWidth:2,pointRadius:2,pointBackgroundColor:'#e63946',fill:true,tension:0.4}]},options:{responsive:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:{duration:700}}});
+}
+
+// ══ COMMENTORS ══
+function renderCommentors(commentors) {
+  window._commentorData=commentors;
+  document.getElementById('assoc-sub').textContent=`${commentors.length} detected`;
+  const USER_SVG_SMALL=`<svg viewBox="0 0 36 36" width="14" height="14" fill="none"><circle cx="18" cy="12" r="6" fill="#1a1a1a" stroke="#e63946" stroke-width="1.2"/><path d="M4 33c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="#e63946" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+  document.getElementById('ctbl-scroll').innerHTML=`<table class="ctbl"><thead><tr><th style="width:40px;">#</th><th>Entity</th><th>Country</th></tr></thead><tbody>${commentors.map((p,i)=>`<tr><td style="color:#444;font-size:10px;font-weight:600;">${i+1}</td><td><div style="display:flex;align-items:center;gap:10px;"><div class="ctbl-avatar">${USER_SVG_SMALL}</div><a href="${p.profile_url}" target="_blank" class="p-link">${p.name||'Unknown'}</a></div></td><td style="font-size:11px;color:#666;">${p.identified_country?(FLAGS[p.identified_country]||'')+' '+p.identified_country:'— Unknown'}</td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('sdots').style.display='flex';
+  if (autoScrollTimer) clearInterval(autoScrollTimer);
+  const el=document.getElementById('ctbl-scroll');
+  el.addEventListener('mouseenter',()=>autoScrollPaused=true);
+  el.addEventListener('mouseleave',()=>autoScrollPaused=false);
+  autoScrollTimer=setInterval(()=>{ if(autoScrollPaused||!el)return; const max=el.scrollHeight-el.clientHeight; if(max<=0)return; el.scrollTop>=max?el.scrollTop=0:el.scrollTop+=1; },50);
+}
+
+// ══ TOP7 ══
+const USER_SVG=`<svg viewBox="0 0 36 36" width="20" height="20" fill="none"><circle cx="18" cy="12" r="6" fill="#1a1a1a" stroke="#e63946" stroke-width="1.2"/><path d="M4 33c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="#e63946" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+function renderTop7(top7) {
+  cnData=top7; if(!cnData.length)return;
+  showCN(0);
+  if (!cnInterval) cnInterval=setInterval(()=>{ if(!cnPaused&&cnData.length){cnIndex=(cnIndex+1)%cnData.length;showCN(cnIndex);} },3500);
+}
+function showCN(idx) {
+  const p=cnData[idx], score=parseFloat(p.total_score||0);
+  const col=score>=0.5?'#66bb6a':score>=0.1?'#4fc3f7':score>=-0.1?'#888':score>=-0.5?'#ffb74d':'#e63946';
+  const rank = idx + 1;
+  const profileUrl = p.profile_url || '#';
+  document.getElementById('top7-body').innerHTML=`
+    <div class="cn-person">
+      <div class="cn-icon-wrap">
+        <div class="cn-icon">${USER_SVG}</div>
+        <div class="cn-rank">TOP ${rank}</div>
+      </div>
+      <div class="cn-info">
+        <div class="cn-name">${p.name||'Unknown'}</div>
+        <div class="cn-sub">${FLAGS[p.identified_country]||''} ${p.identified_country||'— Unknown'}</div>
+      </div>
+      <div class="cn-score" style="color:${col};">${score.toFixed(3)}</div>
+    </div>
+    <hr class="cn-hr">
+    <div class="cn-grid">
+      <div class="cn-f">City<span>${p.city||'—'}</span></div>
+      <div class="cn-f">Work<span>${p.work||'—'}</span></div>
+      <div class="cn-f cn-full">Education<span>${p.education||'—'}</span></div>
+    </div>
+    <a href="${profileUrl}" target="_blank" class="cn-view-profile" onclick="event.stopPropagation();">View Profile</a>
+    <div class="cn-dots">${cnData.map((_,i)=>`<span class="cndot ${i===idx?'cndot-on':'cndot-off'}"></span>`).join('')}</div>`;
+}
+
+// ══ LIFT MODAL ══
+function liftCard(cardId) {
+  const card=document.getElementById(cardId), wasLifted=!!currentModal;
+  dismissLift(); if(wasLifted)return;
+  const rect=card.getBoundingClientRect(), overlay=document.getElementById('blur-overlay');
+  overlay.classList.add('active');
+  const modal=document.createElement('div'); modal.id='lift-modal';
+  modal.style.cssText=`position:fixed;left:${rect.left}px;top:${Math.max(10,rect.top-20)}px;width:${rect.width}px;min-height:${rect.height}px;background:#141414;border:1px solid #e63946;border-radius:12px;box-shadow:0 24px 64px rgba(230,57,70,0.25);z-index:500;padding:16px 20px;cursor:default;animation:modalIn 0.22s ease;font-family:Inter,sans-serif;`;
+  if (cardId==='batch-card') {
+    const urls = window._batchUrls || [];
+    const urlRows = urls.map((u,i) => {
+      const type = u.includes('/reel/')? 'Reel' : u.includes('/photo')||u.includes('fbid=')? 'Photo' : 'Post';
+      const typeCol = type==='Reel'?'#4fc3f7':type==='Photo'?'#ab47bc':'#ffb74d';
+      const short = u.length>55 ? u.substring(0,52)+'...' : u;
+      return `<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #1a1a1a;">
+        <span style="font-size:10px;font-weight:600;color:#444;flex-shrink:0;padding-top:2px;width:20px;">${i+1}.</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;font-weight:700;color:${typeCol};margin-bottom:2px;text-transform:uppercase;">${type}</div>
+          <a href="${u}" target="_blank" style="font-size:11px;color:#e63946;word-break:break-all;text-decoration:none;">${short}</a>
+        </div>
+      </div>`;
+    }).join('');
+    modal.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#e63946;letter-spacing:0.08em;text-transform:uppercase;">Batch Analysis — ${window._batchLabel||BATCH_ID}</div>
+        <div onclick="dismissLift()" style="cursor:pointer;color:#666;font-size:20px;line-height:1;padding:2px 6px;transition:color 0.2s;" onmouseover="this.style.color='#e63946'" onmouseout="this.style.color='#666'">×</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:14px;">
+        <div><div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;">Batch ID</div><div style="font-size:12px;font-weight:500;color:#999;margin-top:2px;">${BATCH_ID}</div></div>
+        <div><div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;">URLs</div><div style="font-size:12px;font-weight:600;color:#e63946;margin-top:2px;">${urls.length} submitted</div></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;margin-bottom:8px;">Submitted URLs</div>
+      <div style="max-height:200px;overflow-y:auto;padding-right:6px;">
+        ${urlRows || '<div style="font-size:11px;color:#666;">No URLs stored</div>'}
+      </div>`;
+  } else if (cardId==='top7-card') {
+    if (!cnData || !cnData.length) {
+      modal.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;">Close Network</div><div onclick="dismissLift()" style="cursor:pointer;color:#666;font-size:20px;line-height:1;padding:2px 6px;">×</div></div><div style="text-align:center;padding:24px;color:#666;font-size:13px;">Scoring not yet complete. Check back after pipeline finishes.</div>`;
+      document.body.appendChild(modal); currentModal=modal; overlay.onclick=dismissLift; return;
+    }
+    const p=cnData[cnIndex]||{}, sc=parseFloat(p.total_score||0), col=sc>=0.5?'#66bb6a':sc>=0.1?'#4fc3f7':'#e63946';
+    const fld=(l,v)=>`<div><div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.08em;">${l}</div><div style="font-size:12px;font-weight:500;color:#999;margin-top:2px;">${v||'—'}</div></div>`;
+    modal.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:#888;letter-spacing:0.08em;text-transform:uppercase;">Close Network — Full Profile</div><div onclick="dismissLift()" style="cursor:pointer;color:#666;font-size:20px;line-height:1;padding:2px 6px;">×</div></div><div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;"><div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1a1a1a,#0d0d0d);border:2px solid #e63946;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${USER_SVG}</div><div style="flex:1;min-width:0;"><div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;">${p.name||'Unknown'}</div><div style="font-size:12px;color:#666;margin-top:2px;">${FLAGS[p.identified_country]||''} ${p.identified_country||'—'}</div></div><div style="font-size:24px;font-weight:800;color:${col};">${sc.toFixed(3)}</div></div><div style="height:1px;background:#262626;margin-bottom:14px;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;">${fld('City',p.city)}${fld('Work',p.work)}${fld('Hometown',p.hometown)}${fld('Tier',p.tier)}<div style="grid-column:1/-1">${fld('Education',p.education)}</div><div style="grid-column:1/-1"><div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;">Profile URL</div><div style="font-size:11px;color:#e63946;margin-top:2px;"><a href="${p.profile_url||'#'}" target="_blank" style="color:#e63946;">${p.profile_url||'—'}</a></div></div></div>`;
+    cnPaused=true;
+  }
+  document.body.appendChild(modal); currentModal=modal;
+  overlay.onclick=dismissLift;
+}
+window.dismissLift=function(){ if(currentModal){currentModal.remove();currentModal=null;} const ov=document.getElementById('blur-overlay'); if(ov){ov.classList.remove('active');ov.onclick=null;} cnPaused=false; const ph=document.getElementById('cn-pause'); if(ph) ph.style.opacity='0'; };
+
+function goDetail(s) { const u={posts:`/batch/${BATCH_ID}/posts`,interactions:`/batch/${BATCH_ID}/interactions`,network:`/batch/${BATCH_ID}/network`}; if(u[s]) window.location.href=u[s]; }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  pollStatus();
+  pollInterval = setInterval(pollStatus, 3000);
+  setTimeout(() => {
+    const hasData = document.getElementById('sn-posts')?.textContent?.trim() !== '' 
+                 && document.getElementById('sn-posts')?.textContent?.trim() !== '0'
+                 || numbersShown;
+    if (!hasData && !networkShown) {
+      console.log('No data after 5s — reloading page');
+      window.location.reload();
+    }
+  }, 60000);
+});
+</script>
+{% endblock %}

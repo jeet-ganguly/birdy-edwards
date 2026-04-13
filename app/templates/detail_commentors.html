@@ -1,0 +1,698 @@
+{% extends 'base.html' %}
+{% block title %}Full Network Analysis — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+{% if profile_id %}
+<a href="{{ url_for('dashboard_profile', profile_id=profile_id) }}" class="back-btn">← Dashboard</a>
+{% elif batch_id %}
+<a href="{{ url_for('dashboard_batch', batch_id=batch_id) }}" class="back-btn">← Dashboard</a>
+{% endif %}
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,
+  *::before,
+  *::after {
+    font-family: "Google Sans", "Product Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: #0a0a0f;
+  }
+
+  .detail-wrap {
+    padding: 24px 32px 60px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* Page Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .page-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 500;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+  }
+
+  .page-sub {
+    font-size: 14px;
+    color: #22c55e;
+    margin-bottom: 24px;
+    margin-left: 40px;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 0;
+  }
+
+  .filter-input {
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid #2a2a35;
+    background: #12121a;
+    color: #e5e5e5;
+    font-size: 14px;
+    font-weight: 400;
+    outline: none;
+    width: 320px;
+    transition: all 0.2s ease;
+  }
+
+  .filter-input::placeholder {
+    color: #6b6b7b;
+  }
+
+  .filter-input:focus {
+    border-color: #4a4a5a;
+    background: #16161f;
+  }
+
+  .filter-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .fpill {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #8b8b9b;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .fpill:hover {
+    color: #c4c4d4;
+  }
+
+  .fpill-active {
+    background: #1e1e2a;
+    color: #94a3b8;
+    border-color: #3a3a4a;
+  }
+
+  .fpill-ss {
+    color: #22c55e;
+    border-color: #22c55e40;
+  }
+
+  .fpill-ss:hover,
+  .fpill-ss.fpill-active {
+    background: #22c55e15;
+    border-color: #22c55e60;
+    color: #22c55e;
+  }
+
+  .fpill-s {
+    color: #818cf8;
+    border-color: #818cf840;
+  }
+
+  .fpill-s:hover,
+  .fpill-s.fpill-active {
+    background: #818cf815;
+    border-color: #818cf860;
+    color: #818cf8;
+  }
+
+  .fpill-n {
+    color: #9ca3af;
+    border-color: #9ca3af40;
+  }
+
+  .fpill-n:hover,
+  .fpill-n.fpill-active {
+    background: #9ca3af15;
+    border-color: #9ca3af60;
+    color: #9ca3af;
+  }
+
+  .fpill-li {
+    color: #f97316;
+    border-color: #f9731640;
+  }
+
+  .fpill-li:hover,
+  .fpill-li.fpill-active {
+    background: #f9731615;
+    border-color: #f9731660;
+    color: #f97316;
+  }
+
+  .fpill-cv {
+    color: #f43f5e;
+    border-color: #f43f5e40;
+  }
+
+  .fpill-cv:hover,
+  .fpill-cv.fpill-active {
+    background: #f43f5e15;
+    border-color: #f43f5e60;
+    color: #f43f5e;
+  }
+
+  /* Sort button */
+  #sort-freq-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #3a3a4a;
+    background: transparent;
+    color: #a78bfa;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  #sort-freq-btn:hover {
+    background: #a78bfa15;
+    border-color: #a78bfa60;
+  }
+
+  /* Table */
+  .tbl-card {
+    background: #0d0d14;
+    border: 1px solid #1e1e28;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tbl-scroll {
+    overflow-x: auto;
+    max-height: calc(100vh - 260px);
+    overflow-y: auto;
+  }
+
+  .tbl-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .tbl-scroll::-webkit-scrollbar-track {
+    background: #0d0d14;
+  }
+
+  .tbl-scroll::-webkit-scrollbar-thumb {
+    background: #2a2a35;
+    border-radius: 3px;
+  }
+
+  .tbl-scroll::-webkit-scrollbar-thumb:hover {
+    background: #3a3a45;
+  }
+
+  table.ntbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  table.ntbl thead tr {
+    background: #0a0a10;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  table.ntbl th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6b6b7b;
+    border-bottom: 1px solid #1e1e28;
+    white-space: nowrap;
+  }
+
+  table.ntbl th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+
+  table.ntbl th.sortable:hover {
+    color: #a0a0b0;
+  }
+
+  table.ntbl td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #16161f;
+    vertical-align: middle;
+    font-size: 14px;
+    font-weight: 400;
+    color: #e5e5e5;
+  }
+
+  table.ntbl tr:hover td {
+    background: #12121a;
+  }
+
+  table.ntbl tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Identity link */
+  .p-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s;
+  }
+
+  .p-link:hover {
+    color: #a78bfa;
+  }
+
+  .p-link::after {
+    content: '↗';
+    font-size: 12px;
+    opacity: 0.7;
+  }
+
+  /* Country cell */
+  .country-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+  }
+
+  .country-flag {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .country-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+  }
+
+  .country-unknown {
+    font-size: 13px;
+    color: #5b5b6b;
+    font-style: normal;
+  }
+
+  /* Confidence bar */
+  .conf-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 120px;
+  }
+
+  .conf-bar {
+    flex: 1;
+    height: 6px;
+    background: #1e1e28;
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 70px;
+  }
+
+  .conf-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .conf-pct {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 36px;
+  }
+
+  /* Basis tooltip */
+  .basis-text {
+    font-size: 13px;
+    color: #9ca3af;
+    line-height: 1.5;
+    font-weight: 400;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: help;
+    transition: color 0.15s;
+  }
+
+  .basis-text:hover {
+    color: #e5e5e5;
+  }
+
+  /* Score */
+  .td-score {
+    font-size: 14px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sc-pos {
+    color: #22c55e;
+  }
+
+  .sc-neg {
+    color: #f43f5e;
+  }
+
+  .sc-neu {
+    color: #6b7280;
+  }
+
+  /* Tier pills */
+  .tier-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 16px;
+    white-space: nowrap;
+    display: inline-block;
+  }
+
+  .tp-ss {
+    background: #22c55e20;
+    color: #22c55e;
+    border: 1px solid #22c55e40;
+  }
+
+  .tp-s {
+    background: #818cf820;
+    color: #818cf8;
+    border: 1px solid #818cf840;
+  }
+
+  .tp-n {
+    background: #6b728020;
+    color: #9ca3af;
+    border: 1px solid #6b728040;
+  }
+
+  .tp-li {
+    background: #f9731620;
+    color: #f97316;
+    border: 1px solid #f9731640;
+  }
+
+  .tp-cv {
+    background: #f43f5e20;
+    color: #f43f5e;
+    border: 1px solid #f43f5e40;
+  }
+
+  .td-num {
+    font-size: 14px;
+    color: #9ca3af;
+    font-weight: 400;
+    width: 40px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .td-interactions {
+    font-size: 14px;
+    color: #e5e5e5;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Empty state */
+  .empty-cell {
+    font-size: 13px;
+    color: #4b4b5b;
+    font-weight: 400;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+  <div class="page-header">
+    <div class="page-icon"></div>
+    <h1 class="page-title">Full Network Analysis</h1>
+  </div>
+  <div class="page-sub">{{ commentors|length }} associated persons detected</div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <input type="text" class="filter-input" id="filter-input" placeholder="Search name or country...">
+    <div class="filter-pills">
+      <button id="sort-freq-btn" onclick="toggleSortMode()">
+        ⚡ Sort by Frequency
+      </button>
+      <button class="fpill fpill-active" onclick="filterTier(this, '')">All</button>
+      <button class="fpill fpill-ss" onclick="filterTier(this, 'Strong Supporter')">Strong Supporter</button>
+      <button class="fpill fpill-s" onclick="filterTier(this, 'Supporter')">Supporter</button>
+      <button class="fpill fpill-n" onclick="filterTier(this, 'Neutral')">Neutral</button>
+      <button class="fpill fpill-li" onclick="filterTier(this, 'Low Interaction')">Low Interaction</button>
+      <button class="fpill fpill-cv" onclick="filterTier(this, 'Critical Voice')">Critical Voice</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-card">
+    <div class="tbl-scroll">
+      <table class="ntbl" id="persons-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="sortable" onclick="sortBy('name')">Identity ↕</th>
+            <th class="sortable" onclick="sortBy('country')">Country ↕</th>
+            <th>AI Confidence</th>
+            <th>Detection Basis</th>
+            <th class="sortable" onclick="sortBy('score')">Score ↕</th>
+            <th>Classification</th>
+            <th>Interactions</th>
+          </tr>
+        </thead>
+        <tbody id="persons-tbody">
+          {% for p in commentors %}
+          {% set conf = p.country_confidence or 0 %}
+          {% set conf_color = '#22c55e' if conf >= 80 else ('#f97316' if conf >= 60 else '#f43f5e') %}
+          {% set score = p.total_score or 0 %}
+          {% set score_cls = 'sc-pos' if score >= 0.1 else ('sc-neg' if score <= -0.1 else 'sc-neu' ) %}
+          <tr data-tier="{{ p.tier or '' }}" data-name="{{ p.name or '' }}"
+            data-country="{{ p.identified_country or '' }}" data-score="{{ score }}"
+            data-interactions="{{ p.comment_count or 0 }}">
+
+            <td class="td-num">{{ loop.index }}</td>
+
+            <!-- Identity -->
+            <td>
+              <a href="{{ p.profile_url }}" target="_blank" class="p-link">
+                {{ p.name or 'Unknown' }}
+              </a>
+            </td>
+
+            <!-- Country with flag -->
+            <td>
+              <div class="country-cell">
+                {% if p.identified_country %}
+                {% set FLAGS = {
+                'Pakistan':'🇵🇰','India':'🇮🇳','Bangladesh':'🇧🇩','Nepal':'🇳🇵',
+                'Sri Lanka':'🇱🇰','Afghanistan':'🇦🇫','Bhutan':'🇧🇹','Maldives':'🇲🇻',
+                'Saudi Arabia':'🇸🇦','United Arab Emirates':'🇦🇪','Kuwait':'🇰🇼',
+                'Iran':'🇮🇷','Iraq':'🇮🇶','Oman':'🇴🇲','Qatar':'🇶🇦','Bahrain':'🇧🇭',
+                'Yemen':'🇾🇪','Jordan':'🇯🇴','Lebanon':'🇱🇧','Syria':'🇸🇾',
+                'Israel':'🇮🇱','Turkey':'🇹🇷','Palestine':'🇵🇸',
+                'China':'🇨🇳','Japan':'🇯🇵','South Korea':'🇰🇷','Mongolia':'🇲🇳',
+                'Vietnam':'🇻🇳','Thailand':'🇹🇭','Malaysia':'🇲🇾','Indonesia':'🇮🇩',
+                'Philippines':'🇵🇭','Singapore':'🇸🇬','Myanmar':'🇲🇲',
+                'Cambodia':'🇰🇭','Laos':'🇱🇦','Taiwan':'🇹🇼',
+                'Kazakhstan':'🇰🇿','Uzbekistan':'🇺🇿','Azerbaijan':'🇦🇿',
+                'Georgia':'🇬🇪','Kyrgyzstan':'🇰🇬','Tajikistan':'🇹🇯',
+                'Russia':'🇷🇺','Germany':'🇩🇪','France':'🇫🇷','United Kingdom':'🇬🇧',
+                'Italy':'🇮🇹','Spain':'🇪🇸','Poland':'🇵🇱','Ukraine':'🇺🇦',
+                'Romania':'🇷🇴','Netherlands':'🇳🇱','Belgium':'🇧🇪',
+                'Sweden':'🇸🇪','Norway':'🇳🇴','Denmark':'🇩🇰','Finland':'🇫🇮',
+                'Switzerland':'🇨🇭','Austria':'🇦🇹','Portugal':'🇵🇹',
+                'Greece':'🇬🇷','Czech Republic':'🇨🇿','Hungary':'🇭🇺',
+                'Bulgaria':'🇧🇬','Serbia':'🇷🇸','Croatia':'🇭🇷',
+                'Belarus':'🇧🇾','Ireland':'🇮🇪','Slovakia':'🇸🇰',
+                'Nigeria':'🇳🇬','Egypt':'🇪🇬','Ethiopia':'🇪🇹',
+                'South Africa':'🇿🇦','Kenya':'🇰🇪','Tanzania':'🇹🇿',
+                'Ghana':'🇬🇭','Uganda':'🇺🇬','Cameroon':'🇨🇲',
+                'Senegal':'🇸🇳','Somalia':'🇸🇴','Sudan':'🇸🇩',
+                'Morocco':'🇲🇦','Algeria':'🇩🇿','Tunisia':'🇹🇳','Libya':'🇱🇾',
+                'Angola':'🇦🇴','Mozambique':'🇲🇿','Zimbabwe':'🇿🇼',
+                'Ivory Coast':'🇨🇮','Madagascar':'🇲🇬','Rwanda':'🇷🇼',
+                'United States':'🇺🇸','Canada':'🇨🇦','Mexico':'🇲🇽',
+                'Brazil':'🇧🇷','Argentina':'🇦🇷','Colombia':'🇨🇴',
+                'Chile':'🇨🇱','Peru':'🇵🇪','Venezuela':'🇻🇪',
+                'Ecuador':'🇪🇨','Bolivia':'🇧🇴','Paraguay':'🇵🇾',
+                'Australia':'🇦🇺','New Zealand':'🇳🇿','Fiji':'🇫🇯',
+                } %}
+                <span class="country-flag">{{ FLAGS.get(p.identified_country, '🌍') }}</span>
+                <span class="country-name">{{ p.identified_country }}</span>
+                {% else %}
+                <span class="country-unknown">— Unknown</span>
+                {% endif %}
+              </div>
+            </td>
+
+            <!-- AI Confidence % -->
+            <td>
+              {% if p.identified_country and conf > 0 %}
+              <div class="conf-wrap">
+                <div class="conf-bar">
+                  <div class="conf-fill" style="width:{{ conf }}%;background:{{ conf_color }};"></div>
+                </div>
+                <span class="conf-pct" style="color:{{ conf_color }};">{{ conf }}%</span>
+              </div>
+              {% else %}
+              <span class="empty-cell">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Detection Basis (why AI decided) -->
+            <td>
+              {% if p.identification_basis %}
+              <div class="basis-text" title="{{ p.identification_basis }}">
+                {{ p.identification_basis[:60] }}{% if p.identification_basis|length > 60 %}…{% endif %}
+              </div>
+              {% else %}
+              <span class="empty-cell">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Score -->
+            <td class="td-score {{ score_cls }}">
+              {{ "%.3f"|format(score) }}
+            </td>
+
+            <!-- Tier -->
+            <td>
+              <span class="tier-pill {{
+                'tp-ss' if p.tier == 'Strong Supporter' else
+                'tp-s'  if p.tier == 'Supporter' else
+                'tp-n'  if p.tier == 'Neutral' else
+                'tp-li' if p.tier == 'Low Interaction' else
+                'tp-cv' if p.tier == 'Critical Voice' else 'tp-n'
+              }}">{{ p.tier or '—' }}</span>
+            </td>
+
+            <!-- Interactions -->
+            <td class="td-interactions">{{ p.comment_count or 0 }}</td>
+
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentTier = '';
+  let sortDir = { name: 1, country: 1, score: -1, interactions: -1 };
+
+  function filterTier(btn, tier) {
+    currentTier = tier;
+    document.querySelectorAll('.fpill').forEach(p => p.classList.remove('fpill-active'));
+    btn.classList.add('fpill-active');
+    applyFilter();
+  }
+
+  document.getElementById('filter-input').addEventListener('input', applyFilter);
+
+  function applyFilter() {
+    const search = document.getElementById('filter-input').value.toLowerCase();
+    document.querySelectorAll('#persons-tbody tr').forEach(row => {
+      const name = (row.dataset.name || '').toLowerCase();
+      const country = (row.dataset.country || '').toLowerCase();
+      const tier = (row.dataset.tier || '');
+      const matchSearch = !search || name.includes(search) || country.includes(search);
+      const matchTier = !currentTier || tier === currentTier;
+      row.style.display = matchSearch && matchTier ? '' : 'none';
+    });
+  }
+
+  function sortBy(field) {
+    const tbody = document.getElementById('persons-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    if (sortDir[field] === undefined) sortDir[field] = -1;
+    sortDir[field] *= -1;
+    rows.sort((a, b) => {
+      let va = a.dataset[field] || '';
+      let vb = b.dataset[field] || '';
+      if (field === 'score' || field === 'interactions') {
+        va = parseFloat(va) || 0;
+        vb = parseFloat(vb) || 0;
+      }
+      return va > vb ? sortDir[field] : va < vb ? -sortDir[field] : 0;
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  }
+
+  let sortByFreq = false;
+  function toggleSortMode() {
+    sortByFreq = !sortByFreq;
+    const btn = document.getElementById('sort-freq-btn');
+    const tbody = document.getElementById('persons-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    if (sortByFreq) {
+      btn.textContent = '★ Sort by Score';
+      btn.style.background = 'rgba(249, 115, 22, 0.15)';
+      btn.style.borderColor = 'rgba(249, 115, 22, 0.5)';
+      btn.style.color = '#f97316';
+      rows.sort((a, b) => (parseFloat(b.dataset.interactions) || 0) - (parseFloat(a.dataset.interactions) || 0));
+    } else {
+      btn.textContent = '⚡ Sort by Frequency';
+      btn.style.background = 'transparent';
+      btn.style.borderColor = '#3a3a4a';
+      btn.style.color = '#a78bfa';
+      rows.sort((a, b) => (parseFloat(b.dataset.score) || 0) - (parseFloat(a.dataset.score) || 0));
+    }
+    rows.forEach(r => tbody.appendChild(r));
+  }
+</script>
+{% endblock %}

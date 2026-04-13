@@ -1,0 +1,67 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# BIRDY-EDWARDS — docker-compose.yml
+# Works on: Linux, Windows (Docker Desktop), Mac
+# Ollama must be running on HOST machine before starting container
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+services:
+  birdy-edwards:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: birdy-edwards
+    restart: unless-stopped
+
+    ports:
+      - "5000:5000"
+
+    # ── Persistent volumes — data survives container restarts ──
+    volumes:
+      # Session cookies (managed via Cookie-Editor import UI)
+      - ./app/fb_cookies.pkl:/app/fb_cookies.pkl
+
+      # Databases
+      - ./app/socmint.db:/app/socmint.db
+      - ./app/socmint_manual.db:/app/socmint_manual.db
+
+      # Output directories
+      - ./app/reports:/app/reports
+      - ./app/face_data:/app/face_data
+      - ./app/post_screenshots:/app/post_screenshots
+      - ./app/status:/app/status
+
+      # Model preference
+      - ./app/.ollama_model:/app/.ollama_model
+
+    environment:
+      # Points to Ollama on the host machine
+      - OLLAMA_HOST=http://host.docker.internal:11434
+
+      # Virtual display for SeleniumBase
+      - DISPLAY=:99
+
+      # Flask config
+      - FLASK_ENV=production
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+
+    # ── Required for host.docker.internal on Linux ──
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # ── Resource limits (adjust based on your system) ──
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+    # ── Health check ──
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Refresh Session Cookies — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_actions %}
+<a href="{{ url_for('home') }}" class="pdf-btn" style="background:#1e1a36;color:#a78bfa;border:1px solid rgba(139,92,246,0.3);">← Home</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+  rel="stylesheet">
+<style>
+*, *::before, *::after { font-family:'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; box-sizing: border-box; }
+.tool-page { max-width: 620px; margin: 0 auto; padding: 40px 24px 80px; }
+.tool-title { font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+.tool-sub   { font-size: 13px; color: #5b4a90; margin-bottom: 32px; }
+
+.info-card {
+  background: #0d0b1e; border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 14px; padding: 20px 24px; margin-bottom: 20px;
+}
+.info-card-title { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #f59e0b; margin-bottom: 12px; }
+.info-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.info-list li { font-size: 13px; color: #c4b5fd; display: flex; gap: 8px; align-items: flex-start; }
+.info-list li span { flex-shrink: 0; }
+
+.warn-card {
+  background: rgba(244,63,94,0.06); border: 1px solid rgba(244,63,94,0.2);
+  border-radius: 10px; padding: 14px 18px; margin-bottom: 24px;
+  font-size: 13px; color: #fb7185; line-height: 1.6;
+}
+.warn-card strong { color: #f43f5e; }
+
+.action-card {
+  background: #0d0b1e; border: 1px solid rgba(99,60,180,0.25);
+  border-radius: 14px; padding: 24px;
+}
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
+  margin-bottom: 20px;
+}
+.badge-ok   { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.badge-miss { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+.badge-dot  { width: 8px; height: 8px; border-radius: 50%; }
+.badge-ok   .badge-dot { background: #10b981; animation: pulse 2s infinite; }
+.badge-miss .badge-dot { background: #f43f5e; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+.start-btn {
+  width: 100%; padding: 15px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.start-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(220,38,38,0.4); }
+.start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Countdown */
+.countdown-wrap { text-align: center; padding: 20px 0; }
+.countdown-num  { font-size: 64px; font-weight: 900; color: #f43f5e; line-height: 1; }
+.countdown-lbl  { font-size: 12px; color: #5b4a90; margin-top: 4px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.countdown-bar  { height: 6px; background: #1a1535; border-radius: 3px; margin-top: 16px; overflow: hidden; }
+.countdown-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #dc2626, #f43f5e); transition: width 1s linear; }
+.countdown-hint { font-size: 12px; color: #5b4a90; margin-top: 12px; line-height: 1.6; }
+
+.done-card {
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 10px; padding: 16px 20px; text-align: center;
+  color: #34d399; font-size: 14px; font-weight: 600; margin-top: 16px;
+}
+.err-card {
+  background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.2);
+  border-radius: 10px; padding: 16px 20px; text-align: center;
+  color: #fb7185; font-size: 13px; margin-top: 16px;
+}
+
+.reminder-card {
+  background: #0d0b1e; border: 1px solid rgba(99,60,180,0.2);
+  border-radius: 12px; padding: 16px 20px; margin-top: 20px;
+  display: flex; gap: 12px; align-items: center;
+}
+.reminder-icon { font-size: 24px; flex-shrink: 0; }
+.reminder-text { font-size: 12px; color: #7a6fa0; line-height: 1.6; }
+.reminder-text strong { color: #c4b5fd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-page">
+
+  <div class="tool-title">🍪 Refresh Session Cookies</div>
+  <div class="tool-sub">Authenticate your Facebook session for BIRDY-EDWARDS</div>
+
+  <div class="info-card">
+    <div class="info-card-title">How it works</div>
+    <ul class="info-list">
+      <li><span>1️⃣</span> Click Start — a Chrome browser window will open Facebook</li>
+      <li><span>2️⃣</span> Log in manually with your credentials in that window</li>
+      <li><span>3️⃣</span> Complete any CAPTCHA if prompted</li>
+      <li><span>4️⃣</span> Wait for the 60-second countdown to finish — cookies are saved automatically</li>
+      <li><span>5️⃣</span> Do NOT close the browser window manually during the countdown</li>
+    </ul>
+  </div>
+
+  <div class="warn-card">
+    ⚠️ <strong>Important:</strong> The browser window will stay open for exactly 60 seconds.
+    Do not force-close it — let the countdown complete. Closing early will discard your session.
+  </div>
+
+  <div class="action-card">
+
+    <div class="status-badge {{ 'badge-ok' if cookies_ok else 'badge-miss' }}">
+      <div class="badge-dot"></div>
+      <span>Session {{ 'Active — cookies found' if cookies_ok else 'Missing — no cookies file' }}</span>
+    </div>
+
+    <div id="idle-section">
+      <button class="start-btn" onclick="startRefresh()" id="start-btn">
+        🔐 Start Cookie Refresh
+      </button>
+    </div>
+
+    <div id="countdown-section" style="display:none;">
+      <div class="countdown-wrap">
+        <div class="countdown-num" id="cd-num">60</div>
+        <div class="countdown-lbl">Seconds remaining — log in now</div>
+        <div class="countdown-bar">
+          <div class="countdown-fill" id="cd-fill" style="width:100%"></div>
+        </div>
+        <div class="countdown-hint">
+          Complete your Facebook login in the browser window.<br>
+          Cookies will be saved automatically when the timer ends.
+        </div>
+      </div>
+    </div>
+
+    <div id="done-section" style="display:none;">
+      <div class="done-card">✅ Cookies saved successfully! Your session is now active.</div>
+      <button class="start-btn" onclick="window.location.href='/'" style="margin-top:16px;background:linear-gradient(135deg,#059669,#047857);">
+        ← Back to Home
+      </button>
+    </div>
+
+    <div id="err-section" style="display:none;">
+      <div class="err-card" id="err-msg">An error occurred.</div>
+      <button class="start-btn" onclick="location.reload()" style="margin-top:16px;">Retry</button>
+    </div>
+
+  </div>
+
+  <div class="reminder-card">
+    <div class="reminder-icon">🗓️</div>
+    <div class="reminder-text">
+      <strong>Refresh every 2 days</strong> — Facebook sessions expire regularly.
+      If scraping returns 0 results or "Log in" errors appear, refresh your cookies.
+      Bookmark this page for quick access.
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let polling = null;
+
+function startRefresh() {
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('start-btn').textContent = 'Starting...';
+
+  fetch('/api/tools/refresh-cookies/start', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) { showErr(d.msg || 'Failed to start'); return; }
+      document.getElementById('idle-section').style.display = 'none';
+      document.getElementById('countdown-section').style.display = 'block';
+      polling = setInterval(pollRefresh, 1000);
+    }).catch(e => showErr(e.toString()));
+}
+
+function pollRefresh() {
+  fetch('/api/tools/refresh-cookies/status')
+    .then(r => r.json())
+    .then(s => {
+      const sec = s.seconds_left || 0;
+      document.getElementById('cd-num').textContent = sec;
+      document.getElementById('cd-fill').style.width = (sec / 60 * 100) + '%';
+
+      if (s.done) {
+        clearInterval(polling);
+        document.getElementById('countdown-section').style.display = 'none';
+        document.getElementById('done-section').style.display = 'block';
+      } else if (s.error) {
+        clearInterval(polling);
+        showErr(s.error);
+      }
+    }).catch(() => {});
+}
+
+function showErr(msg) {
+  clearInterval(polling);
+  document.getElementById('countdown-section').style.display = 'none';
+  document.getElementById('idle-section').style.display = 'block';
+  document.getElementById('err-section').style.display = 'block';
+  document.getElementById('err-msg').textContent = '❌ Error: ' + msg;
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('start-btn').textContent = '🔐 Start Cookie Refresh';
+}
+</script>
+{% endblock %}

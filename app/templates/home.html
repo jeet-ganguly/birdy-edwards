@@ -1,0 +1,1618 @@
+{% extends 'base.html' %}
+{% block title %}BIRDY-EDWARDS — Facebook SOCMINT Platform{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+  rel="stylesheet">
+<style>
+  * {
+    font-family: "Google Sans", sans-serif;
+  }
+
+  .home-wrap {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 40px 28px 80px;
+    background: transparent;
+  }
+
+  /* ══ HERO ══ */
+  .top-section {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    background: linear-gradient(135deg, #04010a 0%, #070112 40%, #000000 70%, #01103a 100%);
+    border-radius: 18px;
+    padding: 52px 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .top-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 20% 50%, rgba(6, 1, 27, 0.18) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 30%, rgba(4, 4, 49, 0.226) 0%, transparent 50%);
+  }
+
+  .logo-block {
+    flex-shrink: 0;
+    order: 2;
+    display: flex;
+    align-items: center;
+    padding-right: 64px;
+    padding-left: 0;
+    margin-left: auto;
+  }
+
+  .logo-img {
+    width: 300px;
+    height: 300px;
+    border-radius: 0px;
+    object-fit: cover;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 60px rgba(238, 23, 127, 0.5), 0 0 120px rgba(139, 92, 246, 0.2), 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .text-block {
+    flex: 1;
+    order: 1;
+    padding: 0 0 0 64px;
+    max-width: 55%;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tool-name {
+    font-size: 58px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    margin-bottom: 18px;
+    color: #fff;
+  }
+
+  .tool-name span {
+    display: block;
+    background: linear-gradient(90deg, #67e8f9, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .tool-desc {
+    font-size: 16px;
+    font-weight: 400;
+    color: rgba(214, 255, 250, 0.85);
+    line-height: 1.65;
+    margin-bottom: 28px;
+    max-width: 460px;
+  }
+
+  .caps-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+
+  .cap {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cap-v {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ddd6fe;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .cap-r {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fda4af;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .cap-g {
+    background: rgba(255, 255, 255, 0.08);
+    color: #86efac;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .cap-a {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fde68a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .cap-c {
+    background: rgba(255, 255, 255, 0.08);
+    color: #a5f3fc;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .tool-quote {
+    font-size: 13px;
+    font-style: italic;
+    color: gold;
+    line-height: 1.7;
+    padding-left: 14px;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    max-width: 460px;
+  }
+
+  /* ══ SYSTEM STATUS ══ */
+  .sys-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .sys-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .sys-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .sys-ok {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+  }
+
+  .sys-ok .sys-dot {
+    background: #10b981;
+    box-shadow: 0 0 5px #10b981;
+    animation: blink 2s infinite;
+  }
+
+  .sys-err {
+    background: #fff1f2;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+  }
+
+  .sys-err .sys-dot {
+    background: #f43f5e;
+  }
+
+  .sys-warn {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  }
+
+  .sys-warn .sys-dot {
+    background: #f59e0b;
+  }
+
+  .sys-info {
+    background: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ddd6fe;
+  }
+
+  .sys-info .sys-dot {
+    background: #8b5cf6;
+  }
+
+  @keyframes blink {
+
+    0%,
+    100% {
+      opacity: 1
+    }
+
+    50% {
+      opacity: 0.3
+    }
+  }
+
+  .sys-alert {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+
+  .sys-alert code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .sys-alert-err {
+    background: rgba(225, 29, 72, 0.08);
+    color: #fb7185;
+    border: 1px solid rgba(225, 29, 72, 0.18);
+  }
+
+  .sys-alert-warn {
+    background: rgba(245, 158, 11, 0.08);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.18);
+  }
+
+  /* ══ BOTTOM SECTION ══ */
+  .bottom-section {
+    background: linear-gradient(135deg, #04010a 0%, #070112 40%, #000000 70%, #000000 100%);
+    border-radius: 18px;
+    padding: 36px 40px 40px;
+    margin-top: 16px;
+  }
+
+  .h-divider {
+    border: none;
+    border-top: 1px solid rgba(99, 60, 180, 0.1);
+    margin: 28px 0;
+  }
+
+  .sec-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ff5f5f;
+    margin-bottom: 16px;
+  }
+
+  /* ══ MODE CARDS ══ */
+  .mode-cards {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 44px;
+  }
+
+  .mode-card {
+    flex: 1;
+    background: linear-gradient(135deg, #000000 0%, #000000 40%, #000000 70%, #060017 100%);
+    border-radius: 16px;
+    padding: 32px 28px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    min-height: 280px;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  }
+
+  .mode-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .mode-auto {
+    border: 0px solid #e9d5ff;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
+  }
+
+  .mode-auto::after {
+    background: linear-gradient(90deg, #3aabed, #8bedfa);
+  }
+
+  .mode-batch {
+    border: 0px solid #fde68a;
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
+  }
+
+  .mode-batch::after {
+    background: linear-gradient(90deg, #d97706, #fbbf24);
+  }
+
+  .mode-auto:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(139, 92, 246, 0.2);
+    border-color: #c4b5fd;
+  }
+
+  .mode-batch:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(245, 158, 11, 0.18);
+    border-color: #fcd34d;
+  }
+
+  .mode-icon-wrap {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    flex-shrink: 0;
+  }
+
+  .mode-auto .mode-icon-wrap {
+    background: rgba(92, 233, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+
+  .mode-batch .mode-icon-wrap {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .mode-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 10px;
+  }
+
+  .mode-desc {
+    font-size: 13.5px;
+    color: #fdf2e1;
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 20px;
+  }
+
+  .mode-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .mtag {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .mtag-v {
+    background: rgba(92, 226, 246, 0.1);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+
+  .mtag-r {
+    background: rgba(63, 244, 211, 0.1);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.2);
+  }
+
+  .mtag-g {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .mtag-a {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .mode-cta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: auto;
+  }
+
+  .mode-auto .mode-cta {
+    color: #7c3aed;
+  }
+
+  .mode-batch .mode-cta {
+    color: #d97706;
+  }
+
+  .mode-cta-arrow {
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+
+  .mode-card:hover .mode-cta-arrow {
+    transform: translateX(5px);
+  }
+
+  /* ══ RECENT INVESTIGATIONS ══ */
+  .recent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .recent-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    border: 1px solid #f1eeff;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.06);
+  }
+
+  .recent-batch {
+    border-color: #fef3c7;
+    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.06);
+  }
+
+  .recent-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .recent-auto:hover {
+    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.16);
+    border-color: #ddd6fe;
+  }
+
+  .recent-batch:hover {
+    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.16);
+    border-color: #fde68a;
+  }
+
+  .rc-bar {
+    height: 4px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .recent-auto .rc-bar {
+    background: linear-gradient(90deg, #3abded, #8bfae2);
+  }
+
+  .recent-batch .rc-bar {
+    background: linear-gradient(90deg, #d97706, #fbbf24);
+  }
+
+  .rc-inner {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+  }
+
+  .rc-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  .recent-auto .rc-icon {
+    background: #f5f3ff;
+  }
+
+  .recent-batch .rc-icon {
+    background: #fffbeb;
+  }
+
+  .rc-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .rc-type {
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .recent-auto .rc-type {
+    color: #8b5cf6;
+  }
+
+  .recent-batch .rc-type {
+    color: #d97706;
+  }
+
+  .rc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1b4b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+
+  .recent-batch .rc-name {
+    color: #78350f;
+  }
+
+  .rc-meta {
+    font-size: 10px;
+    color: #a1a1aa;
+  }
+
+  .rc-arr {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .recent-auto .rc-arr {
+    background: #f5f3ff;
+    color: #8b5cf6;
+  }
+
+  .recent-batch .rc-arr {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .recent-card:hover .rc-arr {
+    transform: translateX(3px);
+  }
+
+  .recent-auto:hover .rc-arr {
+    background: #7c3aed;
+    color: #fff;
+  }
+
+  .recent-batch:hover .rc-arr {
+    background: #d97706;
+    color: #fff;
+  }
+
+  /* ══ DELETE BUTTON ON CARDS ══ */
+  .rc-del {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #fee2e2;
+    color: #ef4444;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.15s;
+    z-index: 5;
+  }
+
+  .recent-card:hover .rc-del {
+    opacity: 1;
+  }
+
+  .rc-del:hover {
+    background: #ef4444;
+    color: #fff;
+    transform: scale(1.15);
+  }
+
+  /* ══ TOOLS ROW ══ */
+  .tools-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .tool-card {
+    flex: 1;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #f1eeff;
+    box-shadow: 0 2px 10px rgba(99, 60, 180, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .tool-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(99, 60, 180, 0.15);
+  }
+
+  .tool-card-danger {
+    border-color: #fee2e2;
+    box-shadow: 0 2px 10px rgba(244, 63, 94, 0.06);
+  }
+
+  .tool-card-danger:hover {
+    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.18);
+    border-color: #fecaca;
+  }
+
+  .tool-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .tool-body {
+    flex: 1;
+  }
+
+  .tool-title2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e1b4b;
+    margin-bottom: 2px;
+  }
+
+  .tool-card-danger .tool-title2 {
+    color: #7f1d1d;
+  }
+
+  .tool-desc2 {
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1.5;
+  }
+
+  .tool-arr {
+    font-size: 14px;
+    color: #d1d5db;
+    transition: all 0.18s;
+    flex-shrink: 0;
+  }
+
+  .tool-card:hover .tool-arr {
+    color: #8b5cf6;
+    transform: translateX(3px);
+  }
+
+  .tool-card-danger:hover .tool-arr {
+    color: #ef4444;
+  }
+
+  /* ══ AI MODEL SELECTOR PANEL ══ */
+  .model-panel {
+    background: linear-gradient(135deg, #000000 0%, #000000 50%, #011c2d 100%);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 18px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .model-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(10, 7, 19, 0.9) 30%, rgba(244, 63, 94, 0.7) 70%, transparent 100%);
+  }
+
+  .model-panel::after {
+    content: '';
+    position: absolute;
+    bottom: -60px;
+    right: -60px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(1, 2, 2, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Panel header */
+  .mp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .mp-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mp-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(244, 63, 94, 0.18));
+    border: 1px solid rgba(92, 246, 238, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 16px rgba(139, 92, 246, 0.2);
+  }
+
+  .mp-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.02em;
+  }
+
+  .mp-sub {
+    font-size: 10px;
+    color: rgba(253, 253, 253, 0.75);
+    font-weight: 600;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  .mp-active-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 20px;
+    padding: 6px 16px;
+  }
+
+  .mp-active-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: blink 2s infinite;
+  }
+
+  .mp-active-model {
+    font-size: 12px;
+    font-weight: 800;
+    color: #34d399;
+    font-family: monospace;
+  }
+
+  /* RAM tier tabs */
+  .mp-tiers {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .mp-tier {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid rgba(99, 60, 180, 0.18);
+    background: rgba(10, 6, 28, 0.6);
+    transition: all 0.2s;
+  }
+
+  .mp-tier:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.06);
+  }
+
+  .mp-tier.mt-active {
+    border-color: rgba(139, 92, 246, 0.55);
+    background: rgba(139, 92, 246, 0.12);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.12);
+  }
+
+  .mp-tier-ram {
+    display: block;
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+
+  .mp-tier-desc {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.35);
+  }
+
+  .mp-tier.mt-active .mp-tier-ram {
+    color: #ffffff;
+  }
+
+  .mp-tier.mt-active .mp-tier-desc {
+    color: rgba(254, 254, 254, 0.7);
+  }
+
+  /* Model grid cards */
+  .mp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .mp-model {
+    border: 1px solid rgba(99, 60, 180, 0.18);
+    border-radius: 10px;
+    padding: 13px 15px;
+    cursor: pointer;
+    transition: all 0.18s;
+    background: rgba(6, 28, 27, 0.55);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mp-model::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #000000, #f43f5e);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .mp-model:hover {
+    border-color: rgba(139, 92, 246, 0.45);
+    background: rgba(92, 246, 220, 0.07);
+    transform: translateY(-2px);
+  }
+
+  .mp-model:hover::before {
+    opacity: 0.6;
+  }
+
+  .mp-model.mp-selected {
+    border-color: rgba(139, 92, 246, 0.7);
+    background: rgba(92, 231, 246, 0.13);
+    box-shadow: 0 0 18px rgba(139, 92, 246, 0.18);
+  }
+
+  .mp-model.mp-selected::before {
+    opacity: 1;
+  }
+
+  .mp-model.mp-current {
+    border-color: rgba(16, 185, 129, 0.45);
+    background: rgba(16, 185, 129, 0.06);
+  }
+
+  .mp-model.mp-current::before {
+    background: linear-gradient(90deg, #059669, #10b981);
+    opacity: 1;
+  }
+
+  .mp-current-tag {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    font-size: 7px;
+    font-weight: 800;
+    color: #10b981;
+    letter-spacing: 0.1em;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .mp-model-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+
+  .mp-model-id {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    font-family: monospace;
+    margin-bottom: 5px;
+  }
+
+  .mp-model-tag {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  .mpt-rec {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.22);
+  }
+
+  .mpt-vis {
+    background: rgba(6, 182, 212, 0.1);
+    color: #67e8f9;
+    border: 1px solid rgba(6, 182, 212, 0.22);
+  }
+
+  .mpt-fast {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.22);
+  }
+
+  .mpt-heavy {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.22);
+  }
+
+  /* Action row */
+  .mp-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mp-apply-btn {
+    padding: 11px 26px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #28d9c1, #be123c);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(109, 40, 217, 0.35);
+    white-space: nowrap;
+  }
+
+  .mp-apply-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(109, 40, 217, 0.5);
+    filter: brightness(1.1);
+  }
+
+  .mp-apply-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .mp-status {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 200px;
+  }
+
+  .mps-idle {
+    background: rgba(60, 180, 170, 0.07);
+    color: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(99, 60, 180, 0.12);
+  }
+
+  .mps-ready {
+    background: rgba(92, 246, 197, 0.1);
+    color: #c4b5fd;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+  }
+
+  .mps-pulling {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    animation: pulse 1.5s infinite;
+  }
+
+  .mps-ok {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .mps-err {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.25);
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1
+    }
+
+    50% {
+      opacity: 0.55
+    }
+  }
+
+  /* Progress bar */
+  .mp-progress {
+    margin-top: 16px;
+    display: none;
+  }
+
+  .mpp-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+
+  .mpp-msg {
+    font-size: 12px;
+    font-weight: 700;
+    color: #c4b5fd;
+  }
+
+  .mpp-pct {
+    font-size: 12px;
+    font-weight: 900;
+    color: #a78bfa;
+  }
+
+  .mpp-track {
+    height: 6px;
+    background: rgba(99, 60, 180, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mpp-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    background: linear-gradient(90deg, #7c3aed, #f43f5e);
+  }
+
+  /* ══ FOOTER ══ */
+  .home-foot {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(99, 60, 180, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 15px;
+    color: #5fa088;
+  }
+
+  .home-foot strong {
+    color: #faac8b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-wrap">
+
+  <!-- ══ HERO ══ -->
+  <div class="top-section">
+    <div class="text-block">
+      <div class="tool-name">BIRDY-EDWARDS<span>Infiltrate &amp; Expose (Beta Version)</span></div>
+      <div class="tool-desc"><b>Facebook intelligence platform for target profiling, network mapping, sentiment analysis
+          and professional PDF reports — all running locally.</b></div>
+      <div class="caps-row">
+        <div class="cap cap-v">Target Profiling</div>
+        <div class="cap cap-r">AI Comment Intelligence</div>
+        <div class="cap cap-g">Network Mapping</div>
+        <div class="cap cap-a">Country Detection</div>
+        <div class="cap cap-c">Face Clustering</div>
+        <div class="cap cap-v">Tier Scoring</div>
+        <div class="cap cap-r">PDF Reports</div>
+        <div class="cap cap-g">100% Local</div>
+      </div>
+      <div class="tool-quote"><b>"The truth is never buried deep enough to escape the right set of eyes."</b></div>
+    </div>
+    <div class="logo-block">
+      <img src="{{ url_for('serve_logo') }}" alt="BIRDY-EDWARDS" class="logo-img" onerror="this.style.display='none'">
+    </div>
+  </div>
+
+  <!-- ══ BOTTOM SECTION ══ -->
+  <div class="bottom-section">
+
+    <!-- SYSTEM STATUS -->
+    <div class="sys-bar">
+      <div class="sys-item {{ 'sys-ok' if system.ollama_ok else 'sys-err' }}">
+        <span class="sys-dot"></span>
+        <span>AI Engine {{ 'Online' if system.ollama_ok else 'Offline' }}</span>
+      </div>
+      <div class="sys-item {{ 'sys-ok' if system.model_pulled else 'sys-warn' }}">
+        <span class="sys-dot"></span>
+        <span>{{ system.model }} {{ '✓' if system.model_pulled else '— Not Pulled' }} · {{ system.ram }}GB RAM</span>
+      </div>
+      <div class="sys-item {{ 'sys-ok' if system.cookies_ok else 'sys-err' }}">
+        <span class="sys-dot"></span>
+        <span>Session {{ 'Active' if system.cookies_ok else 'Missing' }}</span>
+      </div>
+      <div class="sys-item sys-info">
+        <span class="sys-dot"></span>
+        <span>{{ system.ram }} GB RAM</span>
+      </div>
+    </div>
+
+    {% if not system.ollama_ok %}
+    <div class="sys-alert sys-alert-err">AI Engine offline — run <code>ollama serve</code> before starting an
+      investigation.</div>
+    {% endif %}
+    {% if not system.cookies_ok %}
+    <div class="sys-alert sys-alert-warn">Session missing — <a href="{{ url_for('refresh_cookies') }}"
+        style="color:#fbbf24;font-weight:700;">Refresh Cookies →</a></div>
+    {% endif %}
+
+    <hr class="h-divider">
+
+    <!-- START NEW INVESTIGATION -->
+    <div class="sec-label">Start New Investigation</div>
+    <div class="mode-cards">
+      <a href="{{ url_for('scan_new') }}" class="mode-card mode-auto">
+        <div class="mode-icon-wrap">
+          <svg viewBox="0 0 48 48" fill="none" width="28" height="28">
+            <circle cx="24" cy="16" r="8" stroke="#a78bfa" stroke-width="2" />
+            <path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="#a78bfa" stroke-width="2"
+              stroke-linecap="round" />
+            <circle cx="36" cy="12" r="5" fill="#f43f5e" opacity="0.85" />
+            <path d="M34 12l1.5 1.5L38 10" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="mode-title">Automated Profile</div>
+        <div class="mode-desc">Full investigation on a single Facebook profile. Collect posts, photos and reels, analyze
+          all interactions with AI, map network connections and generate a complete intelligence report with face
+          detection.</div>
+        <div class="mode-tags">
+          <span class="mtag mtag-v">Light / Medium / Deep</span>
+          <span class="mtag mtag-r">Full PDF Report</span>
+          <span class="mtag mtag-g">Face Intelligence</span>
+        </div>
+        <div class="mode-cta">Start Investigation <span class="mode-cta-arrow">→</span></div>
+      </a>
+      <a href="{{ url_for('batch_new') }}" class="mode-card mode-batch">
+        <div class="mode-icon-wrap">
+          <svg viewBox="0 0 48 48" fill="none" width="28" height="28">
+            <rect x="8" y="10" width="32" height="8" rx="3" stroke="#f59e0b" stroke-width="2" />
+            <rect x="8" y="22" width="32" height="8" rx="3" stroke="#f59e0b" stroke-width="2" opacity="0.7" />
+            <rect x="8" y="34" width="20" height="6" rx="3" stroke="#f59e0b" stroke-width="2" opacity="0.5" />
+            <circle cx="40" cy="37" r="5" fill="#f59e0b" opacity="0.9" />
+            <path d="M38 37l1.5 1.5L42 35" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="mode-title">Manual Batch URLs</div>
+        <div class="mode-desc">Investigate a specific set of Facebook posts, photos or reels. Paste up to 15 URLs and
+          analyze their commentor networks, sentiment patterns, geographic distribution and generate a PDF report.</div>
+        <div class="mode-tags">
+          <span class="mtag mtag-a">Up to 15 URLs</span>
+          <span class="mtag mtag-r">Photo / Reel / Post</span>
+          <span class="mtag mtag-g">PDF Report</span>
+        </div>
+        <div class="mode-cta">Start Batch Analysis <span class="mode-cta-arrow">→</span></div>
+      </a>
+    </div>
+
+    <!-- PAST INVESTIGATIONS -->
+    {% if profiles or batches %}
+    <div class="sec-label">Past Investigations</div>
+    <div class="recent-grid">
+      {% for p in profiles %}
+      <div class="recent-card recent-auto">
+        <button class="rc-del" onclick="deleteProfile({{ p.id }}, this)" title="Delete">✕</button>
+        <a href="{{ url_for('dashboard_profile', profile_id=p.id) }}"
+          style="text-decoration:none;display:flex;flex-direction:column;flex:1;">
+          <div class="rc-bar"></div>
+          <div class="rc-inner">
+            <div class="rc-icon">👤</div>
+            <div class="rc-body">
+              <div class="rc-type">Profile Investigation</div>
+              <div class="rc-name">{{ p.owner_name or p.profile_url }}</div>
+              <div class="rc-meta">{{ p.scraped_at[:10] if p.scraped_at else '—' }}</div>
+            </div>
+            <div class="rc-arr">→</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+      {% for b in batches %}
+      <div class="recent-card recent-batch">
+        <button class="rc-del" onclick="deleteBatch('{{ b.batch_id }}', this)" title="Delete">✕</button>
+        <a href="{{ url_for('dashboard_batch', batch_id=b.batch_id) }}"
+          style="text-decoration:none;display:flex;flex-direction:column;flex:1;">
+          <div class="rc-bar"></div>
+          <div class="rc-inner">
+            <div class="rc-icon">🔗</div>
+            <div class="rc-body">
+              <div class="rc-type">Batch Analysis</div>
+              <div class="rc-name">{{ b.label or b.batch_id }}</div>
+              <div class="rc-meta">{{ b.created_at[:10] if b.created_at else '—' }}</div>
+            </div>
+            <div class="rc-arr">→</div>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <hr class="h-divider">
+
+    <!-- ══ AI MODEL SELECTOR ══ -->
+    <div class="sec-label">AI Model</div>
+    <div class="model-panel">
+
+      <!-- Header -->
+      <div class="mp-header">
+        <div class="mp-title-group">
+          <div class="mp-icon">🤖</div>
+          <div>
+            <div class="mp-title">Intelligence Engine</div>
+            <div class="mp-sub">SELECT MODEL BASED ON AVAILABLE RAM</div>
+          </div>
+        </div>
+        <div class="mp-active-badge">
+          <span class="mp-active-dot"></span>
+          <span class="mp-active-model" id="mp-active-name">{{ system.model }}</span>
+        </div>
+      </div>
+
+      <!-- RAM Tier Tabs -->
+      <div class="mp-tiers">
+        {% set tier_keys = available_models.keys()|list %}
+        {% for group_name in tier_keys %}
+        <div class="mp-tier {% if loop.index0 == 0 %}mt-active{% endif %}"
+          onclick="mpSwitchTier({{ loop.index0 }}, this)">
+          {% if '8GB' in group_name %}
+          <span class="mp-tier-ram">8 GB</span>
+          <span class="mp-tier-desc">3B – 4B MODELS (SLM)</span>
+          {% elif '16GB' in group_name %}
+          <span class="mp-tier-ram">16 GB</span>
+          <span class="mp-tier-desc">7B – 13B MODELS (LLM)</span>
+          {% else %}
+          <span class="mp-tier-ram">32 GB</span>
+          <span class="mp-tier-desc">30B+ MODELS (LLM)</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Model Grids -->
+      {% for group_name, models in available_models.items() %}
+      <div class="mp-grid" id="mp-grid-{{ loop.index0 }}" style="{{ '' if loop.index0 == 0 else 'display:none' }}">
+        {% for model_id, model_label in models %}
+        {% set parts = model_label.split('—') %}
+        {% set mname = parts[0].strip() %}
+        {% set mdesc = parts[1].strip() if parts|length > 1 else '' %}
+        {% set is_current = model_id == system.model %}
+        {% set is_pulled = model_id == system.model and system.model_pulled %}
+        {% set is_rec = 'recommended' in model_label.lower() %}
+        {% set is_vis = 'vision' in model_label.lower() or 'vl' in model_id.lower() %}
+        {% set is_fast = 'fast' in model_label.lower() or '1b' in model_id or '2b' in model_id %}
+        {% set is_heavy = 'heavy' in model_label.lower() or '72b' in model_id %}
+        <div class="mp-model {{ 'mp-current' if is_pulled else '' }}" data-model="{{ model_id }}"
+          onclick="mpSelect(this, '{{ model_id }}')">
+          {% if is_pulled %}<span class="mp-current-tag">ACTIVE</span>{% endif %}
+          {% if is_current and not is_pulled %}<span class="mp-current-tag"
+            style="color:#f59e0b;background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.25);">NOT
+            PULLED</span>{% endif %}
+          <div class="mp-model-name">{{ mname }}</div>
+          <div class="mp-model-id">{{ model_id }}</div>
+          {% if is_rec %}
+          <span class="mp-model-tag mpt-rec">★ Recommended</span>
+          {% elif is_heavy %}
+          <span class="mp-model-tag mpt-heavy">⚠ Heavy</span>
+          {% elif is_vis %}
+          <span class="mp-model-tag mpt-vis">👁 Vision</span>
+          {% elif is_fast %}
+          <span class="mp-model-tag mpt-fast">⚡ Fast</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      <!-- Actions -->
+      <div class="mp-actions">
+        <button class="mp-apply-btn" id="mp-apply-btn" onclick="mpApply()" disabled>
+          ⚡ Apply &amp; Pull
+        </button>
+        <div class="mp-status mps-idle" id="mp-status">
+          Select a model to switch
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="mp-progress" id="mp-progress">
+        <div class="mpp-top">
+          <span class="mpp-msg" id="mpp-msg">Starting...</span>
+          <span class="mpp-pct" id="mpp-pct">0%</span>
+        </div>
+        <div class="mpp-track">
+          <div class="mpp-fill" id="mpp-fill"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SYSTEM TOOLS -->
+    <div class="sec-label">System Tools</div>
+    <div class="tools-row" style="margin-bottom:28px;flex-wrap:wrap;">
+
+      <!-- Import Cookies — RECOMMENDED -->
+      <a href="{{ url_for('import_cookies') }}" class="tool-card"
+        style="border-color:#1a1040;position:relative;overflow:hidden;">
+        <div
+          style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#10b981,#38bdf8);">
+        </div>
+        <div class="tool-icon">🍪</div>
+        <div class="tool-body">
+          <div class="tool-title2" style="display:flex;align-items:center;gap:8px;">
+            Import Session Cookies
+            <span style="font-size:8px;font-weight:800;padding:2px 7px;border-radius:10px;
+                         background:rgba(16,185,129,0.1);color:#10b981;
+                         border:1px solid rgba(16,185,129,0.25);letter-spacing:0.08em;">
+              ★ RECOMMENDED
+            </span>
+          </div>
+          <div class="tool-desc2">
+            Use Cookie-Editor browser extension to import cookies.
+            Works on <strong>Windows, Mac and Linux</strong> — no Selenium required.
+          </div>
+        </div>
+        <div class="tool-arr">→</div>
+      </a>
+
+      <!-- Refresh Cookies — Classic method -->
+      <a href="{{ url_for('refresh_cookies') }}" class="tool-card">
+        <div class="tool-icon">🔄</div>
+        <div class="tool-body">
+          <div class="tool-title2">Refresh Session Cookies</div>
+          <div class="tool-desc2">
+            Classic Selenium-based refresh — opens a browser window for manual login.
+            Linux only.
+          </div>
+        </div>
+        <div class="tool-arr">→</div>
+      </a>
+
+      <!-- DB Cleaner -->
+      <a href="{{ url_for('db_cleaner') }}" class="tool-card tool-card-danger">
+        <div class="tool-icon">🗑️</div>
+        <div class="tool-body">
+          <div class="tool-title2">Database Cleaner</div>
+          <div class="tool-desc2">Permanently delete investigation data, face images and reset databases.</div>
+        </div>
+        <div class="tool-arr">→</div>
+      </a>
+
+    </div>
+
+
+    <!-- FOOTER -->
+    <div class="home-foot">
+      <span>BIRDY-EDWARDS &nbsp;·&nbsp; Infiltrate &amp; Expose &nbsp;·&nbsp; Developed by <strong>Jeet
+          Ganguly</strong></span>
+      <span>{{ system.model }} &nbsp;·&nbsp; {{ system.ram }} GB RAM</span>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const MP_CURRENT = '{{ system.model }}';
+  let mpSelected = null;
+
+  // Auto-switch to correct tier tab on load
+  (function () {
+    const allModels = [
+      {% for group_name, models in available_models.items() %}
+  [{% for model_id, _ in models %}'{{ model_id }}'{% if not loop.last %}, {% endif %} {% endfor %}],
+  {% endfor %}
+  ];
+  allModels.forEach((tier, i) => {
+    if (tier.includes(MP_CURRENT)) {
+      document.querySelectorAll('.mp-tier').forEach(t => t.classList.remove('mt-active'));
+      document.querySelectorAll('.mp-tier')[i].classList.add('mt-active');
+      document.querySelectorAll('.mp-grid').forEach((g, j) => {
+        g.style.display = j === i ? 'grid' : 'none';
+      });
+    }
+  });
+}) ();
+
+  function mpSwitchTier(idx, el) {
+    document.querySelectorAll('.mp-tier').forEach(t => t.classList.remove('mt-active'));
+    el.classList.add('mt-active');
+    document.querySelectorAll('.mp-grid').forEach((g, i) => {
+      g.style.display = i === idx ? 'grid' : 'none';
+    });
+  }
+
+  function mpSelect(el, modelId) {
+    document.querySelectorAll('.mp-model').forEach(m => m.classList.remove('mp-selected'));
+    el.classList.add('mp-selected');
+    mpSelected = modelId;
+
+    const btn = document.getElementById('mp-apply-btn');
+    const status = document.getElementById('mp-status');
+    const isPulled = el.classList.contains('mp-current');
+
+    if (modelId === MP_CURRENT && isPulled) {
+      status.className = 'mp-status mps-ok';
+      status.textContent = '✓ Already active and ready';
+      btn.disabled = true;
+    } else if (modelId === MP_CURRENT && !isPulled) {
+      status.className = 'mp-status mps-ready';
+      status.textContent = '→ Active but not pulled — click to pull';
+      btn.disabled = false;
+    } else {
+      status.className = 'mp-status mps-ready';
+      status.textContent = '→ Ready to apply: ' + modelId;
+      btn.disabled = false;
+    }
+  }
+
+  function mpApply() {
+  if (!mpSelected) return;
+  // Allow pull if model is current but not yet pulled
+  const isPulled = document.querySelector('.mp-model.mp-current') !== null;
+  if (mpSelected === MP_CURRENT && isPulled) return;
+
+    const btn = document.getElementById('mp-apply-btn');
+    const status = document.getElementById('mp-status');
+    const progress = document.getElementById('mp-progress');
+    const fill = document.getElementById('mpp-fill');
+    const msg = document.getElementById('mpp-msg');
+    const pct = document.getElementById('mpp-pct');
+    const active = document.getElementById('mp-active-name');
+
+    btn.disabled = true;
+    status.className = 'mp-status mps-pulling';
+    status.textContent = '⏳ Applying ' + mpSelected + '...';
+
+    fetch('/api/change-model', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: mpSelected })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) {
+          status.className = 'mp-status mps-err';
+          status.textContent = '❌ ' + (d.error || 'Failed');
+          btn.disabled = false;
+          return;
+        }
+
+        progress.style.display = 'block';
+        fill.style.width = '2%';
+        msg.textContent = '📥 Starting download...';
+        pct.textContent = '2%';
+
+        const es = new EventSource('/api/pull-model?model=' + encodeURIComponent(mpSelected));
+
+        es.onmessage = function (e) {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.pct !== undefined) { fill.style.width = data.pct + '%'; pct.textContent = data.pct + '%'; }
+            if (data.msg) msg.textContent = data.msg;
+
+            if (data.status === 'done') {
+              es.close();
+              status.className = 'mp-status mps-ok';
+              status.textContent = '✓ ' + mpSelected + ' is now active';
+              active.textContent = mpSelected;
+              fill.style.width = '100%';
+              document.querySelectorAll('.mp-model').forEach(m => {
+                m.classList.remove('mp-current');
+                const tag = m.querySelector('.mp-current-tag');
+                if (tag) tag.remove();
+                if (m.dataset.model === mpSelected) {
+                  m.classList.add('mp-current');
+                  const t = document.createElement('span');
+                  t.className = 'mp-current-tag'; t.textContent = 'ACTIVE';
+                  m.appendChild(t);
+                }
+              });
+              setTimeout(() => { progress.style.display = 'none'; }, 3500);
+            }
+            if (data.status === 'error') {
+              es.close();
+              status.className = 'mp-status mps-err';
+              status.textContent = data.msg || '❌ Pull failed';
+              btn.disabled = false;
+            }
+          } catch (e) { }
+        };
+
+        es.onerror = function () {
+          es.close();
+          status.className = 'mp-status mps-ok';
+          status.textContent = '✓ ' + mpSelected + ' applied';
+          active.textContent = mpSelected;
+          progress.style.display = 'none';
+        };
+      })
+      .catch(() => {
+        status.className = 'mp-status mps-err';
+        status.textContent = '❌ Network error';
+        btn.disabled = false;
+      });
+  }
+
+  function deleteProfile(id, btn) {
+    event.preventDefault(); event.stopPropagation();
+    if (!confirm('Delete this profile investigation? This cannot be undone.')) return;
+    btn.textContent = '⏳'; btn.disabled = true;
+    fetch(`/api/delete/profile/${id}`, { method: 'POST' })
+      .then(r => r.json()).then(d => {
+        if (d.ok) { btn.closest('.recent-card').remove(); }
+        else { btn.textContent = '✕'; btn.disabled = false; alert('Error: ' + (d.error || 'failed')); }
+      }).catch(() => { btn.textContent = '✕'; btn.disabled = false; });
+  }
+  function deleteBatch(id, btn) {
+    event.preventDefault(); event.stopPropagation();
+    if (!confirm('Delete this batch investigation? This cannot be undone.')) return;
+    btn.textContent = '⏳'; btn.disabled = true;
+    fetch(`/api/delete/batch/${id}`, { method: 'POST' })
+      .then(r => r.json()).then(d => {
+        if (d.ok) { btn.closest('.recent-card').remove(); }
+        else { btn.textContent = '✕'; btn.disabled = false; alert('Error: ' + (d.error || 'failed')); }
+      }).catch(() => { btn.textContent = '✕'; btn.disabled = false; });
+  }
+</script>
+{% endblock %}

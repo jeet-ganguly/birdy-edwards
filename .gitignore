@@ -1,0 +1,70 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# BIRDY-EDWARDS — .gitignore
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Sensitive / Auth ──────────────────────────────────────────────────────────
+app/fb_cookies.pkl
+app/.ollama_model
+
+# ── Databases ─────────────────────────────────────────────────────────────────
+app/socmint.db
+app/socmint_manual.db
+
+# ── Scraped JSON output ───────────────────────────────────────────────────────
+app/fb_about.json
+app/fb_photos.json
+app/fb_reels.json
+app/fb_posts.json
+app/fb_manual_scrape.json
+
+# ── Runtime directories ───────────────────────────────────────────────────────
+app/reports/
+app/face_data/
+app/post_screenshots/
+app/status/
+app/downloaded_files/
+downloaded_files/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+app/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+.venv/
+
+# ── Test files ────────────────────────────────────────────────────────────────
+test.py
+test_*.py
+debug_*.py
+app/test.py
+app/test_*.py
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ── PDF outputs ───────────────────────────────────────────────────────────────
+app/reports/*.pdf
+*.pdf
+
+# ── Docker runtime ────────────────────────────────────────────────────────────
+.docker/

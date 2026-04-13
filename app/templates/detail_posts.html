@@ -1,0 +1,862 @@
+{% extends 'base.html' %}
+{% block title %}Posts Activity — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+<a href="{{ url_for('dashboard_profile', profile_id=profile_id) }}" class="back-btn">← Dashboard</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  box-sizing: border-box;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DARK INTELLIGENCE THEME
+   ══════════════════════════════════════════════════════════════ */
+
+body {
+  background: linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%) !important;
+  min-height: 100vh;
+}
+
+.detail-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  color: #ffffff;
+}
+
+/* ── Header Section ── */
+.detail-header {
+  margin-bottom: 32px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+  margin-bottom: 8px;
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #2dd4bf;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #2dd4bf;
+}
+
+.detail-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.detail-title span {
+  color: #2dd4bf;
+}
+
+.detail-sub {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #2dd4bf;
+  color: #0a0f1a;
+}
+
+.btn-primary:hover {
+  background: #14b8a6;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #2dd4bf;
+  border: 1px solid #2dd4bf;
+}
+
+.btn-outline:hover {
+  background: rgba(45, 212, 191, 0.1);
+}
+
+/* ── Cards ── */
+.detail-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(45, 212, 191, 0.1);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.dc-header {
+  padding: 20px 24px 0;
+}
+
+.dc-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.dc-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dc-indicators {
+  display: flex;
+  gap: 6px;
+}
+
+.dc-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1e293b;
+}
+
+.dc-indicator.active {
+  background: #2dd4bf;
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.5);
+}
+
+.dc-body {
+  padding: 20px 24px 24px;
+}
+
+/* ── Charts Grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Stats Card ── */
+.stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(45, 212, 191, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.stat-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.stat-value {
+  font-size: 42px;
+  font-weight: 800;
+  color: #2dd4bf;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-change {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.stat-chart {
+  height: 80px;
+  margin-top: 16px;
+}
+
+/* ── Table ── */
+.detail-tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.detail-tbl th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(45, 212, 191, 0.1);
+}
+
+.detail-tbl td {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  padding: 16px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.detail-tbl tr:hover {
+  background: rgba(45, 212, 191, 0.03);
+}
+
+.td-bold {
+  font-weight: 700;
+}
+
+.td-pos {
+  color: #2dd4bf !important;
+  font-weight: 700;
+}
+
+.td-neu {
+  color: #94a3b8 !important;
+  font-weight: 600;
+}
+
+.td-neg {
+  color: #f87171 !important;
+  font-weight: 700;
+}
+
+.type-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+}
+
+.type-pill.type-image {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+.type-pill.type-text {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+/* ── Image Intelligence ── */
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 32px 0 20px;
+}
+
+.img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.img-analysis-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(45, 212, 191, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.img-analysis-card:hover {
+  border-color: rgba(45, 212, 191, 0.3);
+  transform: translateY(-2px);
+}
+
+.img-thumb-wrap {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.img-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.img-thumb-fallback,
+.img-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.img-status-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+
+.img-status-badge.live {
+  background: #2dd4bf;
+  color: #0a0f1a;
+}
+
+.img-status-badge.flagged {
+  background: #f87171;
+  color: #ffffff;
+}
+
+.img-status-badge.secure {
+  background: #22c55e;
+  color: #0a0f1a;
+}
+
+.img-meta {
+  padding: 16px;
+}
+
+.img-scene {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conf-badge {
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(45, 212, 191, 0.15);
+  color: #2dd4bf;
+  border-radius: 4px;
+}
+
+.img-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.img-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.img-field span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.img-field-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.img-flags {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.iflag {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #334155;
+}
+
+.iflag.iflag-yes {
+  background: #f87171;
+  box-shadow: 0 0 6px rgba(248, 113, 113, 0.5);
+}
+
+.iflag.iflag-no {
+  background: #22c55e;
+}
+
+.img-caption {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ── Text Post Intelligence ── */
+.text-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 860px) {
+  .text-posts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.text-post-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  overflow: hidden;
+  border-left: 3px solid #2dd4bf;
+}
+
+.text-post-card.threat {
+  border-left-color: #f87171;
+}
+
+.tp-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(45, 212, 191, 0.1);
+}
+
+.tp-type {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.tp-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2dd4bf;
+}
+
+.tp-icon.warning {
+  color: #f87171;
+}
+
+.tp-body {
+  padding: 20px;
+}
+
+.tp-quote {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e2e8f0;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.tp-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tpf-l {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.tpf-v {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.tp-threat .tpf-l {
+  color: #f87171;
+}
+
+.tp-threat .tpf-v {
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.tp-screenshot {
+  margin-bottom: 16px;
+}
+
+.tp-img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(45, 212, 191, 0.1);
+}
+
+.tp-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+/* ── Footer ── */
+.page-footer {
+  text-align: center;
+  padding: 40px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #475569;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+  <!-- Header -->
+  <div class="detail-header">
+    <div class="status-badge">System Status: Active</div>
+    <h1 class="detail-title">Posts &amp; Activity <span>Intelligence</span></h1>
+    <div class="detail-sub">{{ profile.owner_name or 'Unknown Profile' }} · {{ activity|length }} Image & Text posts analyzed</div>
+
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Activity Timeline Chart -->
+    <div class="detail-card">
+      <div class="dc-header">
+        <div class="dc-label">Interaction Timeline</div>
+        <div class="dc-title">
+          Frequency Analysis
+          <div class="dc-indicators">
+            <span class="dc-indicator"></span>
+            <span class="dc-indicator active"></span>
+          </div>
+        </div>
+      </div>
+      <div class="dc-body" style="height: 220px;">
+        <canvas id="activity-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Cumulative Growth Stat -->
+    <div class="stat-card">
+      <div class="stat-label">Cumulative Growth</div>
+      <div class="stat-title">Network Expansion</div>
+      <div class="stat-value" id="growth-value">0</div>
+      <div class="stat-change">total interactions in image posts</div>
+      <div class="stat-chart">
+        <canvas id="cumulative-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Intelligence -->
+  {% if images %}
+  <h2 class="section-title">Image Intelligence</h2>
+  <div class="img-grid">
+    {% for img in images %}
+    <div class="img-analysis-card">
+      {% if img.image_src %}
+      <div class="img-thumb-wrap">
+        <img src="{{ img.image_src }}" class="img-thumb" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="img-thumb-fallback" style="display:none;">No Image</div>
+
+      </div>
+      {% else %}
+      <div class="img-thumb-empty">No Image</div>
+      {% endif %}
+      <div class="img-meta">
+        {% if img.scene_type %}
+        <div class="img-scene">
+          Scene: {{ img.scene_type }}
+        </div>
+        {% endif %}
+        <div class="img-details-grid">
+          {% if img.activity %}
+          <div class="img-field">
+            <span>Activity</span>
+            <div class="img-field-value">{{ img.activity[:40] }}{% if img.activity|length > 40 %}...{% endif %}</div>
+          </div>
+          {% endif %}
+          {% if img.estimated_location and img.estimated_location != 'Unknown' %}
+          <div class="img-field">
+            <span>Location</span>
+            <div class="img-field-value">{{ img.estimated_location }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if img.caption %}
+        <div class="img-caption">"{{ img.caption[:100] }}{% if img.caption|length > 100 %}...{% endif %}"</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Activity Breakdown Table -->
+  <h2 class="section-title">Activity Breakdown</h2>
+  <div class="detail-card">
+    <div class="dc-body">
+      <table class="detail-tbl">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Total</th>
+            <th>Positive</th>
+            <th>Neutral</th>
+            <th>Negative</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in activity %}
+          {% if a.total and a.total > 0 %}
+          <tr>
+            <td class="td-bold">{{ a.date_text or 'Unknown' }}</td>
+            <td><span class="type-pill type-{{ a.type }}">{{ a.type|upper }}</span></td>
+            <td class="td-bold">{{ a.total or 0 }}</td>
+            <td class="td-pos">{{ a.positive or 0 }}</td>
+            <td class="td-neu">{{ a.neutral or 0 }}</td>
+            <td class="td-neg">{{ a.negative or 0 }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Text Post Intelligence -->
+  {% if texts %}
+  <h2 class="section-title">Text Post Intelligence</h2>
+  <div class="text-posts-grid">
+    {% for t in texts %}
+    <div class="text-post-card {{ 'threat' if t.threat_indicators and t.threat_indicators != 'None' else '' }}">
+      <div class="tp-header">
+        <span class="tp-type">{{ 'Anomaly Detection' if t.threat_indicators and t.threat_indicators != 'None' else 'Entity Analysis' }}</span>
+        <div class="tp-icon {{ 'warning' if t.threat_indicators and t.threat_indicators != 'None' else '' }}">
+          {% if t.threat_indicators and t.threat_indicators != 'None' %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          {% else %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          {% endif %}
+        </div>
+      </div>
+      <div class="tp-body">
+        {% if t.screenshot_path %}
+        <div class="tp-screenshot">
+          <img src="/screenshot/{{ t.screenshot_path | replace('post_screenshots/', '') }}" loading="lazy"
+               class="tp-img" onerror="this.parentElement.style.display='none';">
+        </div>
+        {% endif %}
+        <div class="tp-date">{{ t.date_text or 'Unknown date' }}</div>
+        <div class="tp-meta-grid">
+          {% if t.topic %}
+          <div class="tp-field">
+            <span class="tpf-l">Topic</span>
+            <span class="tpf-v">{{ t.topic }}</span>
+          </div>
+          {% endif %}
+          {% if t.narrative_type %}
+          <div class="tp-field">
+            <span class="tpf-l">Narrative</span>
+            <span class="tpf-v">{{ t.narrative_type }}</span>
+          </div>
+          {% endif %}
+          {% if t.text_language %}
+          <div class="tp-field">
+            <span class="tpf-l">Language</span>
+            <span class="tpf-v">{{ t.text_language }}</span>
+          </div>
+          {% endif %}
+          {% if t.threat_indicators and t.threat_indicators != 'None' %}
+          <div class="tp-field tp-threat">
+            <span class="tpf-l">Threat</span>
+            <span class="tpf-v">{{ t.threat_indicators }}</span>
+          </div>
+          {% else %}
+          <div class="tp-field">
+            <span class="tpf-l">Threat</span>
+            <span class="tpf-v" style="color: #2dd4bf;">Zero Detected</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const activity = {{ activity | tojson }};
+
+// Activity bar chart
+const dated = activity.filter(a => a.date_text && a.date_text !== 'Unknown' && a.total > 0);
+dated.sort((a,b) => (a.date_text||'').localeCompare(b.date_text||''));
+
+if (dated.length > 0) {
+  new Chart(document.getElementById('activity-chart'), {
+    type: 'bar',
+    data: {
+      labels: dated.map(a => a.date_text),
+      datasets: [
+        { label:'Positive', data: dated.map(a=>a.positive||0), backgroundColor:'#2dd4bf', borderRadius: 4, barPercentage: 0.6 },
+        { label:'Neutral',  data: dated.map(a=>a.neutral||0),  backgroundColor:'#f0cd16', borderRadius: 4, barPercentage: 0.6 },
+        { label:'Negative', data: dated.map(a=>a.negative||0), backgroundColor:'#e03714', borderRadius: 4, barPercentage: 0.6 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } },
+          grid: { display: false },
+          border: { display: false }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } },
+          grid: { color: 'rgba(45, 212, 191, 0.05)' },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// Cumulative chart + growth calculation
+if (dated.length > 0) {
+  let cum = 0;
+  const cumData = dated.map(a => { cum += a.total||0; return cum; });
+  
+  // Show final cumulative count
+  const totalCount = cumData[cumData.length - 1] || 0;
+  document.getElementById('growth-value').textContent = totalCount.toLocaleString();
+
+  new Chart(document.getElementById('cumulative-chart'), {
+    type: 'line',
+    data: {
+      labels: dated.map(a=>a.date_text),
+      datasets: [{
+        data: cumData,
+        borderColor: '#2dd4bf',
+        backgroundColor: 'rgba(45, 212, 191, 0.1)',
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: { display: false }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

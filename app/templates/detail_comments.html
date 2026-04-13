@@ -1,0 +1,2348 @@
+{% extends 'base.html' %}
+{% block title %}Interaction Intelligence — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+{% if profile_id %}
+<a href="{{ url_for('dashboard_profile', profile_id=profile_id) }}" class="back-btn">← Dashboard</a>
+{% elif batch_id %}
+<a href="{{ url_for('dashboard_batch', batch_id=batch_id) }}" class="back-btn">← Dashboard</a>
+{% endif %}
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+  rel="stylesheet">
+<style>
+  /* ══════════════════════════════════════════════════════════════════════════
+     DARK BLUE THEME - Interaction Intelligence Dashboard
+     Color Palette:
+     - Background: #0a1628
+     - Card Background: #0f2744
+     - Border: rgba(56, 189, 248, 0.15)
+     - Accent: #38bdf8 (cyan)
+     - Text Primary: #ffffff
+     - Text Secondary: #64748b
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  /* ── Global Reset ── */
+  *,
+  *::before,
+  *::after {
+    font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    box-sizing: border-box;
+  }
+
+  body {
+    background: linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%) !important;
+  }
+
+  /* ── Graph panel ── */
+  .graph-wrap {
+    position: relative;
+    background: #0f2744;
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    height: calc(100vh - 220px);
+    min-height: 500px;
+  }
+
+  #graph-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Legend ── */
+  .graph-legend {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: rgba(15, 39, 68, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Slide-in comment panel ── */
+  .comment-panel {
+    position: absolute;
+    top: 0;
+    right: -340px;
+    width: 320px;
+    height: 100%;
+    background: #0a1628;
+    border-left: 1px solid rgba(56, 189, 248, 0.2);
+    transition: right 0.3s ease;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .comment-panel.open {
+    right: 0;
+  }
+
+  .cp-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    flex-shrink: 0;
+  }
+
+  .cp-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cp-meta {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .cp-score {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .cp-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    cursor: pointer;
+    color: #64748b;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+
+  .cp-close:hover {
+    color: #38bdf8;
+  }
+
+  .cp-comments {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+  }
+
+  .cp-comments::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  .cp-comments::-webkit-scrollbar-thumb {
+    background: #1e3a5f;
+    border-radius: 2px;
+  }
+
+  .cp-comment-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+  }
+
+  .cp-comment-item:last-child {
+    border-bottom: none;
+  }
+
+  .cp-sentiment {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .sent-positive {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .sent-negative {
+    background: rgba(244, 63, 94, 0.12);
+    color: #f43f5e;
+    border: 1px solid rgba(244, 63, 94, 0.25);
+  }
+
+  .sent-neutral {
+    background: rgba(107, 114, 128, 0.12);
+    color: #9ca3af;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+  }
+
+  .cp-comment-text {
+    font-size: 12px;
+    color: #e2e8f0;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 5px;
+  }
+
+  .cp-post-link {
+    font-size: 10px;
+    color: #64748b;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+
+  .cp-post-link:hover {
+    color: #38bdf8;
+  }
+
+  .cp-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* ── Graph loading ── */
+  .graph-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .spin {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #1e3a5f;
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ── Page Layout ── */
+  .detail-wrap {
+    padding: 20px 28px 60px;
+    max-width: 1500px;
+    margin: 0 auto;
+    background: linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%) !important;
+  }
+
+  .detail-header {
+    margin-bottom: 20px;
+  }
+
+  .detail-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .detail-sub {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  /* ── Stats Cards ── */
+  .intel-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .intel-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .istat-card {
+    background: #0f2744;
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .istat-n {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .istat-l {
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 6px;
+  }
+
+  .istat-pct {
+    font-size: 11px;
+    color: #475569;
+    margin-top: 2px;
+  }
+
+  /* ── Chart Cards ── */
+  .detail-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 900px) {
+    .detail-row2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .detail-card {
+    background: #0f2744;
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .dc-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+    background: rgba(10, 22, 40, 0.6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dc-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dc-badge {
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    background: rgba(56, 189, 248, 0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .dc-body {
+    padding: 16px 20px;
+  }
+
+  /* ── Sentiment Chart with Center Score ── */
+  .sentiment-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .chart-container {
+    position: relative;
+    width: 180px;
+    height: 180px;
+  }
+
+  .chart-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .chart-center-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+
+  .chart-center-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .sentiment-stats {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sentiment-stat-box {
+    flex: 1;
+    max-width: 90px;
+    background: rgba(10, 22, 40, 0.6);
+    border: 1px solid rgba(56, 189, 248, 0.1);
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
+  .sentiment-stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+
+  .sentiment-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .sentiment-stat-box.positive .sentiment-stat-value {
+    color: #10b981;
+  }
+
+  .sentiment-stat-box.neutral .sentiment-stat-value {
+    color: #94a3b8;
+  }
+
+  .sentiment-stat-box.negative .sentiment-stat-value {
+    color: #f43f5e;
+  }
+
+  /* ── Language Distribution Bars ── */
+  .lang-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .lang-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lang-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    width: 70px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .lang-bar-wrap {
+    flex: 1;
+    height: 14px;
+    background: rgba(10, 22, 40, 0.8);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .lang-bar {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+    transition: width 0.5s ease-out;
+    position: relative;
+  }
+
+  .lang-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
+    border-radius: 4px 4px 0 0;
+  }
+
+  .lang-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    width: 42px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Section Headers ── */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .section-subtitle {
+    font-size: 10px;
+    color: #475569;
+    margin-top: 2px;
+  }
+
+  .section-sub {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+
+  /* ── Action Button ── */
+  .action-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid #38bdf8;
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .action-btn:hover {
+    background: rgba(56, 189, 248, 0.2);
+  }
+
+  /* ── Filter Buttons ── */
+  .filter-btn {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: transparent;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+  }
+
+  .filter-btn:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+  }
+
+  /* ── Zoom Controls ── */
+  .zoom-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    background: rgba(10, 22, 40, 0.9);
+    color: #38bdf8;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+
+  .zoom-btn:hover {
+    background: rgba(56, 189, 248, 0.15);
+  }
+
+  .zoom-btn.reset {
+    font-size: 9px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Matrix Container ── */
+  .matrix-container {
+    background: #0a1628;
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    border-radius: 12px;
+    overflow: auto;
+    position: relative;
+  }
+
+  /* ── Color Scale Legend ── */
+  .color-scale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .color-scale-label {
+    font-size: 9px;
+    color: #475569;
+    font-weight: 600;
+  }
+
+  .color-scale-bar {
+    width: 120px;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #0a1628, #0c4a6e, #0284c7, #38bdf8, #f59e0b);
+  }
+
+  /* ── Tooltip ── */
+  .matrix-tooltip {
+    position: fixed;
+    display: none;
+    pointer-events: none;
+    z-index: 9999;
+    background: #0f2744;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 200px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── Detail Panel ── */
+  .matrix-detail {
+    display: none;
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: #0f2744;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 10px;
+  }
+
+  .matrix-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .matrix-detail-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .matrix-detail-close {
+    cursor: pointer;
+    color: #64748b;
+    font-size: 16px;
+    transition: color 0.2s;
+  }
+
+  .matrix-detail-close:hover {
+    color: #38bdf8;
+  }
+
+  /* ── Two Column Bottom Layout ── */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 1100px) {
+    .bottom-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+  <div class="detail-header">
+    <div class="detail-title">Interaction Intelligence</div>
+    <div class="detail-sub">{{ intel.total or 0 }} interactions analyzed · {{ intel.languages|length if intel.languages
+      else 0 }} languages detected</div>
+  </div>
+
+  <!-- ══ SUMMARY STATS ══ -->
+  <div class="intel-stats">
+    <div class="istat-card">
+      <div class="istat-n" style="color:#10b981;">{{ intel.positive or 0 }}</div>
+      <div class="istat-l">Positive</div>
+      <div class="istat-pct">{{ "%.1f"|format((intel.positive or 0) / (intel.total or 1) * 100) }}%</div>
+    </div>
+    <div class="istat-card">
+      <div class="istat-n" style="color:#94a3b8;">{{ intel.neutral or 0 }}</div>
+      <div class="istat-l">Neutral</div>
+      <div class="istat-pct">{{ "%.1f"|format((intel.neutral or 0) / (intel.total or 1) * 100) }}%</div>
+    </div>
+    <div class="istat-card">
+      <div class="istat-n" style="color:#f43f5e;">{{ intel.negative or 0 }}</div>
+      <div class="istat-l">Negative</div>
+      <div class="istat-pct">{{ "%.1f"|format((intel.negative or 0) / (intel.total or 1) * 100) }}%</div>
+    </div>
+    <div class="istat-card">
+      <div class="istat-n" style="color:#ffffff;">{{ intel.total or 0 }}</div>
+      <div class="istat-l">Total Analyzed</div>
+      <div class="istat-pct">Primary: {{ intel.primary_language or '—' }}</div>
+    </div>
+  </div>
+
+
+  <!-- ══ CHARTS ══ -->
+  <div class="detail-row2">
+    <!-- Sentiment Distribution -->
+    <div class="detail-card">
+      <div class="dc-header">
+        <div class="dc-title">Sentiment Distribution</div>
+      </div>
+      <div class="dc-body">
+        <div class="sentiment-wrapper">
+          <div class="chart-container">
+            <canvas id="sentiment-chart" width="180" height="180"></canvas>
+            <div class="chart-center">
+              <div class="chart-center-label">Avg Score</div>
+              <div class="chart-center-value" id="avg-score-display">
+                {% set total = intel.total or 1 %}
+                {% set score = ((intel.positive or 0) / total) %}
+                {{ "%.2f"|format(score) }}
+              </div>
+            </div>
+          </div>
+          <div class="sentiment-stats">
+            <div class="sentiment-stat-box positive">
+              <div class="sentiment-stat-label">POS</div>
+              <div class="sentiment-stat-value">{{ "%.0f"|format((intel.positive or 0) / (intel.total or 1) * 100) }}%
+              </div>
+            </div>
+            <div class="sentiment-stat-box neutral">
+              <div class="sentiment-stat-label">NEU</div>
+              <div class="sentiment-stat-value">{{ "%.0f"|format((intel.neutral or 0) / (intel.total or 1) * 100) }}%
+              </div>
+            </div>
+            <div class="sentiment-stat-box negative">
+              <div class="sentiment-stat-label">NEG</div>
+              <div class="sentiment-stat-value">{{ "%.0f"|format((intel.negative or 0) / (intel.total or 1) * 100) }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language Distribution -->
+    <div class="detail-card">
+      <div class="dc-header">
+        <div class="dc-title">Language Distribution</div>
+        <span class="dc-badge">Global Set</span>
+      </div>
+      <div class="dc-body" style="min-height:260px;">
+        <div class="lang-list" id="lang-list">
+          {% set total_comments = intel.total or 1 %}
+          {% set max_count = (intel.languages.values() | list | max) if intel.languages else 1 %}
+          {% set sorted_langs = intel.languages | dictsort(by='value', reverse=True) %}
+
+          {% for name, count in sorted_langs[:8] %}
+          <div class="lang-item">
+            <div class="lang-name">{{ name }}</div>
+
+            <div class="lang-bar-wrap">
+              <div class="lang-bar" style="width: {{ (count / max_count * 100)|round }}%;"></div>
+            </div>
+
+            <div class="lang-pct">
+              {{ "%.0f"|format(count / total_comments * 100) }}%
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ NETWORK GRAPH ══ -->
+  <div style="margin-top:28px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Interaction Network Graph</div>
+        <div class="section-subtitle">NODE_RENDER_V4 | CANVAS_ACTIVE</div>
+      </div>
+      <button class="action-btn" onclick="resetZoom()">Re-Plot Network</button>
+    </div>
+
+    <div class="graph-wrap" id="graph-wrap" style="height:680px;">
+      <!-- Loading state -->
+      <div class="graph-loading" id="graph-loading">
+        <div class="spin"></div>
+        Loading network graph...
+      </div>
+
+      <!-- Canvas -->
+      <canvas id="graph-canvas"></canvas>
+
+      <!-- Zoom controls -->
+      <div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:5;">
+        <button onclick="zoomIn()" class="zoom-btn">+</button>
+        <button onclick="zoomOut()" class="zoom-btn">−</button>
+        <button onclick="resetZoom()" class="zoom-btn reset">RST</button>
+      </div>
+
+      <!-- Legend -->
+      <div class="graph-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b;"></div>10+ Comments
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#ec4899;box-shadow:0 0 6px #ec4899;"></div>5+ Comments
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#fcd34d;box-shadow:0 0 6px #fcd34d;"></div>2+ Comments
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b981;"></div>1 Comment
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#f43f5e;box-shadow:0 0 8px #f43f5e;border-radius:3px;"></div>Threat
+          Actor
+        </div>
+      </div>
+
+      <!-- Slide-in comment panel -->
+      <div class="comment-panel" id="comment-panel">
+        <span class="cp-close" onclick="closePanel()">✕</span>
+        <div class="cp-header">
+          <div class="cp-name" id="cp-name">—</div>
+          <div class="cp-meta" id="cp-meta">—</div>
+          <div class="cp-score" id="cp-score">—</div>
+        </div>
+        <div class="cp-comments" id="cp-comments">
+          <div class="cp-empty">Select a node to view comments</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BOTTOM ROW: MATRIX + FORCE GRAPH ══ -->
+  <div class="bottom-row">
+
+    <!-- ══ RELATIONSHIP MATRIX ══ -->
+    <div>
+      <div class="section-header" style="margin-top:0;">
+        <div>
+          <div class="section-title">CO-Interactors Relationship Matrix</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:4px;">
+          <button onclick="setMinShared(1)" id="ms-btn-1" class="filter-btn active">1+</button>
+          <button onclick="setMinShared(2)" id="ms-btn-2" class="filter-btn">2+</button>
+          <button onclick="setMinShared(3)" id="ms-btn-3" class="filter-btn">3+</button>
+          <button onclick="setMinShared(5)" id="ms-btn-5" class="filter-btn">5+</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+          <span style="font-size:9px;color:#475569;font-weight:600;">WEAK</span>
+          <div class="color-scale-bar"></div>
+          <span style="font-size:9px;color:#f59e0b;font-weight:600;">STRONG</span>
+        </div>
+      </div>
+
+      <!-- Matrix container -->
+      <div class="matrix-container" id="matrix-container">
+        <div class="graph-loading" id="matrix-loading">
+          <div class="spin"></div>
+          Building relationship matrix...
+        </div>
+        <canvas id="matrix-canvas" style="display:block;cursor:crosshair;"></canvas>
+      </div>
+
+      <div style="font-size:10px;color:#475569;margin-top:6px;" id="matrix-stats">—</div>
+
+      <!-- Hover tooltip -->
+      <div id="matrix-tooltip" class="matrix-tooltip"></div>
+
+      <!-- Click detail panel -->
+      <div id="matrix-detail" class="matrix-detail">
+        <div class="matrix-detail-header">
+          <div class="matrix-detail-title">Pair Detail</div>
+          <span onclick="document.getElementById('matrix-detail').style.display='none'"
+            class="matrix-detail-close">✕</span>
+        </div>
+        <div id="matrix-detail-content"></div>
+      </div>
+    </div>
+
+    <!-- ══ FORCE-DIRECTED GRAPH ══ -->
+    <div>
+      <div class="section-header" style="margin-top:0;">
+        <div>
+          <div class="section-title">Force-Directed Graph</div>
+        </div>
+        <button class="action-btn" onclick="fdResetZoom()" style="font-size:9px;padding:4px 10px;">Stable
+          Equilibrium</button>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="display:flex;gap:4px;">
+          <button onclick="setFDMin(1)" id="fd-btn-1" class="filter-btn">1+</button>
+          <button onclick="setFDMin(2)" id="fd-btn-2" class="filter-btn active">2+</button>
+          <button onclick="setFDMin(3)" id="fd-btn-3" class="filter-btn">3+</button>
+          <button onclick="setFDMin(5)" id="fd-btn-5" class="filter-btn">5+</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-left:auto;">
+          <button onclick="fdZoomIn()" class="zoom-btn" style="width:26px;height:26px;font-size:16px;">+</button>
+          <button onclick="fdZoomOut()" class="zoom-btn" style="width:26px;height:26px;font-size:16px;">−</button>
+          <button onclick="fdResetZoom()" class="zoom-btn reset"
+            style="width:auto;height:26px;padding:0 8px;">RST</button>
+        </div>
+      </div>
+
+      <div style="font-size:10px;color:#475569;margin-bottom:6px;" id="fd-stats">—</div>
+
+      <!-- Graph canvas -->
+      <div class="graph-wrap" id="fd-wrap" style="height:400px;">
+        <div class="graph-loading" id="fd-loading">
+          <div class="spin"></div>
+          Building force graph...
+        </div>
+        <canvas id="fd-canvas"></canvas>
+
+        <!-- Legend -->
+        <div class="graph-legend" style="flex-direction:row;flex-wrap:wrap;gap:12px;">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b;"></div>10+ Interactions
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#ec4899;box-shadow:0 0 6px #ec4899;"></div>5+ Interactions
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#fcd34d;box-shadow:0 0 6px #fcd34d;"></div>2+ Interactions
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b981;"></div>1 Interaction
+          </div>
+        </div>
+
+        <!-- Slide-in panel -->
+        <div class="comment-panel" id="fd-comment-panel">
+          <span class="cp-close" onclick="fdClosePanel()">✕</span>
+          <div class="cp-header">
+            <div class="cp-name" id="fd-cp-name">—</div>
+            <div class="cp-meta" id="fd-cp-meta">—</div>
+            <div class="cp-score" id="fd-cp-score">—</div>
+          </div>
+          <div class="cp-comments" id="fd-cp-comments">
+            <div class="cp-empty">Select a node to view Interactions</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:#64748b;">
+        <span>Cluster: ALPHA_7</span>
+        <span>Density: 0.842</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const intel = {{ intel | tojson }};
+  {% if profile_id %}
+  const ENTITY_ID = {{ profile_id }};
+  const ENTITY_TYPE = 'profile';
+  const GRAPH_API = `/api/comment-graph/profile/${ENTITY_ID}`;
+  {% else %}
+  const ENTITY_ID = '{{ batch_id }}';
+  const ENTITY_TYPE = 'batch';
+  const GRAPH_API = `/api/comment-graph/batch/${ENTITY_ID}`;
+  {% endif %}
+
+  const FLAGS = {
+    // South Asia
+    'India': '🇮🇳', 'Pakistan': '🇵🇰', 'Bangladesh': '🇧🇩', 'Nepal': '🇳🇵',
+    'Sri Lanka': '🇱🇰', 'Afghanistan': '🇦🇫', 'Maldives': '🇲🇻', 'Bhutan': '🇧🇹',
+
+    // Southeast Asia
+    'Myanmar': '🇲🇲', 'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Philippines': '🇵🇭',
+    'Indonesia': '🇮🇩', 'Malaysia': '🇲🇾', 'Singapore': '🇸🇬', 'Cambodia': '🇰🇭',
+    'Laos': '🇱🇦', 'Brunei': '🇧🇳', 'Timor-Leste': '🇹🇱',
+
+    // East Asia
+    'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷', 'North Korea': '🇰🇵',
+    'Taiwan': '🇹🇼', 'Mongolia': '🇲🇳', 'Hong Kong': '🇭🇰', 'Macau': '🇲🇴',
+
+    // Middle East
+    'Saudi Arabia': '🇸🇦', 'UAE': '🇦🇪', 'Iran': '🇮🇷', 'Iraq': '🇮🇶',
+    'Turkey': '🇹🇷', 'Israel': '🇮🇱', 'Jordan': '🇯🇴', 'Kuwait': '🇰🇼',
+    'Qatar': '🇶🇦', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲', 'Yemen': '🇾🇪',
+    'Syria': '🇸🇾', 'Lebanon': '🇱🇧', 'Palestine': '🇵🇸',
+
+    // Central Asia
+    'Kazakhstan': '🇰🇿', 'Uzbekistan': '🇺🇿', 'Turkmenistan': '🇹🇲',
+    'Kyrgyzstan': '🇰🇬', 'Tajikistan': '🇹🇯', 'Azerbaijan': '🇦🇿',
+    'Armenia': '🇦🇲', 'Georgia': '🇬🇪',
+
+    // Europe
+    'Russia': '🇷🇺', 'United Kingdom': '🇬🇧', 'Germany': '🇩🇪', 'France': '🇫🇷',
+    'Italy': '🇮🇹', 'Spain': '🇪🇸', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱',
+    'Belgium': '🇧🇪', 'Switzerland': '🇨🇭', 'Austria': '🇦🇹', 'Poland': '🇵🇱',
+    'Czech Republic': '🇨🇿', 'Slovakia': '🇸🇰', 'Hungary': '🇭🇺', 'Romania': '🇷🇴',
+    'Bulgaria': '🇧🇬', 'Greece': '🇬🇷', 'Sweden': '🇸🇪', 'Norway': '🇳🇴',
+    'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Iceland': '🇮🇸', 'Ireland': '🇮🇪',
+    'Ukraine': '🇺🇦', 'Belarus': '🇧🇾', 'Serbia': '🇷🇸', 'Croatia': '🇭🇷',
+    'Slovenia': '🇸🇮', 'Bosnia': '🇧🇦', 'Albania': '🇦🇱', 'North Macedonia': '🇲🇰',
+    'Kosovo': '🇽🇰', 'Montenegro': '🇲🇪', 'Moldova': '🇲🇩', 'Estonia': '🇪🇪',
+    'Latvia': '🇱🇻', 'Lithuania': '🇱🇹', 'Luxembourg': '🇱🇺', 'Malta': '🇲🇹',
+    'Cyprus': '🇨🇾', 'Monaco': '🇲🇨', 'Liechtenstein': '🇱🇮', 'Andorra': '🇦🇩',
+    'San Marino': '🇸🇲', 'Vatican': '🇻🇦',
+
+    // Africa
+    'Nigeria': '🇳🇬', 'Egypt': '🇪🇬', 'South Africa': '🇿🇦', 'Kenya': '🇰🇪',
+    'Ethiopia': '🇪🇹', 'Ghana': '🇬🇭', 'Tanzania': '🇹🇿', 'Uganda': '🇺🇬',
+    'Algeria': '🇩🇿', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Libya': '🇱🇾',
+    'Sudan': '🇸🇩', 'Somalia': '🇸🇴', 'Senegal': '🇸🇳', 'Cameroon': '🇨🇲',
+    'Ivory Coast': '🇨🇮', 'Angola': '🇦🇴', 'Mozambique': '🇲🇿', 'Zambia': '🇿🇲',
+    'Zimbabwe': '🇿🇼', 'Madagascar': '🇲🇬', 'Malawi': '🇲🇼', 'Rwanda': '🇷🇼',
+    'Botswana': '🇧🇼', 'Namibia': '🇳🇦',
+
+    // Americas
+    'United States': '🇺🇸', 'Canada': '🇨🇦', 'Mexico': '🇲🇽', 'Brazil': '🇧🇷',
+    'Argentina': '🇦🇷', 'Colombia': '🇨🇴', 'Chile': '🇨🇱', 'Peru': '🇵🇪',
+    'Venezuela': '🇻🇪', 'Ecuador': '🇪🇨', 'Bolivia': '🇧🇴', 'Paraguay': '🇵🇾',
+    'Uruguay': '🇺🇾', 'Cuba': '🇨🇺', 'Haiti': '🇭🇹', 'Dominican Republic': '🇩🇴',
+    'Guatemala': '🇬🇹', 'Honduras': '🇭🇳', 'El Salvador': '🇸🇻', 'Nicaragua': '🇳🇮',
+    'Costa Rica': '🇨🇷', 'Panama': '🇵🇦', 'Jamaica': '🇯🇲', 'Trinidad': '🇹🇹',
+    'Guyana': '🇬🇾', 'Suriname': '🇸🇷', 'Belize': '🇧🇿', 'Barbados': '🇧🇧',
+
+    // Oceania
+    'Australia': '🇦🇺', 'New Zealand': '🇳🇿', 'Fiji': '🇫🇯', 'Papua New Guinea': '🇵🇬',
+    'Samoa': '🇼🇸', 'Tonga': '🇹🇴', 'Vanuatu': '🇻🇺', 'Solomon Islands': '🇸🇧',
+
+    // Fallback
+    'Unknown': '🏳️',
+  };
+
+  // ── Auto-load graph on page load ──
+  document.addEventListener('DOMContentLoaded', () => {
+    loadGraph();
+  });
+
+  // ── SENTIMENT CHART (Donut with no legend - using stat boxes instead) ──
+  new Chart(document.getElementById('sentiment-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{
+        data: [intel.positive || 0, intel.neutral || 0, intel.negative || 0],
+        backgroundColor: ['#10b981', '#64748b', '#f43f5e'],
+        borderWidth: 0,
+        hoverOffset: 8,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      cutout: '72%',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f2744',
+          borderColor: '#38bdf8',
+          borderWidth: 1,
+          titleColor: '#fff',
+          bodyColor: '#94a3b8',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { family: 'Google Sans', weight: 'bold' },
+          bodyFont: { family: 'Google Sans' }
+        }
+      },
+      animation: {
+        duration: 1200,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
+
+  const langs = intel.languages || {};
+  const sortedLangs = Object.entries(langs).sort((a, b) => b[1] - a[1]);
+  new Chart(document.getElementById('language-chart'), {
+    type: 'bar',
+    data: {
+      labels: sortedLangs.map(([l]) => l),
+      datasets: [{
+        label: 'Interactions',
+        data: sortedLangs.map(([, v]) => v),
+        backgroundColor: '#38bdf888',
+        borderColor: '#38bdf8',
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 10, family: 'Google Sans' } }, grid: { color: 'rgba(56,189,248,0.08)' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 11, family: 'Google Sans' } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ══ NETWORK GRAPH ══
+  let graphData = [];
+  let nodes = [];
+  let selectedNode = null;
+  let animFrame = null;
+  let isDragging = false;
+  let dragNode = null;
+  let panOffset = { x: 0, y: 0 };
+  let isPanning = false;
+  let panStart = { x: 0, y: 0 };
+  let lastPanOffset = { x: 0, y: 0 };
+  let zoomScale = 1.0;
+  const ZOOM_MIN = 0.3;
+  const ZOOM_MAX = 3.0;
+  const _threatIcon = new Image();
+  _threatIcon.src = '/icons/threat.png';
+
+  function nodeColor(count) {
+    if (count >= 10) return '#f59e0b';
+    if (count >= 5) return '#ec4899';
+    if (count >= 2) return '#fcd34d';
+    return '#10b981';
+  }
+
+  function nodeRadius(count) {
+    return Math.max(14, Math.min(28, 14 + Math.sqrt(count) * 4));
+  }
+
+  function loadGraph() {
+    fetch(GRAPH_API)
+      .then(r => r.json())
+      .then(d => {
+        graphData = d.commentors || [];
+        document.getElementById('graph-loading').style.display = 'none';
+        initGraph();
+      })
+      .catch(e => {
+        document.getElementById('graph-loading').textContent = 'Failed to load graph';
+        console.error(e);
+      });
+  }
+
+  function initGraph() {
+    const wrap = document.getElementById('graph-wrap');
+    const canvas = document.getElementById('graph-canvas');
+    canvas.width = wrap.offsetWidth;
+    canvas.height = wrap.offsetHeight;
+
+    const W = canvas.width, H = canvas.height;
+    const cx = W / 2, cy = H / 2;
+
+    // Ring-based layout
+    const rings = [
+      { min: 10, R: Math.min(W, H) * 0.18, nodes: [] },
+      { min: 5, R: Math.min(W, H) * 0.32, nodes: [] },
+      { min: 2, R: Math.min(W, H) * 0.44, nodes: [] },
+      { min: 0, R: Math.min(W, H) * 0.56, nodes: [] },
+    ];
+
+    graphData.forEach(c => {
+      const cnt = c.comment_count || 0;
+      if (cnt >= 10) rings[0].nodes.push(c);
+      else if (cnt >= 5) rings[1].nodes.push(c);
+      else if (cnt >= 2) rings[2].nodes.push(c);
+      else rings[3].nodes.push(c);
+    });
+
+    nodes = [];
+    rings.forEach(ring => {
+      const total = ring.nodes.length;
+      ring.nodes.forEach((c, i) => {
+        const angle = (i / (total || 1)) * Math.PI * 2 - Math.PI / 2;
+        nodes.push({
+          x: cx + ring.R * Math.cos(angle),
+          y: cy + ring.R * Math.sin(angle),
+          r: nodeRadius(c.comment_count || 0),
+          col: nodeColor(c.comment_count || 0),
+          data: c,
+          vx: 0, vy: 0,
+          fixed: false
+        });
+      });
+    });
+
+    // Center node (target)
+    nodes.unshift({
+      x: cx, y: cy, r: 26,
+      col: '#f43f5e',
+      data: { name: 'TARGET', comment_count: 0 },
+      isTarget: true,
+      fixed: true,
+      vx: 0, vy: 0
+    });
+
+    setupInteraction(canvas);
+    render(canvas);
+  }
+
+  function render(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    if (animFrame) cancelAnimationFrame(animFrame);
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.save();
+      const W2 = canvas.width, H2 = canvas.height;
+      ctx.translate(W2 / 2 + panOffset.x, H2 / 2 + panOffset.y);
+      ctx.scale(zoomScale, zoomScale);
+      ctx.translate(-W2 / 2, -H2 / 2);
+
+      const target = nodes[0];
+
+      // Draw edges
+      nodes.slice(1).forEach(n => {
+        const g = ctx.createLinearGradient(target.x, target.y, n.x, n.y);
+        g.addColorStop(0, '#38bdf8');
+        g.addColorStop(1, n.col + '22');
+        ctx.strokeStyle = g;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(target.x, target.y);
+        ctx.lineTo(n.x, n.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      // Draw commentor nodes
+      nodes.slice(1).forEach(n => {
+        const isSelected = selectedNode && selectedNode.data.commentor_id === n.data.commentor_id;
+
+        // Glow
+        const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.2);
+        gr.addColorStop(0, n.col + (isSelected ? '55' : '22'));
+        gr.addColorStop(1, 'transparent');
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Node circle
+        ctx.shadowColor = n.col;
+        ctx.shadowBlur = isSelected ? 18 : 8;
+        ctx.fillStyle = '#0a1628';
+        ctx.strokeStyle = n.col;
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Initials
+        const initials = (n.data.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        ctx.fillStyle = n.col;
+        ctx.font = `bold ${Math.max(8, Math.floor(n.r * 0.55))}px Google Sans, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initials, n.x, n.y);
+
+        // Name below node
+        const firstName = (n.data.name || '?').split(' ')[0];
+        const label = firstName.length > 8 ? firstName.slice(0, 7) + '…' : firstName;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px Google Sans, sans-serif';
+        ctx.textBaseline = 'top';
+        ctx.fillText(label, n.x, n.y + n.r + 4);
+
+        // Comment count badge
+        ctx.fillStyle = n.col + 'bb';
+        ctx.font = 'bold 8px Google Sans, sans-serif';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`${n.data.comment_count || 0}`, n.x, n.y + n.r + 14);
+      });
+
+      // Draw target node
+      const t = nodes[0];
+      const tg = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
+      tg.addColorStop(0, '#f43f5e');
+      tg.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = tg;
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Outer ring
+      ctx.strokeStyle = '#f43f5e55';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.r + 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Threat icon on target
+      if (_threatIcon.complete && _threatIcon.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r - 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(_threatIcon, t.x - t.r + 2, t.y - t.r + 2, (t.r - 2) * 2, (t.r - 2) * 2);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px Google Sans, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TGT', t.x, t.y);
+        _threatIcon.onload = () => render(canvas);
+      }
+
+      ctx.restore();
+      animFrame = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  // ── Interaction: click + drag + pan ──
+  function setupInteraction(canvas) {
+    let mouseDownPos = null;
+    let mouseDownTime = 0;
+
+    canvas.addEventListener('mousedown', e => {
+      const pos = getCanvasPos(canvas, e);
+      mouseDownPos = pos;
+      mouseDownTime = Date.now();
+
+      const hit = hitTest(pos);
+      if (hit && !hit.isTarget) {
+        dragNode = hit;
+        isDragging = false;
+      } else {
+        isPanning = true;
+        lastPanOffset = { ...panOffset };
+        panStart = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      const pos = getCanvasPos(canvas, e);
+
+      if (dragNode) {
+        isDragging = true;
+        dragNode.x = pos.x - panOffset.x;
+        dragNode.y = pos.y - panOffset.y;
+        return;
+      }
+      if (isPanning) {
+        panOffset.x = lastPanOffset.x + (e.clientX - panStart.x);
+        panOffset.y = lastPanOffset.y + (e.clientY - panStart.y);
+        return;
+      }
+
+      // Cursor
+      const hit = hitTest(pos);
+      canvas.style.cursor = (hit && !hit.isTarget) ? 'pointer' : 'grab';
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      const wasDragging = isDragging;
+      dragNode = null;
+      isPanning = false;
+      isDragging = false;
+
+      if (!wasDragging && mouseDownPos) {
+        const pos = getCanvasPos(canvas, e);
+        const dist = Math.hypot(pos.x - mouseDownPos.x, pos.y - mouseDownPos.y);
+        const dt = Date.now() - mouseDownTime;
+        if (dist < 8 && dt < 400) {
+          handleClick(pos);
+        }
+      }
+      mouseDownPos = null;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      dragNode = null;
+      isPanning = false;
+    });
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomScale * delta));
+      zoomScale = newZoom;
+    }, { passive: false });
+  }
+
+  function getCanvasPos(canvas, e) {
+    const br = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - br.left) * (canvas.width / br.width),
+      y: (e.clientY - br.top) * (canvas.height / br.height)
+    };
+  }
+
+  function hitTest(pos) {
+    const canvas = document.getElementById('graph-canvas');
+    const W2 = canvas.width, H2 = canvas.height;
+    const ax = (pos.x - W2 / 2 - panOffset.x) / zoomScale + W2 / 2;
+    const ay = (pos.y - H2 / 2 - panOffset.y) / zoomScale + H2 / 2;
+    for (const n of nodes) {
+      if (Math.hypot(ax - n.x, ay - n.y) <= n.r + 4) return n;
+    }
+    return null;
+  }
+
+  function handleClick(pos) {
+    const hit = hitTest(pos);
+    if (!hit || hit.isTarget) {
+      closePanel();
+      selectedNode = null;
+      return;
+    }
+    if (selectedNode && selectedNode.data.commentor_id === hit.data.commentor_id) {
+      closePanel();
+      selectedNode = null;
+    } else {
+      selectedNode = hit;
+      openPanel(hit.data);
+    }
+  }
+
+  // ── Comment Panel ──
+  function openPanel(commentor) {
+    document.getElementById('cp-name').textContent = commentor.name || 'Unknown';
+
+    const flag = FLAGS[commentor.identified_country] || '🌍';
+    const country = commentor.identified_country || '— Unknown';
+    document.getElementById('cp-meta').textContent =
+      `${flag} ${country} · ${commentor.comment_count || 0} Interactions`;
+
+    const score = parseFloat(commentor.total_score || 0);
+    const scoreColor = score >= 0.5 ? '#10b981' : score >= 0.1 ? '#38bdf8' :
+      score >= -0.1 ? '#64748b' : score >= -0.5 ? '#f59e0b' : '#f43f5e';
+    document.getElementById('cp-score').innerHTML =
+      `<span style="color:${scoreColor};">Score: ${score.toFixed(3)}</span>
+       <span style="color:#ffffff;margin-left:8px;font-size:10px;">${commentor.tier || '—'}</span>`;
+
+    const comments = commentor.comments || [];
+    if (!comments.length) {
+      document.getElementById('cp-comments').innerHTML =
+        '<div class="cp-empty">No analyzed Interactions yet</div>';
+    } else {
+      document.getElementById('cp-comments').innerHTML = comments.map(c => {
+        const sent = (c.sentiment || 'neutral').toLowerCase();
+        const sentClass = sent === 'positive' ? 'sent-positive' :
+          sent === 'negative' ? 'sent-negative' : 'sent-neutral';
+        const sentIcon = sent === 'positive' ? '🟢' : sent === 'negative' ? '🔴' : '🟡';
+        const text = c.comment_text || '[No text]';
+        const postUrl = c.post_url || '#';
+
+        return `
+          <div class="cp-comment-item">
+            <div class="cp-sentiment ${sentClass}">${sentIcon} ${sent}</div>
+            <div class="cp-comment-text" style="color:#ffffff;font-size:12px">${text.substring(0, 120)}${text.length > 120 ? '…' : ''}</div>
+            <a href="${postUrl}" target="_blank" class="cp-post-link" style="color:#64748b;font-size:10px">
+              🔗 URL ↗
+            </a>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('comment-panel').classList.add('open');
+  }
+
+  function closePanel() {
+    document.getElementById('comment-panel').classList.remove('open');
+    selectedNode = null;
+  }
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    const wrap = document.getElementById('graph-wrap');
+    const canvas = document.getElementById('graph-canvas');
+    if (canvas && wrap && typeof fdNodes !== 'undefined' && fdNodes.length) {
+      canvas.width = wrap.offsetWidth;
+      canvas.height = wrap.offsetHeight;
+    }
+  });
+
+  function zoomIn() { zoomScale = Math.min(ZOOM_MAX, zoomScale * 1.2); }
+  function zoomOut() { zoomScale = Math.max(ZOOM_MIN, zoomScale * 0.8); }
+  function resetZoom() { zoomScale = 1.0; panOffset = { x: 0, y: 0 }; }
+
+  // ══ CO-COMMENTOR MATRIX STATE ══
+  let matrixNodes = [];
+  let matrixEdges = [];
+  let matrixMin = 1;
+  let matrixMax = 1;
+  let cellSize = 18;
+  let matrixPadL = 90;
+  let matrixPadT = 90;
+
+  const CC_API = ENTITY_TYPE === 'profile'
+    ? `/api/cocomment-graph/profile/${ENTITY_ID}`
+    : `/api/cocomment-graph/batch/${ENTITY_ID}`;
+
+  // ── Load data ──
+  function loadAllCoCommentData() {
+    fetch(CC_API)
+      .then(r => r.json())
+      .then(d => {
+        const nodes = d.nodes || [];
+        const edges = d.edges || [];
+
+        // ── Matrix ──
+        document.getElementById('matrix-loading').style.display = 'none';
+        matrixNodes = nodes;
+        matrixEdges = edges;
+        matrixMax = Math.max(...edges.map(e => e.weight), 1);
+        renderMatrix();
+
+        // ── Force graph ──
+        document.getElementById('fd-loading').style.display = 'none';
+        fdAllNodes = nodes;
+        fdAllEdges = edges;
+
+        const wrap = document.getElementById('fd-wrap');
+        const canvas = document.getElementById('fd-canvas');
+        canvas.width = wrap.offsetWidth;
+        canvas.height = wrap.offsetHeight;
+
+        buildFDGraph();
+      })
+      .catch(e => {
+        console.error('Co-commentor load error:', e);
+        document.getElementById('matrix-loading').textContent = 'Failed to load data';
+        document.getElementById('fd-loading').textContent = 'Failed to load data';
+      });
+  }
+
+  // ── Filter control ──
+  function setMinShared(val) {
+    matrixMin = val;
+    ['1', '2', '3', '5'].forEach(v => {
+      const btn = document.getElementById(`ms-btn-${v}`);
+      const active = parseInt(v) === val;
+      btn.classList.toggle('active', active);
+    });
+    renderMatrix();
+  }
+
+  // ── Render matrix ──
+  function renderMatrix() {
+    if (!matrixNodes.length) return;
+
+    const activeEdges = matrixEdges.filter(e => e.weight >= matrixMin);
+    const activeIds = new Set();
+    activeEdges.forEach(e => { activeIds.add(e.source); activeIds.add(e.target); });
+
+    const visibleNodes = matrixMin === 1
+      ? matrixNodes
+      : matrixNodes.filter(n => activeIds.has(n.commentor_id));
+
+    if (!visibleNodes.length) {
+      const canvas = document.getElementById('matrix-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 400; canvas.height = 100;
+      ctx.fillStyle = '#64748b'; ctx.font = '12px Google Sans, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`No pairs with ${matrixMin}+ shared posts`, 200, 50);
+      document.getElementById('matrix-stats').textContent = '0 pairs found';
+      return;
+    }
+
+    const N = visibleNodes.length;
+
+    // Adaptive cell size
+    if (N <= 15) cellSize = 32;
+    else if (N <= 25) cellSize = 24;
+    else if (N <= 40) cellSize = 18;
+    else if (N <= 60) cellSize = 13;
+    else if (N <= 100) cellSize = 10;
+    else cellSize = 7;
+
+    const labelFont = Math.max(8, Math.min(11, cellSize * 0.72));
+    matrixPadL = Math.max(80, Math.min(130, labelFont * 9));
+    matrixPadT = matrixPadL;
+
+    const canvasW = matrixPadL + N * cellSize + 20;
+    const canvasH = matrixPadT + N * cellSize + 20;
+
+    const canvas = document.getElementById('matrix-canvas');
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    const ctx = canvas.getContext('2d');
+
+    // Build edge lookup
+    const edgeLookup = {};
+    activeEdges.forEach(e => {
+      edgeLookup[`${e.source}-${e.target}`] = e.weight;
+      edgeLookup[`${e.target}-${e.source}`] = e.weight;
+    });
+
+    // ── Background ──
+    ctx.fillStyle = '#0a1628';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // ── Alternating row/col bands ──
+    visibleNodes.forEach((_, i) => {
+      if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(56,189,248,0.03)';
+        ctx.fillRect(matrixPadL, matrixPadT + i * cellSize, N * cellSize, cellSize);
+        ctx.fillRect(matrixPadL + i * cellSize, matrixPadT, cellSize, N * cellSize);
+      }
+    });
+
+    // ── Draw cells ──
+    const cellGap = Math.max(1, Math.floor(cellSize * 0.06));
+    const cellR = Math.min(3, cellSize * 0.18);
+
+    visibleNodes.forEach((rowNode, ri) => {
+      visibleNodes.forEach((colNode, ci) => {
+        const x = matrixPadL + ci * cellSize + cellGap;
+        const y = matrixPadT + ri * cellSize + cellGap;
+        const w = cellSize - cellGap * 2;
+        const h = cellSize - cellGap * 2;
+
+        if (rowNode.commentor_id === colNode.commentor_id) {
+          ctx.fillStyle = '#0f2744';
+          roundRect(ctx, x, y, w, h, cellR);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56,189,248,0.2)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x + 2, y + 2);
+          ctx.lineTo(x + w - 2, y + h - 2);
+          ctx.stroke();
+        } else {
+          const key = `${rowNode.commentor_id}-${colNode.commentor_id}`;
+          const shared = edgeLookup[key] || 0;
+
+          if (shared === 0) {
+            ctx.fillStyle = '#0c1e32';
+            roundRect(ctx, x, y, w, h, cellR);
+            ctx.fill();
+          } else {
+            const t = Math.min(shared / matrixMax, 1);
+            const col = heatColor(t);
+
+            if (t > 0.5) {
+              ctx.shadowColor = col;
+              ctx.shadowBlur = cellSize * 0.4;
+            }
+            ctx.fillStyle = col;
+            roundRect(ctx, x, y, w, h, cellR);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (cellSize >= 16 && shared > 0) {
+              const brightness = t > 0.55 ? '#000000cc' : '#ffffffaa';
+              ctx.fillStyle = brightness;
+              ctx.font = `bold ${Math.max(7, cellSize * 0.42)}px Google Sans, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(shared, x + w / 2, y + h / 2);
+            }
+          }
+        }
+      });
+
+      // ── Row label ──
+      const rName = (rowNode.name || '?').split(' ')[0];
+      const rShort = rName.length > 11 ? rName.slice(0, 10) + '…' : rName;
+      const rCol = nodeColor(rowNode.comment_count || 0);
+
+      ctx.fillStyle = rCol + '18';
+      ctx.fillRect(0, matrixPadT + ri * cellSize, matrixPadL - 4, cellSize);
+
+      ctx.fillStyle = rCol;
+      ctx.font = `${labelFont}px Google Sans, sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(rShort, matrixPadL - 8, matrixPadT + ri * cellSize + cellSize / 2);
+
+      // ── Column label (rotated) ──
+      const cName = (visibleNodes[ri].name || '?').split(' ')[0];
+      const cShort = cName.length > 11 ? cName.slice(0, 10) + '…' : cName;
+      const cCol = nodeColor(visibleNodes[ri].comment_count || 0);
+
+      ctx.save();
+      ctx.translate(matrixPadL + ri * cellSize + cellSize / 2, matrixPadT - 8);
+      ctx.rotate(-Math.PI / 2);
+
+      ctx.fillStyle = cCol + '18';
+      ctx.fillRect(0, -cellSize / 2, matrixPadT - 8, cellSize);
+
+      ctx.fillStyle = cCol;
+      ctx.font = `${labelFont}px Google Sans, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cShort, 4, 0);
+      ctx.restore();
+    });
+
+    // ── Grid lines ──
+    ctx.strokeStyle = 'rgba(56,189,248,0.08)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= N; i++) {
+      ctx.lineWidth = i % 5 === 0 ? 1 : 0.4;
+      ctx.strokeStyle = i % 5 === 0 ? 'rgba(56,189,248,0.15)' : 'rgba(56,189,248,0.05)';
+      ctx.beginPath();
+      ctx.moveTo(matrixPadL + i * cellSize, matrixPadT);
+      ctx.lineTo(matrixPadL + i * cellSize, matrixPadT + N * cellSize);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(matrixPadL, matrixPadT + i * cellSize);
+      ctx.lineTo(matrixPadL + N * cellSize, matrixPadT + i * cellSize);
+      ctx.stroke();
+    }
+
+    // ── Border ──
+    ctx.strokeStyle = 'rgba(56,189,248,0.2)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(matrixPadL, matrixPadT, N * cellSize, N * cellSize);
+
+    document.getElementById('matrix-stats').textContent =
+      `${visibleNodes.length} persons · ${activeEdges.length} pairs shown`;
+
+    setupMatrixInteraction(canvas, visibleNodes, edgeLookup);
+  }
+
+  // ── Helper: rounded rect ──
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ── Helper: heat color (dark blue theme) ──
+  function heatColor(t) {
+    if (t < 0.25) {
+      const s = t / 0.25;
+      return `rgb(${Math.round(s * 12)},${Math.round(74 * s)},${Math.round(110 * s)})`;
+    } else if (t < 0.5) {
+      const s = (t - 0.25) / 0.25;
+      return `rgb(${Math.round(12 + s * 2)},${Math.round(74 + s * 58)},${Math.round(110 + s * 89)})`;
+    } else if (t < 0.75) {
+      const s = (t - 0.5) / 0.25;
+      return `rgb(${Math.round(14 + s * 42)},${Math.round(132 + s * 57)},${Math.round(199 + s * 49)})`;
+    } else {
+      const s = (t - 0.75) / 0.25;
+      return `rgb(${Math.round(56 + s * 189)},${Math.round(189 - s * 31)},${Math.round(248 - s * 237)})`;
+    }
+  }
+
+  // ── Matrix interaction ──
+  function setupMatrixInteraction(canvas, visibleNodes, edgeLookup) {
+    canvas.onmousemove = null;
+    canvas.onmouseleave = null;
+    canvas.onclick = null;
+
+    const tooltip = document.getElementById('matrix-tooltip');
+
+    canvas.onmousemove = (e) => {
+      const br = canvas.getBoundingClientRect();
+      const mx = (e.clientX - br.left) * (canvas.width / br.width);
+      const my = (e.clientY - br.top) * (canvas.height / br.height);
+
+      const ci = Math.floor((mx - matrixPadL) / cellSize);
+      const ri = Math.floor((my - matrixPadT) / cellSize);
+
+      if (ci < 0 || ri < 0 || ci >= visibleNodes.length || ri >= visibleNodes.length) {
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'crosshair';
+        return;
+      }
+
+      const rowNode = visibleNodes[ri];
+      const colNode = visibleNodes[ci];
+
+      if (rowNode.commentor_id === colNode.commentor_id) {
+        const col = nodeColor(rowNode.comment_count || 0);
+        const flag = FLAGS[rowNode.identified_country] || '🌍';
+        tooltip.innerHTML = `
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px;">${rowNode.name || '?'}</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:4px;">${flag} ${rowNode.identified_country || '— Unknown'}</div>
+        <div style="font-size:10px;color:${col};font-weight:600;">${rowNode.comment_count || 0} Interactions · ${rowNode.tier || '—'}</div>
+      `;
+        canvas.style.cursor = 'default';
+      } else {
+        const key = `${rowNode.commentor_id}-${colNode.commentor_id}`;
+        const shared = edgeLookup[key] || 0;
+        const col = shared > 0 ? '#f59e0b' : '#475569';
+        const flag1 = FLAGS[rowNode.identified_country] || '🌍';
+        const flag2 = FLAGS[colNode.identified_country] || '🌍';
+        tooltip.innerHTML = `
+        <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;">
+          ${rowNode.name || '?'} ↔ ${colNode.name || '?'}
+        </div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:2px;">${flag1} ${rowNode.identified_country || '—'}</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:6px;">${flag2} ${colNode.identified_country || '—'}</div>
+        <div style="font-size:12px;font-weight:700;color:${col};">
+          ${shared > 0 ? `${shared} shared post${shared > 1 ? 's' : ''}` : 'No shared posts'}
+        </div>
+      `;
+        canvas.style.cursor = shared > 0 ? 'pointer' : 'crosshair';
+      }
+
+      tooltip.style.display = 'block';
+      tooltip.style.left = Math.min(e.clientX + 14, window.innerWidth - 230) + 'px';
+      tooltip.style.top = Math.max(e.clientY - 80, 10) + 'px';
+    };
+
+    canvas.onmouseleave = () => {
+      tooltip.style.display = 'none';
+      canvas.style.cursor = 'crosshair';
+    };
+
+    canvas.onclick = (e) => {
+      const br = canvas.getBoundingClientRect();
+      const mx = (e.clientX - br.left) * (canvas.width / br.width);
+      const my = (e.clientY - br.top) * (canvas.height / br.height);
+
+      const ci = Math.floor((mx - matrixPadL) / cellSize);
+      const ri = Math.floor((my - matrixPadT) / cellSize);
+
+      if (ci < 0 || ri < 0 || ci >= visibleNodes.length || ri >= visibleNodes.length) return;
+
+      const rowNode = visibleNodes[ri];
+      const colNode = visibleNodes[ci];
+      if (rowNode.commentor_id === colNode.commentor_id) return;
+
+      const key = `${rowNode.commentor_id}-${colNode.commentor_id}`;
+      const shared = edgeLookup[key] || 0;
+      if (shared === 0) return;
+
+      showMatrixDetail(rowNode, colNode, shared);
+    };
+  }
+
+  // ── Detail panel on cell click ──
+  function showMatrixDetail(nodeA, nodeB, shared) {
+    const flag1 = FLAGS[nodeA.identified_country] || '🌍';
+    const flag2 = FLAGS[nodeB.identified_country] || '🌍';
+    const colA = nodeColor(nodeA.comment_count || 0);
+    const colB = nodeColor(nodeB.comment_count || 0);
+    const scoreA = parseFloat(nodeA.total_score || 0);
+    const scoreB = parseFloat(nodeB.total_score || 0);
+
+    const scoreColor = s => s >= 0.5 ? '#10b981' : s >= 0.1 ? '#38bdf8' :
+      s >= -0.1 ? '#64748b' : s >= -0.5 ? '#f59e0b' : '#f43f5e';
+
+    document.getElementById('matrix-detail-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;">
+      <!-- Person A -->
+      <div style="background:#0a1628;border:1px solid rgba(56,189,248,0.15);border-radius:8px;padding:12px;">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">${nodeA.name || '?'}</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:6px;">${flag1} ${nodeA.identified_country || '—'}</div>
+        <div style="font-size:10px;color:${colA};font-weight:600;">${nodeA.comment_count || 0} Interactions</div>
+        <div style="font-size:10px;color:${scoreColor(scoreA)};font-weight:600;">Score: ${scoreA.toFixed(3)}</div>
+        <div style="font-size:10px;color:#475569;margin-top:2px;">${nodeA.tier || '—'}</div>
+        <a href="${nodeA.profile_url || '#'}" target="_blank"
+           style="font-size:9px;color:#64748b;text-decoration:none;margin-top:6px;display:block;">
+          View Profile ↗
+        </a>
+      </div>
+ 
+      <!-- Shared info -->
+      <div style="text-align:center;padding-top:16px;">
+        <div style="font-size:24px;font-weight:700;color:#f59e0b;">${shared}</div>
+        <div style="font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">
+          shared<br>posts
+        </div>
+        <div style="margin-top:8px;font-size:18px;color:#475569;">↔</div>
+      </div>
+ 
+      <!-- Person B -->
+      <div style="background:#0a1628;border:1px solid rgba(56,189,248,0.15);border-radius:8px;padding:12px;">
+        <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;">${nodeB.name || '?'}</div>
+        <div style="font-size:10px;color:#64748b;margin-bottom:6px;">${flag2} ${nodeB.identified_country || '—'}</div>
+        <div style="font-size:10px;color:${colB};font-weight:600;">${nodeB.comment_count || 0} Interactions</div>
+        <div style="font-size:10px;color:${scoreColor(scoreB)};font-weight:600;">Score: ${scoreB.toFixed(3)}</div>
+        <div style="font-size:10px;color:#475569;margin-top:2px;">${nodeB.tier || '—'}</div>
+        <a href="${nodeB.profile_url || '#'}" target="_blank"
+           style="font-size:9px;color:#64748b;text-decoration:none;margin-top:6px;display:block;">
+          View Profile ↗
+        </a>
+      </div>
+    </div>
+  `;
+
+    const detail = document.getElementById('matrix-detail');
+    detail.style.display = 'block';
+    detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Auto-load
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAllCoCommentData();
+  });
+
+  // ══ FORCE-DIRECTED STATE ══
+  let fdNodes = [];
+  let fdEdges = [];
+  let fdAllNodes = [];
+  let fdAllEdges = [];
+  let fdMin = 2;
+  let fdZoom = 1.0;
+  let fdPan = { x: 0, y: 0 };
+  let fdLastPan = { x: 0, y: 0 };
+  let fdPanStart = { x: 0, y: 0 };
+  let fdIsPanning = false;
+  let fdDragNode = null;
+  let fdIsDragging = false;
+  let fdSelected = null;
+  let fdAnimFrame = null;
+  let fdSimStep = 0;
+  let fdInteractionOK = false;
+  const FD_ZOOM_MIN = 0.2;
+  const FD_ZOOM_MAX = 4.0;
+  const FD_MAX_SIM = 400;
+
+  function fdZoomIn() { fdZoom = Math.min(FD_ZOOM_MAX, fdZoom * 1.2); }
+  function fdZoomOut() { fdZoom = Math.max(FD_ZOOM_MIN, fdZoom * 0.8); }
+  function fdResetZoom() { fdZoom = 1.0; fdPan = { x: 0, y: 0 }; }
+
+  function setFDMin(val) {
+    fdMin = val;
+    ['1', '2', '3', '5'].forEach(v => {
+      const btn = document.getElementById(`fd-btn-${v}`);
+      const active = parseInt(v) === val;
+      btn.classList.toggle('active', active);
+    });
+    buildFDGraph();
+  }
+
+  function buildFDGraph() {
+    const wrap = document.getElementById('fd-wrap');
+    const canvas = document.getElementById('fd-canvas');
+    const W = canvas.width = wrap.offsetWidth;
+    const H = canvas.height = wrap.offsetHeight;
+
+    const activeEdges = fdAllEdges.filter(e => e.weight >= fdMin);
+    const activeIds = new Set();
+    activeEdges.forEach(e => { activeIds.add(e.source); activeIds.add(e.target); });
+
+    const visibleRaw = fdMin === 1
+      ? fdAllNodes
+      : fdAllNodes.filter(n => activeIds.has(n.commentor_id));
+
+    if (!visibleRaw.length) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#64748b'; ctx.font = '13px Google Sans, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`No pairs with ${fdMin}+ shared posts`, W / 2, H / 2);
+      document.getElementById('fd-stats').textContent = '0 nodes shown';
+      return;
+    }
+
+    const maxWeight = Math.max(...activeEdges.map(e => e.weight), 1);
+
+    const nodeMap = {};
+    fdNodes = visibleRaw.map((c, i) => {
+      const angle = (i / visibleRaw.length) * Math.PI * 2;
+      const R = Math.min(W, H) * 0.42;
+      const n = {
+        id: c.commentor_id,
+        x: W / 2 + R * Math.cos(angle) + (Math.random() - 0.5) * 20,
+        y: H / 2 + R * Math.sin(angle) + (Math.random() - 0.5) * 20,
+        vx: 0, vy: 0,
+        r: nodeRadius(c.comment_count || 0),
+        col: nodeColor(c.comment_count || 0),
+        data: c,
+      };
+      nodeMap[c.commentor_id] = n;
+      return n;
+    });
+
+    fdEdges = activeEdges
+      .map(e => ({
+        source: nodeMap[e.source],
+        target: nodeMap[e.target],
+        weight: e.weight,
+        width: Math.max(0.8, Math.min(5, (e.weight / maxWeight) * 5)),
+        alpha: Math.min(0.85, 0.2 + (e.weight / maxWeight) * 0.65),
+      }))
+      .filter(e => e.source && e.target);
+
+    document.getElementById('fd-stats').textContent =
+      `${fdNodes.length} persons · ${fdEdges.length} connections`;
+
+    fdSimStep = 0;
+    fdSelected = null;
+    fdClosePanel();
+
+    if (!fdInteractionOK) {
+      setupFDInteraction(canvas, W, H);
+      fdInteractionOK = true;
+    }
+    runFD(canvas, W, H);
+  }
+
+  function runFD(canvas, W, H) {
+    if (fdAnimFrame) cancelAnimationFrame(fdAnimFrame);
+
+    const REPEL = 10000;
+    const ATTRACT = 0.00000000005;
+    const DAMPING = 0.75;
+    const CENTER = 0.002;
+    const MAX_V = 6;
+
+    function tick() {
+      if (fdSimStep < FD_MAX_SIM) {
+        fdSimStep++;
+        const cool = 1 - fdSimStep / FD_MAX_SIM;
+
+        for (let i = 0; i < fdNodes.length; i++) {
+          for (let j = i + 1; j < fdNodes.length; j++) {
+            const a = fdNodes[i], b = fdNodes[j];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const d = Math.max(Math.hypot(dx, dy), 1);
+            const f = (REPEL * cool) / (d * d);
+            const fx = (dx / d) * f, fy = (dy / d) * f;
+            a.vx -= fx; a.vy -= fy;
+            b.vx += fx; b.vy += fy;
+          }
+        }
+
+        fdEdges.forEach(e => {
+          const dx = e.target.x - e.source.x;
+          const dy = e.target.y - e.source.y;
+          const d = Math.max(Math.hypot(dx, dy), 1);
+          const f = d * ATTRACT * e.weight * cool;
+          const fx = (dx / d) * f, fy = (dy / d) * f;
+          e.source.vx += fx; e.source.vy += fy;
+          e.target.vx -= fx; e.target.vy -= fy;
+        });
+
+        fdNodes.forEach(n => {
+          if (n === fdDragNode) return;
+          n.vx += (W / 2 - n.x) * CENTER;
+          n.vy += (H / 2 - n.y) * CENTER;
+          n.vx *= DAMPING; n.vy *= DAMPING;
+          n.vx = Math.max(-MAX_V, Math.min(MAX_V, n.vx));
+          n.vy = Math.max(-MAX_V, Math.min(MAX_V, n.vy));
+          n.x += n.vx; n.y += n.vy;
+          n.x = Math.max(n.r + 8, Math.min(W - n.r - 8, n.x));
+          n.y = Math.max(n.r + 8, Math.min(H - n.r - 8, n.y));
+        });
+      }
+
+      drawFD(canvas, W, H);
+      fdAnimFrame = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function drawFD(canvas, W, H) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(W / 2 + fdPan.x, H / 2 + fdPan.y);
+    ctx.scale(fdZoom, fdZoom);
+    ctx.translate(-W / 2, -H / 2);
+
+    // Edges
+    fdEdges.forEach(e => {
+      const col = e.source.col;
+      ctx.strokeStyle = col + Math.round(e.alpha * 255).toString(16).padStart(2, '0');
+      ctx.lineWidth = e.width;
+      ctx.beginPath();
+      ctx.moveTo(e.source.x, e.source.y);
+      ctx.lineTo(e.target.x, e.target.y);
+      ctx.stroke();
+
+      if (e.weight > 1 && fdZoom > 0.6) {
+        const mx = (e.source.x + e.target.x) / 2;
+        const my = (e.source.y + e.target.y) / 2;
+        ctx.fillStyle = col + '99';
+        ctx.font = '8px Google Sans, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(e.weight, mx, my);
+      }
+    });
+
+    // Nodes
+    fdNodes.forEach(n => {
+      const isSelected = fdSelected && fdSelected.id === n.id;
+
+      const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.2);
+      gr.addColorStop(0, n.col + (isSelected ? '55' : '22'));
+      gr.addColorStop(1, 'transparent');
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.shadowColor = n.col;
+      ctx.shadowBlur = isSelected ? 18 : 7;
+      ctx.fillStyle = '#0a1628';
+      ctx.strokeStyle = n.col;
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      const initials = (n.data.name || '?').split(' ')
+        .map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      ctx.fillStyle = n.col;
+      ctx.font = `bold ${Math.max(8, Math.floor(n.r * 0.55))}px Google Sans, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(initials, n.x, n.y);
+
+      const firstName = (n.data.name || '?').split(' ')[0];
+      const label = firstName.length > 9 ? firstName.slice(0, 8) + '…' : firstName;
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '9px Google Sans, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText(label, n.x, n.y + n.r + 4);
+
+      ctx.fillStyle = n.col + 'bb';
+      ctx.font = 'bold 8px Google Sans, sans-serif';
+      ctx.fillText(`${n.data.comment_count || 0}`, n.x, n.y + n.r + 14);
+    });
+
+    ctx.restore();
+  }
+
+  function setupFDInteraction(canvas, W, H) {
+    let mouseDownPos = null;
+    let mouseDownTime = 0;
+
+    const cv = canvas;
+
+    cv.addEventListener('mousedown', e => {
+      const pos = getFDPos(cv, e);
+      mouseDownPos = pos;
+      mouseDownTime = Date.now();
+      const hit = fdHitTest(cv, pos, W, H);
+      if (hit) {
+        fdDragNode = hit;
+        fdIsDragging = false;
+      } else {
+        fdIsPanning = true;
+        fdLastPan = { ...fdPan };
+        fdPanStart = { x: e.clientX, y: e.clientY };
+      }
+    });
+
+    cv.addEventListener('mousemove', e => {
+      const pos = getFDPos(cv, e);
+      if (fdDragNode) {
+        fdIsDragging = true;
+        fdDragNode.x = (pos.x - W / 2 - fdPan.x) / fdZoom + W / 2;
+        fdDragNode.y = (pos.y - H / 2 - fdPan.y) / fdZoom + H / 2;
+        fdDragNode.vx = 0; fdDragNode.vy = 0;
+        return;
+      }
+      if (fdIsPanning) {
+        fdPan.x = fdLastPan.x + (e.clientX - fdPanStart.x);
+        fdPan.y = fdLastPan.y + (e.clientY - fdPanStart.y);
+        return;
+      }
+      const hit = fdHitTest(cv, pos, W, H);
+      cv.style.cursor = hit ? 'pointer' : 'grab';
+    });
+
+    cv.addEventListener('mouseup', e => {
+      const wasDragging = fdIsDragging;
+      fdDragNode = null;
+      fdIsPanning = false;
+      fdIsDragging = false;
+
+      if (!wasDragging && mouseDownPos) {
+        const pos = getFDPos(cv, e);
+        const dist = Math.hypot(pos.x - mouseDownPos.x, pos.y - mouseDownPos.y);
+        const dt = Date.now() - mouseDownTime;
+        if (dist < 8 && dt < 400) fdHandleClick(cv, pos, W, H);
+      }
+      mouseDownPos = null;
+    });
+
+    cv.addEventListener('mouseleave', () => {
+      fdDragNode = null;
+      fdIsPanning = false;
+    });
+
+    cv.addEventListener('wheel', e => {
+      e.preventDefault();
+      fdZoom = Math.min(FD_ZOOM_MAX, Math.max(FD_ZOOM_MIN, fdZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
+    }, { passive: false });
+  }
+
+  function getFDPos(canvas, e) {
+    const br = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - br.left) * (canvas.width / br.width),
+      y: (e.clientY - br.top) * (canvas.height / br.height),
+    };
+  }
+
+  function fdHitTest(canvas, pos, W, H) {
+    const ax = (pos.x - W / 2 - fdPan.x) / fdZoom + W / 2;
+    const ay = (pos.y - H / 2 - fdPan.y) / fdZoom + H / 2;
+    for (const n of fdNodes) {
+      if (Math.hypot(ax - n.x, ay - n.y) <= n.r + 4) return n;
+    }
+    return null;
+  }
+
+  function fdHandleClick(canvas, pos, W, H) {
+    const hit = fdHitTest(canvas, pos, W, H);
+    if (!hit) { fdClosePanel(); fdSelected = null; return; }
+    if (fdSelected && fdSelected.id === hit.id) {
+      fdClosePanel(); fdSelected = null;
+    } else {
+      fdSelected = hit;
+      fdOpenPanel(hit.data);
+    }
+  }
+
+  function fdOpenPanel(commentor) {
+    document.getElementById('fd-cp-name').textContent = commentor.name || 'Unknown';
+    const flag = FLAGS[commentor.identified_country] || '🌍';
+    document.getElementById('fd-cp-meta').textContent =
+      `${flag} ${commentor.identified_country || '— Unknown'} · ${commentor.comment_count || 0} Interactions`;
+
+    const score = parseFloat(commentor.total_score || 0);
+    const scoreColor = score >= 0.5 ? '#10b981' : score >= 0.1 ? '#38bdf8' :
+      score >= -0.1 ? '#64748b' : score >= -0.5 ? '#f59e0b' : '#f43f5e';
+    document.getElementById('fd-cp-score').innerHTML =
+      `<span style="color:${scoreColor};">Score: ${score.toFixed(3)}</span>
+     <span style="color:#475569;margin-left:8px;font-size:10px;">${commentor.tier || '—'}</span>`;
+
+    const _gd = (typeof graphData !== 'undefined') ? graphData : [];
+    const found = _gd.find(c => c.commentor_id === commentor.commentor_id);
+    const comments = found ? (found.comments || []) : [];
+
+    if (!comments.length) {
+      document.getElementById('fd-cp-comments').innerHTML =
+        '<div class="cp-empty">No analyzed Interactions</div>';
+    } else {
+      document.getElementById('fd-cp-comments').innerHTML = comments.map(c => {
+        const sent = (c.sentiment || 'neutral').toLowerCase();
+        const sentClass = sent === 'positive' ? 'sent-positive' :
+          sent === 'negative' ? 'sent-negative' : 'sent-neutral';
+        const sentIcon = sent === 'positive' ? '🟢' : sent === 'negative' ? '🔴' : '🟡';
+        const text = c.comment_text || '[No text]';
+        const postUrl = c.post_url || '#';
+        const shortUrl = postUrl.replace('https://www.facebook.com/', 'fb.com/').substring(0, 38);
+        return `
+        <div class="cp-comment-item">
+          <div class="cp-sentiment ${sentClass}">${sentIcon} ${sent}</div>
+          <div class="cp-comment-text">${text.substring(0, 120)}${text.length > 120 ? '…' : ''}</div>
+          <a href="${postUrl}" target="_blank" class="cp-post-link">🔗 ${shortUrl}↗</a>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('fd-comment-panel').classList.add('open');
+  }
+
+  function fdClosePanel() {
+    document.getElementById('fd-comment-panel').classList.remove('open');
+    fdSelected = null;
+  }
+</script>
+{% endblock %}

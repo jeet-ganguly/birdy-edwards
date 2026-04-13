@@ -1,0 +1,1703 @@
+{% extends 'base.html' %}
+{% block title %}Face Intelligence — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+<a href="{{ url_for('dashboard_profile', profile_id=profile_id) }}" class="back-btn">← Dashboard</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  box-sizing: border-box;
+}
+
+/* ── Base Layout ── */
+.detail-wrap { 
+  padding: 32px 40px 80px; 
+  max-width: 1700px; 
+  margin: 0 auto; 
+  background: linear-gradient(180deg, #0a0f1a 0%, #0d1117 100%);
+  min-height: 100vh;
+}
+
+.page-title { 
+  font-size: 28px; 
+  font-weight: 700; 
+  color: #ffffff; 
+  margin-bottom: 8px; 
+  letter-spacing: -0.02em;
+}
+
+.page-sub { 
+  font-size: 16px; 
+  color: rgba(255,255,255,0.7); 
+  margin-bottom: 32px; 
+  font-weight: 500; 
+}
+
+/* ── Stats Row ── */
+.stats-row { 
+  display: flex; 
+  gap: 16px; 
+  margin-bottom: 32px; 
+  flex-wrap: wrap; 
+}
+
+.stat-pill { 
+  background: linear-gradient(135deg, #1a2332 0%, #151d2a 100%);
+  border: 1px solid rgba(255,255,255,0.08); 
+  border-radius: 12px; 
+  padding: 20px 28px; 
+  text-align: center; 
+  min-width: 140px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.stat-pill:hover {
+  border-color: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+
+.stat-pill-n { 
+  font-size: 32px; 
+  font-weight: 700; 
+  line-height: 1; 
+  color: #ffffff;
+}
+
+.stat-pill-l { 
+  font-size: 11px; 
+  font-weight: 700; 
+  letter-spacing: 0.12em; 
+  text-transform: uppercase; 
+  color: rgba(255,255,255,0.6); 
+  margin-top: 8px; 
+}
+
+/* ── Alert Box ── */
+.hf-alert { 
+  background: rgba(239,68,68,0.08); 
+  border: 1px solid rgba(239,68,68,0.25); 
+  border-radius: 12px; 
+  padding: 16px 20px; 
+  margin-bottom: 32px; 
+  display: flex; 
+  gap: 12px; 
+  align-items: flex-start; 
+  font-size: 14px; 
+  color: #fca5a5; 
+  font-weight: 500;
+}
+
+.hf-alert strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ── Section Headings ── */
+.sec-heading { 
+  font-size: 13px; 
+  font-weight: 700; 
+  letter-spacing: 0.15em; 
+  text-transform: uppercase; 
+  color: #ffffff; 
+  margin-bottom: 20px; 
+  padding-bottom: 12px; 
+  border-bottom: 1px solid rgba(255,255,255,0.1); 
+}
+
+/* ── Graph Card ── */
+.graph-card {
+  background: linear-gradient(135deg, #0a0f1a 0%, #030712 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  margin-bottom: 40px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 8px 40px rgba(0,0,0,0.5),
+    0 20px 80px rgba(0,0,0,0.3);
+}
+
+/* ── Graph Viewport (constrained size with zoom) ── */
+.graph-viewport {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.graph-viewport:active {
+  cursor: grabbing;
+}
+
+.graph-viewport-inner {
+  position: absolute;
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+}
+
+/* ── Zoom Controls ── */
+.zoom-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+
+.zoom-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(15,23,42,0.9);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.zoom-btn:hover {
+  background: rgba(34,211,238,0.2);
+  border-color: rgba(34,211,238,0.4);
+  transform: scale(1.05);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-level {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  text-align: center;
+  padding: 6px 0;
+  background: rgba(15,23,42,0.9);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.zoom-btn-reset {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.graph-legend {
+  display: flex; 
+  gap: 20px; 
+  flex-wrap: wrap;
+  padding: 20px 28px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.6) 100%);
+}
+
+.leg-item { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  font-size: 13px; 
+  color: #ffffff; 
+  font-weight: 700;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.2s ease;
+}
+
+.leg-item:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.leg-dot { 
+  width: 12px; 
+  height: 12px; 
+  border-radius: 50%; 
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ── Person Blocks ── */
+.person-block { 
+  background: linear-gradient(135deg, #151d2a 0%, #111827 100%);
+  border: 1px solid rgba(255,255,255,0.08); 
+  border-radius: 14px; 
+  margin-bottom: 12px; 
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.person-block:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+
+.person-block-hf { 
+  border-color: rgba(239,68,68,0.35); 
+}
+
+.person-block-hf:hover {
+  border-color: rgba(239,68,68,0.5);
+}
+
+.person-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 16px; 
+  padding: 18px 22px; 
+  border-bottom: 1px solid rgba(255,255,255,0.05); 
+  background: rgba(0,0,0,0.2); 
+  cursor: pointer; 
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.person-header:hover { 
+  background: rgba(255,255,255,0.03); 
+}
+
+.person-rep-img { 
+  width: 56px; 
+  height: 56px; 
+  border-radius: 10px; 
+  object-fit: cover; 
+  border: 2px solid rgba(255,255,255,0.15); 
+  flex-shrink: 0; 
+}
+
+.person-rep-fallback { 
+  width: 56px; 
+  height: 56px; 
+  border-radius: 10px; 
+  flex-shrink: 0; 
+  background: #1f2937; 
+  border: 2px solid rgba(255,255,255,0.1); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 22px; 
+}
+
+.person-meta { flex: 1; }
+
+.person-label { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #ffffff; 
+  margin-bottom: 4px; 
+}
+
+.person-count { 
+  font-size: 14px; 
+  font-weight: 600; 
+  color: rgba(255,255,255,0.6);
+}
+
+.count-high { color: #f87171; font-weight: 700; }
+.count-med { color: #fbbf24; font-weight: 700; }
+.count-low { color: rgba(255,255,255,0.7); }
+
+.person-badge { 
+  font-size: 11px; 
+  font-weight: 700; 
+  padding: 6px 14px; 
+  border-radius: 20px; 
+  letter-spacing: 0.1em; 
+  text-transform: uppercase; 
+}
+
+.badge-hf { 
+  background: rgba(239,68,68,0.15); 
+  color: #f87171; 
+  border: 1px solid rgba(239,68,68,0.3); 
+}
+
+.badge-rep { 
+  background: rgba(251,191,36,0.12); 
+  color: #fbbf24; 
+  border: 1px solid rgba(251,191,36,0.25); 
+}
+
+.badge-once { 
+  background: rgba(255,255,255,0.06); 
+  color: rgba(255,255,255,0.7); 
+  border: 1px solid rgba(255,255,255,0.12); 
+}
+
+.collapse-arrow { 
+  font-size: 14px; 
+  color: rgba(255,255,255,0.4); 
+  transition: transform 0.2s ease, color 0.2s ease; 
+  flex-shrink: 0; 
+}
+
+.person-block.open .collapse-arrow { 
+  transform: rotate(90deg); 
+  color: #ffffff; 
+}
+
+.person-crops { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 12px; 
+  padding: 20px 22px; 
+  background: rgba(0,0,0,0.15);
+}
+
+.person-crops.hidden { display: none; }
+
+.crop-img { 
+  width: 84px; 
+  height: 84px; 
+  border-radius: 10px; 
+  object-fit: cover; 
+  border: 1px solid rgba(255,255,255,0.1); 
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; 
+  cursor: pointer; 
+  display: block; 
+}
+
+.crop-img:hover { 
+  transform: scale(1.05); 
+  border-color: rgba(255,255,255,0.3); 
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.crop-fallback { 
+  width: 84px; 
+  height: 84px; 
+  border-radius: 10px; 
+  background: #1f2937; 
+  border: 1px solid rgba(255,255,255,0.08); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-size: 24px; 
+  color: rgba(255,255,255,0.4); 
+}
+
+.crop-date { 
+  font-size: 11px; 
+  color: rgba(255,255,255,0.6); 
+  font-weight: 600; 
+  text-align: center; 
+  margin-top: 6px; 
+  max-width: 84px; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+}
+
+.no-faces { 
+  padding: 60px; 
+  text-align: center; 
+  color: rgba(255,255,255,0.3); 
+  font-size: 16px; 
+  font-weight: 600;
+}
+
+/* ── View Toggle ── */
+.view-toggle {
+  display: flex; 
+  gap: 12px; 
+  margin-bottom: 24px;
+}
+
+.vtab {
+  padding: 12px 28px; 
+  border-radius: 10px; 
+  border: 1px solid rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  color: rgba(255,255,255,0.7); 
+  font-size: 14px; 
+  font-weight: 700;
+  cursor: pointer; 
+  transition: all 0.25s ease; 
+  letter-spacing: 0.03em;
+  position: relative;
+  overflow: hidden;
+}
+
+.vtab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(34,211,238,0.1) 0%, rgba(34,211,238,0) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.vtab:hover { 
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  border-color: rgba(255,255,255,0.15);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.vtab:hover::before {
+  opacity: 1;
+}
+
+.vtab.active {
+  background: linear-gradient(135deg, rgba(34,211,238,0.15) 0%, rgba(34,211,238,0.05) 100%);
+  color: #ffffff;
+  border-color: rgba(34,211,238,0.4);
+  box-shadow: 
+    0 0 20px rgba(34,211,238,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.vtab.active::before {
+  opacity: 0;
+}
+
+/* ── Tree Canvas ── */
+#tree-canvas-wrap {
+  display: none;
+  background: linear-gradient(135deg, #0a0f1a 0%, #030712 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  margin-bottom: 40px;
+  overflow: hidden;
+  box-shadow: 
+    0 0 0 1px rgba(255,255,255,0.05),
+    0 8px 40px rgba(0,0,0,0.5),
+    0 20px 80px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.tree-viewport {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.tree-viewport:active {
+  cursor: grabbing;
+}
+
+.tree-viewport-inner {
+  position: absolute;
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+}
+
+/* ── Lightbox ── */
+.lightbox { 
+  display: none; 
+  position: fixed; 
+  inset: 0; 
+  z-index: 9999; 
+  background: rgba(0,0,0,0.95); 
+  align-items: center; 
+  justify-content: center; 
+  flex-direction: column; 
+  gap: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.lightbox.open { display: flex; }
+
+.lb-img { 
+  max-width: 90vw; 
+  max-height: 85vh; 
+  border-radius: 12px; 
+  object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.lb-close { 
+  position: absolute; 
+  top: 24px; 
+  right: 28px; 
+  font-size: 28px; 
+  color: #ffffff; 
+  cursor: pointer; 
+  background: rgba(255,255,255,0.1); 
+  border: none; 
+  line-height: 1; 
+  z-index: 10000;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.lb-close:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.lb-label { 
+  font-size: 16px; 
+  color: #ffffff; 
+  font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+
+  <div class="page-title">Face Intelligence</div>
+  <div class="page-sub">{{ faces.stats.unique or 0 }} unique persons · {{ faces.stats.total or 0 }} total face crops detected</div>
+
+  <div class="stats-row">
+    <div class="stat-pill"><div class="stat-pill-n" style="color:#22d3ee;">{{ faces.stats.unique or 0 }}</div><div class="stat-pill-l">Unique Persons</div></div>
+    <div class="stat-pill"><div class="stat-pill-n" style="color:#34d399;">{{ faces.stats.total or 0 }}</div><div class="stat-pill-l">Total Faces</div></div>
+    <div class="stat-pill"><div class="stat-pill-n" style="color:#fbbf24;">{{ faces.stats.repeat or 0 }}</div><div class="stat-pill-l">Repeat Persons</div></div>
+    <div class="stat-pill"><div class="stat-pill-n" style="color:#f87171;">{{ faces.stats.high_freq or 0 }}</div><div class="stat-pill-l">High Frequency</div></div>
+  </div>
+
+  {% set hf_persons = faces.clusters | selectattr('appearance_count', 'ge', 3) | list %}
+  {% if hf_persons %}
+  <div class="hf-alert">
+    <div><strong>High Frequency — </strong>
+      {% for p in hf_persons %}<strong>{{ p.person_label|replace('_',' ')|title }}</strong> ({{ p.appearance_count }} posts){% if not loop.last %}, {% endif %}{% endfor %}
+      — likely close associates.
+    </div>
+  </div>
+  {% endif %}
+
+  {% set all_persons = faces.clusters | sort(attribute='appearance_count', reverse=True) | list %}
+
+  {% if all_persons %}
+
+  <!-- ══ SECTION 1: RADIAL NETWORK GRAPH ══ -->
+  <!-- View toggle -->
+  <div class="view-toggle">
+    <button class="vtab active" id="vtab-graph" onclick="switchView('graph')">Network Graph</button>
+    <button class="vtab"        id="vtab-tree"  onclick="switchView('tree')">Hierarchy Tree</button>
+  </div>
+
+  <div class="sec-heading" id="viz-heading">Face Network - Threat Actor Center - Distance = Frequency</div>
+  <div class="graph-card" id="graph-card">
+    <div class="graph-viewport" id="graph-viewport">
+      <div class="graph-viewport-inner" id="graph-inner">
+        <canvas id="face-graph" style="display:block;"></canvas>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomGraph(0.2)" title="Zoom In">+</button>
+        <button class="zoom-btn" onclick="zoomGraph(-0.2)" title="Zoom Out">-</button>
+        <div class="zoom-level" id="zoom-level">100%</div>
+        <button class="zoom-btn zoom-btn-reset" onclick="resetZoom()" title="Reset">FIT</button>
+      </div>
+    </div>
+    <div class="graph-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#f87171;"></div> High Frequency (3+ posts)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fbbf24;"></div> Repeat (2 posts)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#4b5563;"></div> Appeared once</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#22d3ee;"></div> Threat Actor (center)</div>
+    </div>
+  </div>
+
+  <!-- ══ TREE CANVAS ══ -->
+  <div id="tree-canvas-wrap">
+    <div class="tree-viewport" id="tree-viewport">
+      <div class="tree-viewport-inner" id="tree-inner">
+        <canvas id="tree-canvas" style="display:block;"></canvas>
+      </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomTree(0.2)" title="Zoom In">+</button>
+        <button class="zoom-btn" onclick="zoomTree(-0.2)" title="Zoom Out">-</button>
+        <div class="zoom-level" id="tree-zoom-level">100%</div>
+        <button class="zoom-btn zoom-btn-reset" onclick="resetTreeZoom()" title="Reset">FIT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2: ALL DETECTED FACES ══ -->
+  <div class="sec-heading">🗂 All Detected Faces by Person — Click to Expand</div>
+
+  {% for person in all_persons %}
+  <div class="person-block {{ 'person-block-hf' if person.appearance_count >= 3 else '' }}" id="pb-{{ loop.index }}">
+
+    <div class="person-header" onclick="togglePerson({{ loop.index }})">
+      {% if person.face_url %}
+      <img src="{{ person.face_url }}" class="person-rep-img" loading="lazy"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <div class="person-rep-fallback" style="display:none;">👤</div>
+      {% else %}
+      <div class="person-rep-fallback">👤</div>
+      {% endif %}
+      <div class="person-meta">
+        <div class="person-label">{{ person.person_label|replace('_',' ')|title }}</div>
+        <div class="person-count {{ 'count-high' if person.appearance_count >= 3 else ('count-med' if person.appearance_count >= 2 else 'count-low') }}">
+          Appeared in {{ person.appearance_count }} post{{ 's' if person.appearance_count != 1 else '' }}
+          &nbsp;·&nbsp; {{ person.all_faces|length }} face crop{{ 's' if person.all_faces|length != 1 else '' }}
+        </div>
+      </div>
+      <span class="person-badge {{ 'badge-hf' if person.appearance_count >= 3 else ('badge-rep' if person.appearance_count >= 2 else 'badge-once') }}">
+        {{ 'High Freq' if person.appearance_count >= 3 else ('Repeat' if person.appearance_count >= 2 else 'Once') }}
+      </span>
+      <span class="collapse-arrow">▶</span>
+    </div>
+
+    <div class="person-crops hidden" id="crops-{{ loop.index }}">
+      {% if person.all_faces %}
+        {% for face in person.all_faces %}
+        <div style="display:inline-block;">
+          {% if face.face_url %}
+          <img src="{{ face.face_url }}" class="crop-img" loading="lazy"
+               data-label="{{ person.person_label|replace('_',' ')|title }}"
+               onclick="openLightbox(this.src, this.dataset.label)"
+               onerror="this.outerHTML='<div class=crop-fallback>👤</div>'">
+          {% else %}
+          <div class="crop-fallback">👤</div>
+          {% endif %}
+          {% if face.date_text %}<div class="crop-date">{{ face.date_text }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="font-size:14px;color:rgba(255,255,255,0.4);padding:16px;">No individual face crops available</div>
+      {% endif %}
+    </div>
+
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="no-faces">No faces detected yet. Run face intelligence analysis first.</div>
+  {% endif %}
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lb" onclick="closeLB()">
+  <button class="lb-close" onclick="closeLB()">✕</button>
+  <img class="lb-img" id="lb-img" src="" alt="">
+  <div class="lb-label" id="lb-label"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ══════════════════════════════════════════════════════
+//  ZOOM & PAN CONTROLS - GRAPH
+// ══════════════════════════════════════════════════════
+let currentZoom = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+
+// Tree zoom state
+let treeZoom = 1;
+let treePanX = 0;
+let treePanY = 0;
+let isTreePanning = false;
+let treeStartX = 0;
+let treeStartY = 0;
+
+function zoomGraph(delta) {
+  currentZoom = Math.max(0.3, Math.min(3, currentZoom + delta));
+  updateGraphTransform();
+}
+
+function resetZoom() {
+  currentZoom = 1;
+  panX = 0;
+  panY = 0;
+  updateGraphTransform();
+}
+
+function updateGraphTransform() {
+  const inner = document.getElementById('graph-inner');
+  const viewport = document.getElementById('graph-viewport');
+  const canvas = document.getElementById('face-graph');
+  
+  if (!inner || !viewport || !canvas) return;
+  
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  
+  const offsetX = (vw - cw * currentZoom) / 2 + panX;
+  const offsetY = (vh - ch * currentZoom) / 2 + panY;
+  
+  inner.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${currentZoom})`;
+  inner.style.transformOrigin = '0 0';
+  
+  document.getElementById('zoom-level').textContent = Math.round(currentZoom * 100) + '%';
+}
+
+// ══════════════════════════════════════════════════════
+//  ZOOM & PAN CONTROLS - TREE
+// ══════════════════════════════════════════════════════
+function zoomTree(delta) {
+  treeZoom = Math.max(0.3, Math.min(3, treeZoom + delta));
+  updateTreeTransform();
+}
+
+function resetTreeZoom() {
+  treeZoom = 1;
+  treePanX = 0;
+  treePanY = 0;
+  updateTreeTransform();
+}
+
+function updateTreeTransform() {
+  const inner = document.getElementById('tree-inner');
+  const viewport = document.getElementById('tree-viewport');
+  const canvas = document.getElementById('tree-canvas');
+  
+  if (!inner || !viewport || !canvas) return;
+  
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  
+  const offsetX = (vw - cw * treeZoom) / 2 + treePanX;
+  const offsetY = (vh - ch * treeZoom) / 2 + treePanY;
+  
+  inner.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${treeZoom})`;
+  inner.style.transformOrigin = '0 0';
+  
+  const zoomLabel = document.getElementById('tree-zoom-level');
+  if (zoomLabel) zoomLabel.textContent = Math.round(treeZoom * 100) + '%';
+}
+
+// Mouse wheel zoom
+document.addEventListener('DOMContentLoaded', function() {
+  const viewport = document.getElementById('graph-viewport');
+  if (!viewport) return;
+  
+  viewport.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    zoomGraph(delta);
+  }, { passive: false });
+  
+  // Pan with mouse drag
+  viewport.addEventListener('mousedown', function(e) {
+    isPanning = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    viewport.style.cursor = 'grabbing';
+  });
+  
+  document.addEventListener('mousemove', function(e) {
+    if (!isPanning) return;
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    updateGraphTransform();
+  });
+  
+  document.addEventListener('mouseup', function() {
+    isPanning = false;
+    const viewport = document.getElementById('graph-viewport');
+    if (viewport) viewport.style.cursor = 'grab';
+  });
+  
+  // Touch support for mobile
+  let lastTouchDist = 0;
+  viewport.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) {
+      isPanning = true;
+      startX = e.touches[0].clientX - panX;
+      startY = e.touches[0].clientY - panY;
+    } else if (e.touches.length === 2) {
+      lastTouchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+  
+  viewport.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 1 && isPanning) {
+      panX = e.touches[0].clientX - startX;
+      panY = e.touches[0].clientY - startY;
+      updateGraphTransform();
+    } else if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      if (lastTouchDist > 0) {
+        const delta = (dist - lastTouchDist) * 0.005;
+        zoomGraph(delta);
+      }
+      lastTouchDist = dist;
+    }
+  }, { passive: true });
+  
+  viewport.addEventListener('touchend', function() {
+    isPanning = false;
+    lastTouchDist = 0;
+  });
+  
+  // ══ Tree viewport pan/zoom ══
+  const treeViewport = document.getElementById('tree-viewport');
+  if (treeViewport) {
+    treeViewport.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      zoomTree(delta);
+    }, { passive: false });
+    
+    treeViewport.addEventListener('mousedown', function(e) {
+      isTreePanning = true;
+      treeStartX = e.clientX - treePanX;
+      treeStartY = e.clientY - treePanY;
+      treeViewport.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+      if (!isTreePanning) return;
+      treePanX = e.clientX - treeStartX;
+      treePanY = e.clientY - treeStartY;
+      updateTreeTransform();
+    });
+    
+    document.addEventListener('mouseup', function() {
+      isTreePanning = false;
+      const tv = document.getElementById('tree-viewport');
+      if (tv) tv.style.cursor = 'grab';
+    });
+  }
+});
+
+// ── Person data from server ──
+const PERSONS = [
+  {% for p in faces.clusters | sort(attribute='appearance_count', reverse=True) %}
+  {
+    label : {{ (p.person_label|replace('_',' ')|title)|tojson }},
+    count : {{ p.appearance_count }},
+    imgUrl: {{ (p.face_url or '')|tojson }},
+    hf    : {{ 'true' if p.appearance_count >= 3 else 'false' }}
+  },
+  {% endfor %}
+];
+
+// ══════════════════════════════════════════════════════
+//  RADIAL FACE GRAPH - Enhanced Professional Version
+// ══════════════════════════════════════════════════════
+(function buildGraph() {
+  const canvas = document.getElementById('face-graph');
+  const ctx    = canvas.getContext('2d');
+  if (!PERSONS.length) { canvas.style.display='none'; return; }
+
+  const W = Math.max(canvas.parentElement.clientWidth || 900, 900);
+
+  // Node size based on count - larger nodes for better visibility
+  function nodeRadius(count) {
+    if (count >= 10) return 44;
+    if (count >= 5)  return 40;
+    if (count >= 3)  return 36;
+    if (count >= 2)  return 32;
+    return 28;
+  }
+
+  const maxCount = PERSONS[0].count || 1;
+
+  // Group persons into orbit tiers by count
+  const tiers = new Map();
+  PERSONS.forEach(p => {
+    const key = p.count >= 10 ? 10 : p.count >= 5 ? 5 : p.count >= 3 ? 3 : p.count >= 2 ? 2 : 1;
+    if (!tiers.has(key)) tiers.set(key, []);
+    tiers.get(key).push(p);
+  });
+
+  const sortedTierKeys = [...tiers.keys()].sort((a,b) => b - a);
+  const CENTER_R = 64;
+  const RING_PADDING = 50;
+
+  const tierOrbits = new Map();
+  let prevOrbit = CENTER_R + 40;
+  sortedTierKeys.forEach(key => {
+    const group  = tiers.get(key);
+    const nr     = nodeRadius(group[0].count);
+    const n      = group.length;
+    const nodeGap   = nr * 2 + 35;
+    const minCirc   = n * nodeGap;
+    const minOrbit  = Math.max(prevOrbit + nr + RING_PADDING, minCirc / (2 * Math.PI));
+    tierOrbits.set(key, minOrbit);
+    prevOrbit = minOrbit + nr + RING_PADDING;
+  });
+
+  const outerOrbit = Math.max(...tierOrbits.values());
+  const MARGIN = 100;
+  const SIZE   = Math.max(800, (outerOrbit + MARGIN) * 2);
+  const H      = SIZE;
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  canvas.style.width  = SIZE + 'px';
+  canvas.style.height = SIZE + 'px';
+  
+  // Set initial zoom to fit viewport
+  setTimeout(() => {
+    const viewport = document.getElementById('graph-viewport');
+    if (viewport) {
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const fitScale = Math.min(vw / SIZE, vh / SIZE) * 0.9;
+      currentZoom = Math.max(0.3, Math.min(1, fitScale));
+      updateGraphTransform();
+    }
+  }, 100);
+
+  const CX = SIZE / 2;
+  const CY = SIZE / 2;
+
+  const nodes = [];
+  sortedTierKeys.forEach(key => {
+    const group  = tiers.get(key);
+    const orbit  = tierOrbits.get(key);
+    const n      = group.length;
+    group.forEach((p, i) => {
+      const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+      nodes.push({
+        ...p,
+        x: CX + orbit * Math.cos(angle),
+        y: CY + orbit * Math.sin(angle),
+        r: nodeRadius(p.count),
+        orbit,
+        angle
+      });
+    });
+  });
+
+  const imgs = {};
+  let loaded = 0;
+  const toLoad = PERSONS.filter(p => p.imgUrl).length;
+  let animFrame = 0;
+  let animId = null;
+
+  function draw() {
+    animFrame++;
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    // ── Sophisticated dark background with subtle gradient ──
+    const bgGrad = ctx.createRadialGradient(CX, CY, 0, CX, CY, SIZE/2);
+    bgGrad.addColorStop(0, '#0f172a');
+    bgGrad.addColorStop(0.5, '#0a0f1a');
+    bgGrad.addColorStop(1, '#030712');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    // ── Animated background particles ──
+    ctx.save();
+    for (let i = 0; i < 50; i++) {
+      const px = (Math.sin(animFrame * 0.002 + i * 1.3) * 0.5 + 0.5) * SIZE;
+      const py = (Math.cos(animFrame * 0.0015 + i * 0.9) * 0.5 + 0.5) * SIZE;
+      const ps = 1 + Math.sin(animFrame * 0.01 + i) * 0.5;
+      ctx.beginPath();
+      ctx.arc(px, py, ps, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(34, 211, 238, ${0.1 + Math.sin(animFrame * 0.01 + i) * 0.05})`;
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ── Orbit rings with glow effect ──
+    const uniqueOrbits = [...new Set(nodes.map(n => n.orbit))].sort((a,b)=>a-b);
+    uniqueOrbits.forEach((r, idx) => {
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(CX, CY, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(34, 211, 238, ${0.03 + Math.sin(animFrame * 0.02 + idx) * 0.02})`;
+      ctx.lineWidth = 8;
+      ctx.stroke();
+
+      // Main ring
+      ctx.beginPath();
+      ctx.arc(CX, CY, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+
+    // ── Enhanced connection lines with gradient ──
+    nodes.forEach(n => {
+      const grad = ctx.createLinearGradient(CX, CY, n.x, n.y);
+      if (n.hf) {
+        grad.addColorStop(0, 'rgba(248,113,113,0.8)');
+        grad.addColorStop(0.5, 'rgba(248,113,113,0.5)');
+        grad.addColorStop(1, 'rgba(248,113,113,0.2)');
+      } else if (n.count >= 2) {
+        grad.addColorStop(0, 'rgba(251,191,36,0.6)');
+        grad.addColorStop(0.5, 'rgba(251,191,36,0.3)');
+        grad.addColorStop(1, 'rgba(251,191,36,0.1)');
+      } else {
+        grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+        grad.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+        grad.addColorStop(1, 'rgba(255,255,255,0.05)');
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(CX, CY);
+      ctx.lineTo(n.x, n.y);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = n.hf ? 3 : (n.count >= 2 ? 2 : 1.5);
+      ctx.stroke();
+
+      // Animated pulse along connection for high-freq
+      if (n.hf) {
+        const pulsePos = (animFrame % 100) / 100;
+        const px = CX + (n.x - CX) * pulsePos;
+        const py = CY + (n.y - CY) * pulsePos;
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(248,113,113,0.8)';
+        ctx.fill();
+      }
+    });
+
+    // ── Person nodes with enhanced styling ──
+    nodes.forEach(n => {
+      const r = n.r;
+
+      // Multi-layer glow effect
+      for (let i = 3; i >= 1; i--) {
+        const glowR = r + 8 * i;
+        const glow = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, glowR);
+        if (n.hf) {
+          glow.addColorStop(0, `rgba(248,113,113,${0.15 / i})`);
+        } else if (n.count >= 2) {
+          glow.addColorStop(0, `rgba(251,191,36,${0.1 / i})`);
+        } else {
+          glow.addColorStop(0, `rgba(34,211,238,${0.08 / i})`);
+        }
+        glow.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+      }
+
+      // Dark background with gradient
+      const bgGrad = ctx.createRadialGradient(n.x - r/3, n.y - r/3, 0, n.x, n.y, r);
+      bgGrad.addColorStop(0, '#1e293b');
+      bgGrad.addColorStop(1, '#0f172a');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = bgGrad;
+      ctx.fill();
+
+      // Face image with proper clipping
+      const img = imgs[n.imgUrl];
+      if (img && img.complete && img.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r - 3, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, n.x - r + 3, n.y - r + 3, (r - 3) * 2, (r - 3) * 2);
+        ctx.restore();
+      } else {
+        ctx.font = `bold ${r}px "Google Sans", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillText('?', n.x, n.y + 2);
+      }
+
+      // Animated border ring
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      const borderColor = n.hf ? '#f87171' : (n.count >= 2 ? '#fbbf24' : '#64748b');
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = n.hf ? 3 : 2;
+      ctx.stroke();
+
+      // Secondary ring for depth
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `${borderColor}40`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Count badge with shadow
+      const bx = n.x + r - 10, by = n.y - r + 10;
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(bx, by, 12, 0, Math.PI * 2);
+      const badgeGrad = ctx.createRadialGradient(bx - 3, by - 3, 0, bx, by, 12);
+      if (n.hf) {
+        badgeGrad.addColorStop(0, '#ef4444');
+        badgeGrad.addColorStop(1, '#b91c1c');
+      } else {
+        badgeGrad.addColorStop(0, '#22d3ee');
+        badgeGrad.addColorStop(1, '#0891b2');
+      }
+      ctx.fillStyle = badgeGrad;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.font = 'bold 10px "Google Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(n.count, bx, by);
+
+      // Name label with background
+      const lbl = n.label.length > 12 ? n.label.slice(0, 11) + '...' : n.label;
+      ctx.font = 'bold 11px "Google Sans", sans-serif';
+      const lblW = ctx.measureText(lbl).width + 12;
+      
+      // Label background
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.beginPath();
+      ctx.roundRect(n.x - lblW/2, n.y + r + 8, lblW, 18, 4);
+      ctx.fill();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = n.hf ? '#fca5a5' : (n.count >= 2 ? '#fde68a' : 'rgba(255,255,255,0.8)');
+      ctx.fillText(lbl, n.x, n.y + r + 11);
+    });
+
+    // ── CENTER: Enhanced Threat Actor node ──
+    const CR = 64;
+
+    // Animated pulsing rings
+    for (let i = 0; i < 3; i++) {
+      const pulseR = CR + 15 + i * 20 + Math.sin(animFrame * 0.05 + i) * 5;
+      ctx.beginPath();
+      ctx.arc(CX, CY, pulseR, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(220,38,38,${0.2 - i * 0.05})`;
+      ctx.lineWidth = 2 - i * 0.5;
+      ctx.stroke();
+    }
+
+    // Outer glow
+    const pulse = ctx.createRadialGradient(CX, CY, CR, CX, CY, CR + 40);
+    pulse.addColorStop(0, 'rgba(220,38,38,0.4)');
+    pulse.addColorStop(0.5, 'rgba(220,38,38,0.15)');
+    pulse.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(CX, CY, CR + 40, 0, Math.PI * 2);
+    ctx.fillStyle = pulse;
+    ctx.fill();
+
+    // Main node background
+    const cgrad = ctx.createRadialGradient(CX - CR/3, CY - CR/3, 0, CX, CY, CR);
+    cgrad.addColorStop(0, '#1f2937');
+    cgrad.addColorStop(0.5, '#111827');
+    cgrad.addColorStop(1, '#0a0a0a');
+    ctx.beginPath();
+    ctx.arc(CX, CY, CR, 0, Math.PI * 2);
+    ctx.fillStyle = cgrad;
+    ctx.fill();
+
+    // Threat icon
+    const tIcon = imgs['__threat__'];
+    if (tIcon && tIcon.complete && tIcon.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(CX, CY, CR - 4, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(tIcon, CX - CR + 4, CY - CR + 4, (CR - 4) * 2, (CR - 4) * 2);
+      ctx.restore();
+    } else {
+      ctx.font = 'bold 48px "Google Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#dc2626';
+      ctx.fillText('T', CX, CY);
+    }
+
+    // Animated border
+    ctx.beginPath();
+    ctx.arc(CX, CY, CR, 0, Math.PI * 2);
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Secondary border
+    ctx.beginPath();
+    ctx.arc(CX, CY, CR + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(220,38,38,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label with background
+    const threatLbl = 'THREAT ACTOR';
+    ctx.font = 'bold 12px "Google Sans", sans-serif';
+    const tlblW = ctx.measureText(threatLbl).width + 20;
+    
+    ctx.fillStyle = 'rgba(220,38,38,0.2)';
+    ctx.beginPath();
+    ctx.roundRect(CX - tlblW/2, CY + CR + 12, tlblW, 24, 6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(220,38,38,0.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#f87171';
+    ctx.fillText(threatLbl, CX, CY + CR + 17);
+
+    // Continue animation
+    animId = requestAnimationFrame(draw);
+  }
+
+  // Cleanup on page leave
+  window.addEventListener('beforeunload', () => {
+    if (animId) cancelAnimationFrame(animId);
+  });
+
+  // Load threat icon
+  imgs['__threat__'] = new Image();
+  imgs['__threat__'].crossOrigin = 'anonymous';
+  imgs['__threat__'].onload  = draw;
+  imgs['__threat__'].onerror = draw;
+  imgs['__threat__'].src = '/icons/threat.png';
+
+  // Load face images
+  if (toLoad === 0) { draw(); return; }
+  PERSONS.filter(p => p.imgUrl).forEach(p => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => { imgs[p.imgUrl] = img; loaded++; };
+    img.onerror = () => { loaded++; };
+    img.src = p.imgUrl;
+    imgs[p.imgUrl] = img;
+  });
+
+  draw();
+})();
+
+// ══════════════════════════════════════════════════════
+//  VIEW TOGGLE
+// ══════════════════════════════════════════════════════
+let treeBuilt = false;
+
+function switchView(view) {
+  const graphCard   = document.getElementById('graph-card');
+  const treeWrap    = document.getElementById('tree-canvas-wrap');
+  const heading     = document.getElementById('viz-heading');
+  const tabGraph    = document.getElementById('vtab-graph');
+  const tabTree     = document.getElementById('vtab-tree');
+
+  if (view === 'graph') {
+    graphCard.style.display = '';
+    treeWrap.style.display  = 'none';
+    tabGraph.classList.add('active');
+    tabTree.classList.remove('active');
+    heading.textContent = '☠ Face Network — Threat Actor Center · Distance = Frequency';
+  } else {
+    graphCard.style.display = 'none';
+    treeWrap.style.display  = 'block';
+    tabGraph.classList.remove('active');
+    tabTree.classList.add('active');
+    heading.textContent = '🌲 Appearance Hierarchy Tree — Most to Least';
+    if (!treeBuilt) { buildTree(); treeBuilt = true; }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  HIERARCHY TREE - Enhanced Professional Version
+// ══════════════════════════════════════════════════════
+function buildTree() {
+  if (!PERSONS.length) return;
+
+  const canvas = document.getElementById('tree-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  // ── Layout constants - more spacious ──
+  const NODE_R   = 38;
+  const H_GAP    = 40;
+  const V_GAP    = 130;
+  const TOP_PAD  = 90;
+  const SIDE_PAD = 80;
+
+  // ── Group into rows ──
+  const countMap = new Map();
+  PERSONS.forEach(p => {
+    if (!countMap.has(p.count)) countMap.set(p.count, []);
+    countMap.get(p.count).push(p);
+  });
+  const rows = [...countMap.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([count, persons]) => ({ count, persons }));
+
+  const maxNodes = Math.max(...rows.map(r => r.persons.length));
+  const rowWidth = n => n * (NODE_R * 2 + H_GAP) - H_GAP;
+  const W = Math.max(1000, rowWidth(maxNodes) + SIDE_PAD * 2);
+  const H = rows.length * V_GAP + TOP_PAD + NODE_R * 2 + 80;
+
+  canvas.width  = W;
+  canvas.height = H;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  
+  // Set initial zoom to fit viewport
+  setTimeout(() => {
+    const viewport = document.getElementById('tree-viewport');
+    if (viewport) {
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const fitScale = Math.min(vw / W, vh / H) * 0.9;
+      treeZoom = Math.max(0.3, Math.min(1, fitScale));
+      updateTreeTransform();
+    }
+  }, 100);
+
+  const allNodes = [];
+  rows.forEach((row, ri) => {
+    const y  = TOP_PAD + ri * V_GAP + NODE_R;
+    const rw = rowWidth(row.persons.length);
+    const x0 = (W - rw) / 2;
+    row.persons.forEach((p, pi) => {
+      allNodes.push({
+        ...p,
+        x: x0 + pi * (NODE_R * 2 + H_GAP) + NODE_R,
+        y,
+        rowIdx: ri
+      });
+    });
+  });
+
+  const imgs = {};
+  let loaded = 0;
+  const toLoad = PERSONS.filter(p => p.imgUrl).length;
+  let animFrame = 0;
+  let animId = null;
+
+  function draw() {
+    animFrame++;
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Premium dark background with vertical gradient ──
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a0f1a');
+    bgGrad.addColorStop(0.5, '#0d1420');
+    bgGrad.addColorStop(1, '#030712');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Subtle grid pattern ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 50) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+    }
+    for (let y = 0; y < H; y += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+
+    // ── Row backgrounds / tier bands ──
+    rows.forEach((row, ri) => {
+      const y = TOP_PAD + ri * V_GAP + NODE_R;
+      const bandH = V_GAP * 0.7;
+      
+      const bandGrad = ctx.createLinearGradient(0, y - bandH/2, 0, y + bandH/2);
+      if (ri === 0) {
+        bandGrad.addColorStop(0, 'rgba(248,113,113,0.03)');
+        bandGrad.addColorStop(0.5, 'rgba(248,113,113,0.06)');
+        bandGrad.addColorStop(1, 'rgba(248,113,113,0.03)');
+      } else {
+        bandGrad.addColorStop(0, 'rgba(255,255,255,0.01)');
+        bandGrad.addColorStop(0.5, 'rgba(255,255,255,0.02)');
+        bandGrad.addColorStop(1, 'rgba(255,255,255,0.01)');
+      }
+      ctx.fillStyle = bandGrad;
+      ctx.fillRect(0, y - bandH/2, W, bandH);
+    });
+
+    // ── Enhanced connector lines with bezier curves ──
+    rows.forEach((row, ri) => {
+      if (ri >= rows.length - 1) return;
+      const curNodes  = allNodes.filter(n => n.rowIdx === ri);
+      const nextNodes = allNodes.filter(n => n.rowIdx === ri + 1);
+
+      curNodes.forEach(cn => {
+        nextNodes.forEach(nn => {
+          // Create gradient for connection
+          const connGrad = ctx.createLinearGradient(cn.x, cn.y, nn.x, nn.y);
+          if (nn.hf) {
+            connGrad.addColorStop(0, 'rgba(248,113,113,0.6)');
+            connGrad.addColorStop(1, 'rgba(248,113,113,0.3)');
+          } else if (nn.count >= 2) {
+            connGrad.addColorStop(0, 'rgba(251,191,36,0.4)');
+            connGrad.addColorStop(1, 'rgba(251,191,36,0.2)');
+          } else {
+            connGrad.addColorStop(0, 'rgba(34,211,238,0.3)');
+            connGrad.addColorStop(1, 'rgba(34,211,238,0.15)');
+          }
+
+          // Bezier curve connection
+          ctx.beginPath();
+          ctx.moveTo(cn.x, cn.y + NODE_R + 5);
+          const midY = (cn.y + NODE_R + nn.y - NODE_R) / 2;
+          ctx.bezierCurveTo(
+            cn.x, midY,
+            nn.x, midY,
+            nn.x, nn.y - NODE_R - 5
+          );
+          ctx.strokeStyle = connGrad;
+          ctx.lineWidth = nn.hf ? 3 : 2;
+          ctx.stroke();
+
+          // Animated dot on connection for high-freq
+          if (nn.hf) {
+            const t = (animFrame % 80) / 80;
+            const px = Math.pow(1-t, 3) * cn.x + 3 * Math.pow(1-t, 2) * t * cn.x + 3 * (1-t) * t * t * nn.x + t * t * t * nn.x;
+            const py = Math.pow(1-t, 3) * (cn.y + NODE_R + 5) + 3 * Math.pow(1-t, 2) * t * midY + 3 * (1-t) * t * t * midY + t * t * t * (nn.y - NODE_R - 5);
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#f87171';
+            ctx.fill();
+          }
+        });
+      });
+    });
+
+    // ── Row tier labels on left with pill background ──
+    rows.forEach((row, ri) => {
+      const y = TOP_PAD + ri * V_GAP + NODE_R;
+      const label = row.count + 'x';
+      ctx.font = 'bold 13px "Google Sans", sans-serif';
+      const lblW = ctx.measureText(label).width + 16;
+
+      // Pill background
+      ctx.fillStyle = ri === 0 ? 'rgba(248,113,113,0.15)' : 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.roundRect(12, y - 12, lblW, 24, 12);
+      ctx.fill();
+
+      ctx.strokeStyle = ri === 0 ? 'rgba(248,113,113,0.4)' : 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = ri === 0 ? '#f87171' : 'rgba(255,255,255,0.6)';
+      ctx.fillText(label, 20, y);
+    });
+
+    // ── Draw nodes with enhanced styling ──
+    allNodes.forEach(n => {
+      const r = NODE_R;
+
+      // Multi-layer glow
+      for (let i = 3; i >= 1; i--) {
+        const glowR = r + 10 * i;
+        const g = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, glowR);
+        if (n.hf) {
+          g.addColorStop(0, `rgba(248,113,113,${0.12 / i})`);
+        } else if (n.count >= 2) {
+          g.addColorStop(0, `rgba(251,191,36,${0.08 / i})`);
+        } else {
+          g.addColorStop(0, `rgba(34,211,238,${0.06 / i})`);
+        }
+        g.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+
+      // Node background with gradient
+      const bgGrad = ctx.createRadialGradient(n.x - r/3, n.y - r/3, 0, n.x, n.y, r);
+      bgGrad.addColorStop(0, '#1e293b');
+      bgGrad.addColorStop(1, '#0f172a');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = bgGrad;
+      ctx.fill();
+
+      // Face image
+      const img = imgs[n.imgUrl];
+      if (img && img.complete && img.naturalWidth > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r - 3, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, n.x - r + 3, n.y - r + 3, (r - 3) * 2, (r - 3) * 2);
+        ctx.restore();
+      } else {
+        ctx.font = `bold ${r}px "Google Sans", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillText('?', n.x, n.y + 2);
+      }
+
+      // Border
+      const borderColor = n.hf ? '#f87171' : (n.count >= 2 ? '#fbbf24' : '#64748b');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = n.hf ? 3 : 2;
+      ctx.stroke();
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = `${borderColor}30`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Count badge with shadow
+      const bx = n.x + r - 10, by = n.y - r + 10;
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(bx, by, 13, 0, Math.PI * 2);
+      const badgeGrad = ctx.createRadialGradient(bx - 4, by - 4, 0, bx, by, 13);
+      if (n.hf) {
+        badgeGrad.addColorStop(0, '#ef4444');
+        badgeGrad.addColorStop(1, '#b91c1c');
+      } else {
+        badgeGrad.addColorStop(0, '#22d3ee');
+        badgeGrad.addColorStop(1, '#0891b2');
+      }
+      ctx.fillStyle = badgeGrad;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.font = 'bold 11px "Google Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(n.count, bx, by);
+
+      // Name label with background pill
+      const lbl = n.label.length > 12 ? n.label.slice(0, 11) + '...' : n.label;
+      ctx.font = 'bold 11px "Google Sans", sans-serif';
+      const lblW = ctx.measureText(lbl).width + 14;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.beginPath();
+      ctx.roundRect(n.x - lblW/2, n.y + r + 10, lblW, 20, 5);
+      ctx.fill();
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = n.hf ? '#fca5a5' : (n.count >= 2 ? '#fde68a' : 'rgba(255,255,255,0.85)');
+      ctx.fillText(lbl, n.x, n.y + r + 13);
+    });
+
+    // ── Header and footer labels ──
+    // Top header
+    ctx.font = 'bold 14px "Google Sans", sans-serif';
+    const topLbl = 'MOST APPEARED';
+    const topLblW = ctx.measureText(topLbl).width + 40;
+    
+    ctx.fillStyle = 'rgba(248,113,113,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(W/2 - topLblW/2, 15, topLblW, 32, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(248,113,113,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f87171';
+    ctx.fillText(topLbl, W/2, 31);
+
+    // Arrow indicator
+    ctx.beginPath();
+    ctx.moveTo(W/2, 50);
+    ctx.lineTo(W/2 - 8, 60);
+    ctx.lineTo(W/2 + 8, 60);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(248,113,113,0.5)';
+    ctx.fill();
+
+    // Bottom footer
+    const botLbl = 'LEAST APPEARED';
+    const botLblW = ctx.measureText(botLbl).width + 40;
+
+    ctx.fillStyle = 'rgba(100,116,139,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(W/2 - botLblW/2, H - 50, botLblW, 32, 8);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(100,116,139,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(botLbl, W/2, H - 34);
+
+    // Arrow indicator
+    ctx.beginPath();
+    ctx.moveTo(W/2, H - 55);
+    ctx.lineTo(W/2 - 8, H - 65);
+    ctx.lineTo(W/2 + 8, H - 65);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(100,116,139,0.4)';
+    ctx.fill();
+
+    // Continue animation
+    animId = requestAnimationFrame(draw);
+  }
+
+  // Cleanup
+  window.addEventListener('beforeunload', () => {
+    if (animId) cancelAnimationFrame(animId);
+  });
+
+  // Load images
+  if (toLoad === 0) { draw(); return; }
+  PERSONS.filter(p => p.imgUrl).forEach(p => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => { imgs[p.imgUrl] = img; loaded++; };
+    img.onerror = () => { loaded++; };
+    img.src = p.imgUrl;
+    imgs[p.imgUrl] = img;
+  });
+  draw();
+}
+
+// ══ COLLAPSE/EXPAND ══
+function togglePerson(idx) {
+  const block = document.getElementById('pb-' + idx);
+  const crops = document.getElementById('crops-' + idx);
+  if (!block || !crops) return;
+  const isOpen = block.classList.contains('open');
+  block.classList.toggle('open', !isOpen);
+  crops.classList.toggle('hidden', isOpen);
+}
+
+// ══ LIGHTBOX ══
+function openLightbox(src, label) {
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb-label').textContent = label || '';
+  document.getElementById('lb').classList.add('open');
+  event.stopPropagation();
+}
+function closeLB() {
+  document.getElementById('lb').classList.remove('open');
+  document.getElementById('lb-img').src = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+</script>
+{% endblock %}

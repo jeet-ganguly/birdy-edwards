@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% block title %}Database Cleaner — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_actions %}
+<a href="{{ url_for('home') }}" class="pdf-btn" style="background:#1e1a36;color:#a78bfa;border:1px solid rgba(139,92,246,0.3);">← Home</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+  rel="stylesheet">
+<style>
+*, *::before, *::after { font-family: 'Google Sans'.-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; box-sizing: border-box; }
+.tool-page { max-width: 700px; margin: 0 auto; padding: 40px 24px 80px; }
+.tool-title { font-size: 24px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+.tool-sub   { font-size: 13px; color: #5b4a90; margin-bottom: 32px; }
+
+.warn-banner {
+  background: rgba(244,63,94,0.08); border: 1px solid rgba(244,63,94,0.3);
+  border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.warn-banner-icon { font-size: 22px; flex-shrink: 0; }
+.warn-banner-text { font-size: 13px; color: #fb7185; line-height: 1.6; }
+.warn-banner-text strong { color: #f43f5e; }
+
+/* DB info cards */
+.db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+.db-card {
+  background: #0d0b1e; border: 1px solid rgba(99,60,180,0.22);
+  border-radius: 12px; padding: 18px 20px;
+}
+.db-card-title { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #5b4a90; margin-bottom: 10px; }
+.db-stat { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(99,60,180,0.07); }
+.db-stat:last-child { border-bottom: none; }
+.db-stat-label { font-size: 12px; color: #6a5a98; }
+.db-stat-val   { font-size: 14px; font-weight: 700; color: #c4b5fd; }
+
+/* Clean options */
+.clean-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.clean-option {
+  background: #0d0b1e; border: 2px solid rgba(99,60,180,0.2);
+  border-radius: 12px; padding: 16px 20px; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  transition: all 0.2s;
+}
+.clean-option:hover { border-color: rgba(244,63,94,0.4); background: #120a1e; }
+.clean-option.selected { border-color: #f43f5e; background: rgba(244,63,94,0.06); }
+.clean-option input { display: none; }
+.option-icon { font-size: 28px; flex-shrink: 0; }
+.option-body { flex: 1; }
+.option-title { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.option-desc  { font-size: 12px; color: #5b4a90; line-height: 1.5; }
+.option-check {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(99,60,180,0.3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s;
+}
+.clean-option.selected .option-check { background: #f43f5e; border-color: #f43f5e; }
+.clean-option.selected .option-check::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 800; }
+
+/* Confirm input */
+.confirm-section { background: #0d0b1e; border: 1px solid rgba(244,63,94,0.2); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+.confirm-label { font-size: 12px; font-weight: 700; color: #fb7185; margin-bottom: 8px; letter-spacing: 0.05em; }
+.confirm-input {
+  width: 100%; background: #1a1030; border: 1px solid rgba(244,63,94,0.3);
+  border-radius: 8px; padding: 11px 14px; font-size: 14px; color: #fff;
+  outline: none; transition: border-color 0.2s;
+}
+.confirm-input:focus { border-color: #f43f5e; }
+.confirm-hint { font-size: 11px; color: #5b4a90; margin-top: 6px; }
+
+.delete-btn {
+  width: 100%; padding: 15px; border: none; border-radius: 12px;
+  background: #374151; color: #9ca3af;
+  font-size: 15px; font-weight: 700; cursor: not-allowed;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.delete-btn.ready {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #fff; cursor: pointer;
+}
+.delete-btn.ready:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(220,38,38,0.4); }
+
+.result-card {
+  background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 10px; padding: 16px 20px; margin-top: 16px;
+  font-size: 13px; color: #34d399; line-height: 1.7; display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tool-page">
+
+  <div class="tool-title">🗑️ Database Cleaner</div>
+  <div class="tool-sub">Permanently delete investigation data from BIRDY-EDWARDS</div>
+
+  <div class="warn-banner">
+    <div class="warn-banner-icon">⚠️</div>
+    <div class="warn-banner-text">
+      <strong>This action cannot be undone.</strong> All investigation data, face images,
+      network graphs and reports will be permanently deleted. Make sure you have downloaded
+      any PDF reports you need before proceeding.
+    </div>
+  </div>
+
+  <!-- DB Info -->
+  <div class="db-grid">
+    <div class="db-card">
+      <div class="db-card-title">Profile Investigations (socmint.db)</div>
+      <div class="db-stat"><span class="db-stat-label">Investigations</span><span class="db-stat-val">{{ info.profiles }}</span></div>
+      <div class="db-stat"><span class="db-stat-label">DB Size</span><span class="db-stat-val">{{ info.socmint_size }} MB</span></div>
+      <div class="db-stat"><span class="db-stat-label">Face Data</span><span class="db-stat-val">{{ '✅ Present' if info.faces_exist else '—' }}</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-card-title">Batch Investigations (socmint_manual.db)</div>
+      <div class="db-stat"><span class="db-stat-label">Batches</span><span class="db-stat-val">{{ info.batches }}</span></div>
+      <div class="db-stat"><span class="db-stat-label">DB Size</span><span class="db-stat-val">{{ info.manual_size }} MB</span></div>
+      <div class="db-stat"><span class="db-stat-label">Type</span><span class="db-stat-val">Manual URLs</span></div>
+    </div>
+  </div>
+
+  <!-- Clean Options -->
+  <div class="clean-options" id="options">
+    <label class="clean-option" onclick="select('both')">
+      <div class="option-icon">💣</div>
+      <div class="option-body">
+        <div class="option-title">Wipe Everything</div>
+        <div class="option-desc">Delete all profile investigations, all batch analyses, face images and all status files</div>
+      </div>
+      <div class="option-check" id="chk-both"></div>
+    </label>
+    <label class="clean-option" onclick="select('profile')">
+      <div class="option-icon">👤</div>
+      <div class="option-body">
+        <div class="option-title">Profile Investigations Only</div>
+        <div class="option-desc">Delete socmint.db + face_data/ folder. Keep batch analysis data intact.</div>
+      </div>
+      <div class="option-check" id="chk-profile"></div>
+    </label>
+    <label class="clean-option" onclick="select('manual')">
+      <div class="option-icon">🔗</div>
+      <div class="option-body">
+        <div class="option-title">Batch Investigations Only</div>
+        <div class="option-desc">Delete socmint_manual.db. Keep profile investigation data intact.</div>
+      </div>
+      <div class="option-check" id="chk-manual"></div>
+    </label>
+  </div>
+
+  <!-- Confirm -->
+  <div class="confirm-section">
+    <div class="confirm-label">Type DELETE to confirm</div>
+    <input type="text" class="confirm-input" id="confirm-input"
+           placeholder="Type DELETE here" oninput="checkConfirm()" autocomplete="off">
+    <div class="confirm-hint">This confirmation is required to prevent accidental deletion.</div>
+  </div>
+
+  <button class="delete-btn" id="delete-btn" onclick="doDelete()">
+    🗑️ Delete Selected Data
+  </button>
+
+  <div class="result-card" id="result-card"></div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedTarget = null;
+
+function select(target) {
+  selectedTarget = target;
+  ['both','profile','manual'].forEach(t => {
+    const opt = document.querySelector(`[onclick="select('${t}')"]`);
+    const chk = document.getElementById('chk-' + t);
+    opt.classList.toggle('selected', t === target);
+    chk.textContent = t === target ? '✓' : '';
+    if (t === target) { chk.style.background='#f43f5e'; chk.style.borderColor='#f43f5e'; chk.style.color='#fff'; chk.style.fontSize='11px'; chk.style.fontWeight='800'; }
+    else              { chk.style.background=''; chk.style.borderColor=''; chk.style.color=''; }
+  });
+  checkConfirm();
+}
+
+function checkConfirm() {
+  const val = document.getElementById('confirm-input').value.trim();
+  const btn = document.getElementById('delete-btn');
+  if (val === 'DELETE' && selectedTarget) {
+    btn.classList.add('ready');
+  } else {
+    btn.classList.remove('ready');
+  }
+}
+
+function doDelete() {
+  const btn = document.getElementById('delete-btn');
+  if (!btn.classList.contains('ready')) return;
+
+  btn.textContent = '⏳ Deleting...';
+  btn.classList.remove('ready');
+  btn.disabled = true;
+
+  fetch('/api/tools/clean-db', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({target: selectedTarget})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      const r = d.results;
+      const lines = [];
+      if (r.profile_rows !== undefined) lines.push(`✅ Profile DB: ${r.profile_rows} rows deleted`);
+      if (r.faces_wiped)                lines.push('✅ Face images folder deleted');
+      if (r.manual_rows  !== undefined) lines.push(`✅ Batch DB: ${r.manual_rows} rows deleted`);
+      const rc = document.getElementById('result-card');
+      rc.style.display = 'block';
+      rc.innerHTML = lines.join('<br>') + '<br><br><a href="/" style="color:#34d399;font-weight:700;">← Back to Home</a>';
+      btn.textContent = '✅ Done';
+    } else {
+      btn.textContent = '❌ Error — ' + (d.error || 'unknown');
+      btn.disabled = false;
+    }
+  }).catch(e => {
+    btn.textContent = '❌ Error';
+    btn.disabled = false;
+  });
+}
+</script>
+{% endblock %}

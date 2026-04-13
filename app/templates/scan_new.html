@@ -1,0 +1,1113 @@
+{% extends 'base.html' %}
+{% block title %}New Investigation — BIRDY-EDWARDS{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+  rel="stylesheet">
+<style>
+  /* ══ GLOBAL FONT ══ */
+  *,
+  *::before,
+  *::after {
+    font-family: 'Google Sans',-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif !important;
+    box-sizing: border-box;
+  }
+
+  /* ══ PAGE LAYOUT ══ */
+  .scan-page {
+    min-height: calc(100vh - 62px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px 80px;
+  }
+
+  .scan-container {
+    width: 100%;
+    max-width: 660px;
+  }
+
+  /* ══ TABS ══ */
+  .tabs {
+    display: flex;
+    background: #111118;
+    border: 1px solid rgba(200, 50, 70, 0.2);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: #b05868;
+    letter-spacing: 0.01em;
+  }
+
+  .tab-btn:hover {
+    color: #9080c0;
+  }
+
+  .tab-auto.active {
+    background: #1f1215;
+    color: #f87171;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.3);
+  }
+
+  .tab-batch.active {
+    background: linear-gradient(135deg, #1f1a0a, #18180f);
+    color: #fbbf24;
+    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.25);
+  }
+
+  /* ══ FORM CARD ══ */
+  .form-card {
+    background: #111118;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(99, 60, 180, 0.15);
+  }
+
+  .form-card-batch {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(245, 158, 11, 0.15);
+  }
+
+  /* Card header */
+  .card-header {
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid rgba(200, 50, 70, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #13131a;
+  }
+
+  .form-card-batch .card-header {
+    border-bottom-color: rgba(245, 158, 11, 0.1);
+    background: #15140e;
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icon-auto {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(200, 50, 70, 0.2);
+  }
+
+  .icon-batch {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  .header-text {}
+
+  .header-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 3px;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: #b05060;
+  }
+
+  /* Card body */
+  .card-body {
+    padding: 28px 32px 32px;
+  }
+
+  /* ══ ERROR ══ */
+  .form-error {
+    background: rgba(244, 63, 94, 0.08);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #fb7185;
+    margin-bottom: 20px;
+  }
+
+  /* ══ FORM FIELDS ══ */
+  .field {
+    margin-bottom: 22px;
+  }
+
+  .field:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #c0606a;
+    margin-bottom: 8px;
+  }
+
+  .field-label .req {
+    color: #f43f5e;
+    margin-left: 2px;
+  }
+
+  .field-label .opt {
+    color: #a05060;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10px;
+  }
+
+  .field-input,
+  .field-textarea {
+    width: 100%;
+    background: #16161f;
+    border: 1px solid rgba(200, 50, 70, 0.2);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 15px;
+    color: #e2daf5;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.5;
+  }
+
+  .field-input::placeholder,
+  .field-textarea::placeholder {
+    color: #905068;
+  }
+
+  .field-input:focus,
+  .field-textarea:focus {
+    border-color: rgba(220, 50, 70, 0.6);
+    box-shadow: 0 0 0 3px rgba(200, 50, 70, 0.1);
+  }
+
+  .form-card-batch .field-input:focus,
+  .form-card-batch .field-textarea:focus {
+    border-color: rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 160px;
+  }
+
+  .field-hint {
+    font-size: 12px;
+    color: #a05060;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .url-counter {
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    margin-top: 6px;
+    color: #a05060;
+    transition: color 0.2s;
+  }
+
+  .url-counter.over {
+    color: #f43f5e;
+  }
+
+  /* ══ DEPTH SELECTOR ══ */
+  .depth-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #c0606a;
+    margin-bottom: 10px;
+  }
+
+  .depth-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .depth-card {
+    position: relative;
+    background: #16161f;
+    border: 1px solid rgba(200, 50, 70, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+  }
+
+  .depth-card input {
+    display: none;
+  }
+
+  .depth-card:hover {
+    border-color: rgba(200, 50, 70, 0.35);
+    background: #120e2c;
+  }
+
+  .depth-inner {
+    padding: 16px 14px 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .depth-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #e11d48;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 0 12px 0 6px;
+  }
+
+  .depth-icon {
+    font-size: 16px;
+    color: #a05060;
+    margin-bottom: 4px;
+    letter-spacing: -3px;
+  }
+
+  .depth-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .depth-detail {
+    font-size: 11px;
+    color: #b05868;
+    margin-top: 1px;
+  }
+
+  .depth-time {
+    font-size: 10px;
+    color: #a05060;
+  }
+
+  .depth-bar {
+    width: 100%;
+    height: 3px;
+    background: #1e1e28;
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .depth-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #7c3aed, #f43f5e);
+  }
+
+  /* Selected states */
+  .depth-card.selected-light {
+    border-color: #22d3ee;
+    background: #0c1a1e;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.18);
+  }
+
+  .depth-card.selected-medium {
+    border-color: #8b5cf6;
+    background: #151520;
+    box-shadow: 0 0 16px rgba(200, 50, 70, 0.2);
+  }
+
+  .depth-card.selected-deep {
+    border-color: #f43f5e;
+    background: #1a1218;
+    box-shadow: 0 0 16px rgba(244, 63, 94, 0.2);
+  }
+
+  .depth-card.selected-light .depth-name {
+    color: #22d3ee;
+  }
+
+  .depth-card.selected-medium .depth-name {
+    color: #f87171;
+  }
+
+  .depth-card.selected-deep .depth-name {
+    color: #fb7185;
+  }
+
+  /* ══ CHECKBOX ══ */
+  .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #16161f;
+    border: 1px solid rgba(200, 50, 70, 0.15);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .check-row:hover {
+    border-color: rgba(200, 50, 70, 0.3);
+  }
+
+  .check-row input {
+    display: none;
+  }
+
+  .check-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    background: #1e1e28;
+    border: 1.5px solid rgba(200, 50, 70, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .check-box.checked {
+    background: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .check-box.checked::after {
+    content: '✓';
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .check-text {
+    font-size: 14px;
+    color: #fca5a5;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .check-hint {
+    font-size: 12px;
+    color: #a05060;
+    margin-top: 3px;
+    line-height: 1.5;
+  }
+
+  /* ══ DIVIDER ══ */
+  .field-divider {
+    border: none;
+    border-top: 1px solid rgba(200, 50, 70, 0.1);
+    margin: 22px 0;
+  }
+
+  @keyframes blink-dot {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  /* Cookie check block */
+  .cookie-check-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: rgba(12, 8, 32, 0.6);
+    border: 1px solid rgba(99, 60, 180, 0.2);
+    transition: all 0.3s;
+  }
+
+  .cookie-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #6b5fa0;
+    transition: all 0.3s;
+  }
+
+  .cookie-status-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b5fa0;
+  }
+
+  .cookie-status-sub {
+    font-size: 10px;
+    color: #3a2860;
+    margin-top: 1px;
+  }
+
+  .cookie-check-btn {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(99, 60, 180, 0.3);
+    background: transparent;
+    color: #6b5fa0;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .cookie-check-btn:hover {
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.5);
+  }
+
+  .cookie-check-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Session screenshot preview */
+  .session-proof-wrap {
+    display: none;
+    margin-bottom: 12px;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .session-proof-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #5b4a90;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .session-proof-label span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+    animation: blink-dot 2s infinite;
+  }
+
+  .session-proof-frame {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.12);
+  }
+
+  .session-proof-img {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    filter: brightness(0.95);
+  }
+
+  .session-proof-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .session-proof-badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .session-proof-time {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes blink-dot {
+
+    0%,
+    100% {
+      opacity: 1
+    }
+
+    50% {
+      opacity: 0.3
+    }
+  }
+
+  /* ══ SUBMIT BUTTON ══ */
+  .submit-btn {
+    width: 100%;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+  }
+
+  .submit-auto {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 50%, #ef4444 100%);
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(220, 38, 38, 0.35);
+  }
+
+  .submit-auto:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(220, 38, 38, 0.45);
+  }
+
+  .submit-batch {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #f59e0b 100%);
+    color: #fff;
+    box-shadow: 0 4px 24px rgba(245, 158, 11, 0.3);
+  }
+
+  .submit-batch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.45);
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .submit-btn svg {
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scan-page">
+  <div class="scan-container">
+
+    <!-- ══ TABS ══ -->
+    <div class="tabs">
+      <button class="tab-btn tab-auto {{ 'active' if mode != 'batch' else '' }}"
+        onclick="window.location='{{ url_for('scan_new') }}'">
+        Automated Profile
+      </button>
+      <button class="tab-btn tab-batch {{ 'active' if mode == 'batch' else '' }}"
+        onclick="window.location='{{ url_for('batch_new') }}'">
+        Manual Batch URLs
+      </button>
+    </div>
+
+    {% if mode == 'batch' %}
+    <!-- ══════════════════════════════════════
+       MANUAL BATCH FORM
+  ══════════════════════════════════════ -->
+    <div class="form-card form-card-batch">
+
+      <div class="card-header">
+        <div class="header-icon icon-batch">
+          <svg viewBox="0 0 32 32" fill="none" width="22" height="22">
+            <rect x="4" y="6" width="24" height="6" rx="2" stroke="#f59e0b" stroke-width="1.5" />
+            <rect x="4" y="14" width="24" height="6" rx="2" stroke="#f59e0b" stroke-width="1.5" opacity="0.7" />
+            <rect x="4" y="22" width="14" height="5" rx="2" stroke="#f59e0b" stroke-width="1.5" opacity="0.5" />
+            <circle cx="28" cy="24.5" r="4" fill="#f59e0b" opacity="0.9" />
+            <path d="M26.5 24.5l1 1 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="header-text">
+          <div class="header-title">Manual Batch Investigation</div>
+          <div class="header-sub">Paste up to 15 Facebook URLs — photos, reels or posts</div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if error %}
+        <div class="form-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('batch_new') }}" id="scan-form">
+
+          <div class="field">
+            <label class="field-label">
+              Batch Label <span class="opt">(optional)</span>
+            </label>
+            <input type="text" name="label" class="field-input" placeholder="e.g. investigation_march_2026"
+              autocomplete="off">
+            <div class="field-hint">Used to identify this investigation. Leave blank for auto-generated ID.</div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Facebook URLs <span class="req">*</span></label>
+            <textarea name="urls" id="urls-ta" class="field-textarea"
+              placeholder="https://www.facebook.com/photo.php?fbid=...&#10;https://www.facebook.com/reel/...&#10;https://www.facebook.com/username/posts/..."
+              required></textarea>
+            <div class="field-hint">One URL per line. Maximum 15 URLs. Supports photo, reel and post URLs.</div>
+            <div class="url-counter" id="url-counter">0 / 15 URLs</div>
+          </div>
+
+          <hr class="field-divider">
+
+          <div class="field">
+            <div class="depth-label">Investigation Depth</div>
+            <div class="depth-cards">
+              <label class="depth-card" id="dc-light">
+                <input type="radio" name="scan_type" value="light">
+                <div class="depth-inner">
+                  <div class="depth-icon">◈</div>
+                  <div class="depth-name">Light</div>
+                  <div class="depth-detail">Basic analysis only</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:33%"></div>
+                  </div>
+                </div>
+              </label>
+              <!--<label class="depth-card" id="dc-medium">
+                <input type="radio" name="scan_type" value="medium" checked>
+                <div class="depth-inner">
+                  <div class="depth-badge">Recommended</div>
+                  <div class="depth-icon">◈◈</div>
+                  <div class="depth-name">Medium</div>
+                  <div class="depth-detail">Analysis + top7 enrich</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:66%"></div>
+                  </div>
+                </div>
+              </label>-->
+              <label class="depth-card" id="dc-deep">
+                <input type="radio" name="scan_type" value="deep">
+                <div class="depth-inner">
+                  <div class="depth-icon">◈◈◈</div>
+                  <div class="depth-name">Deep</div>
+                  <div class="depth-detail">Full enrichment pass</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:100%"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <!-- Cookie session check -->
+          <div class="cookie-check-block" id="cookie-check-block">
+            <div class="cookie-dot" id="cookie-dot"></div>
+            <div style="flex:1;">
+              <div class="cookie-status-text" id="cookie-status-text">Session not checked</div>
+              <div class="cookie-status-sub" id="cookie-status-sub">Checking automatically...</div>
+            </div>
+            <button type="button" class="cookie-check-btn" id="cookie-check-btn" onclick="checkCookiesNow()">
+              Check Now
+            </button>
+          </div>
+
+          <!-- Session screenshot proof -->
+          <div class="session-proof-wrap" id="session-proof-wrap">
+            <div class="session-proof-label">
+              <span></span> Live Session Verification
+            </div>
+            <div class="session-proof-frame">
+              <img class="session-proof-img" id="session-proof-img" src="/api/session-screenshot" alt="Session proof"
+                onerror="document.getElementById('session-proof-wrap').style.display='none'">
+              <div class="session-proof-overlay">
+                <div class="session-proof-badge">
+                  ✓ Facebook session active
+                </div>
+                <div class="session-proof-time" id="session-proof-time"></div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn submit-batch" id="submit-btn">
+            <span>Start Investigation</span>
+            <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
+              <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+
+        </form>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- ══════════════════════════════════════
+       AUTOMATED PROFILE FORM
+  ══════════════════════════════════════ -->
+    <div class="form-card">
+
+      <div class="card-header">
+        <div class="header-icon icon-auto">
+          <svg viewBox="0 0 32 32" fill="none" width="22" height="22">
+            <circle cx="16" cy="11" r="6" stroke="#f87171" stroke-width="1.5" />
+            <path d="M4 28c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#f87171" stroke-width="1.5"
+              stroke-linecap="round" />
+            <circle cx="24" cy="8" r="4.5" fill="#f43f5e" opacity="0.85" />
+            <path d="M22.5 8l1.2 1.2L26 7" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div class="header-text">
+          <div class="header-title">Automated Profile Investigation</div>
+          <div class="header-sub">Full intelligence analysis on a Facebook profile</div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if error %}
+        <div class="form-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('scan_new') }}" id="scan-form">
+
+          <div class="field">
+            <label class="field-label">Facebook Profile URL <span class="req">*</span></label>
+            <input type="url" name="profile_url" class="field-input" placeholder="https://www.facebook.com/username"
+              required autocomplete="off">
+            <div class="field-hint">Profile URL or profile.php?id= format both supported.</div>
+          </div>
+
+          <hr class="field-divider">
+
+          <div class="field">
+            <div class="depth-label">Investigation Depth</div>
+            <div class="depth-cards">
+              <label class="depth-card" id="dc-light">
+                <input type="radio" name="scan_type" value="light">
+                <div class="depth-inner">
+                  <div class="depth-icon">◈</div>
+                  <div class="depth-name">Light</div>
+                  <div class="depth-detail">5 posts each type</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:33%"></div>
+                  </div>
+                </div>
+              </label>
+              <label class="depth-card" id="dc-medium">
+                <input type="radio" name="scan_type" value="medium" checked>
+                <div class="depth-inner">
+                  <div class="depth-badge">Recommended</div>
+                  <div class="depth-icon">◈◈</div>
+                  <div class="depth-name">Medium</div>
+                  <div class="depth-detail">10 posts each type</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:66%"></div>
+                  </div>
+                </div>
+              </label>
+              <label class="depth-card" id="dc-deep">
+                <input type="radio" name="scan_type" value="deep">
+                <div class="depth-inner">
+                  <div class="depth-icon">◈◈◈</div>
+                  <div class="depth-name">Deep</div>
+                  <div class="depth-detail">20 posts each type</div>
+                  <div class="depth-time">~Time depends on your target profile</div>
+                  <div class="depth-bar">
+                    <div class="depth-fill" style="width:100%"></div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <hr class="field-divider">
+
+          <div class="field">
+            <label class="check-row" id="enrich-row">
+              <input type="checkbox" name="enrich_top14" value="y" id="enrich-cb" checked>
+              <div class="check-box checked" id="check-box"></div>
+              <div>
+                <div class="check-text">Enrich top 7 network persons with full profile data</div>
+                <div class="check-hint">Gathers additional profile information for the highest-scoring network
+                  connections.</div>
+              </div>
+            </label>
+          </div>
+          <!-- Cookie session check -->
+          <div class="cookie-check-block" id="cookie-check-block">
+            <div class="cookie-dot" id="cookie-dot"></div>
+            <div style="flex:1;">
+              <div class="cookie-status-text" id="cookie-status-text">Session not checked</div>
+              <div class="cookie-status-sub" id="cookie-status-sub">Checking automatically...</div>
+            </div>
+            <button type="button" class="cookie-check-btn" id="cookie-check-btn" onclick="checkCookiesNow()">
+              Check Now
+            </button>
+          </div>
+
+          <!-- Session screenshot proof -->
+          <div class="session-proof-wrap" id="session-proof-wrap">
+            <div class="session-proof-label">
+              <span></span> Live Session Verification
+            </div>
+            <div class="session-proof-frame">
+              <img class="session-proof-img" id="session-proof-img" src="/api/session-screenshot" alt="Session proof"
+                onerror="document.getElementById('session-proof-wrap').style.display='none'">
+              <div class="session-proof-overlay">
+                <div class="session-proof-badge">
+                  ✓ Facebook session active
+                </div>
+                <div class="session-proof-time" id="session-proof-time"></div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn submit-auto" id="submit-btn">
+            <span>Start Investigation</span>
+            <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
+              <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </button>
+
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let cookieCheckDone = false;
+  let cookieCheckOk = false;
+
+  function setCookieStatus(ok, reason, checking) {
+    const dot = document.getElementById('cookie-dot');
+    const text = document.getElementById('cookie-status-text');
+    const sub = document.getElementById('cookie-status-sub');
+    const block = document.getElementById('cookie-check-block');
+    const btn = document.getElementById('cookie-check-btn');
+    const proof = document.getElementById('session-proof-wrap');
+
+    if (checking) {
+      dot.style.background = '#f59e0b';
+      dot.style.boxShadow = '0 0 6px #f59e0b';
+      dot.style.animation = 'blink-dot 0.8s infinite';
+      text.style.color = '#f59e0b';
+      text.textContent = 'Checking session...';
+      sub.textContent = 'Opening Facebook to verify';
+      block.style.borderColor = 'rgba(245,158,11,0.4)';
+      block.style.background = 'rgba(245,158,11,0.06)';
+      if (proof) proof.style.display = 'none';
+      if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+      return;
+    }
+
+    dot.style.animation = '';
+
+    if (ok) {
+      dot.style.background = '#10b981';
+      dot.style.boxShadow = '0 0 8px #10b981';
+      text.style.color = '#10b981';
+      text.textContent = '✓ Session Active';
+      sub.textContent = reason || 'Ready to start investigation';
+      block.style.borderColor = 'rgba(16,185,129,0.35)';
+      block.style.background = 'rgba(16,185,129,0.06)';
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Re-check';
+        btn.style.color = '#10b981';
+        btn.style.borderColor = 'rgba(16,185,129,0.35)';
+        btn.onclick = checkCookiesNow;
+      }
+
+      // Show screenshot proof
+      if (proof) {
+        proof.style.display = 'block';
+        const img = document.getElementById('session-proof-img');
+        if (img) img.src = '/api/session-screenshot?t=' + Date.now();
+        const timeEl = document.getElementById('session-proof-time');
+        if (timeEl) timeEl.textContent = 'Verified ' + new Date().toLocaleTimeString();
+      }
+
+    } else {
+      dot.style.background = '#f43f5e';
+      dot.style.boxShadow = '0 0 8px #f43f5e';
+      text.style.color = '#f43f5e';
+      text.textContent = '❌ Session Expired';
+      sub.textContent = reason || 'Please refresh cookies before investigating';
+      block.style.borderColor = 'rgba(244,63,94,0.35)';
+      block.style.background = 'rgba(244,63,94,0.06)';
+
+      if (proof) proof.style.display = 'none';
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Refresh Cookies →';
+        btn.style.color = '#f43f5e';
+        btn.style.borderColor = 'rgba(244,63,94,0.4)';
+        btn.onclick = () => window.location.href = '/tools/refresh-cookies';
+      }
+    }
+  }
+
+  function checkCookiesNow() {
+    setCookieStatus(null, null, true);
+    fetch('/api/check-cookies')
+      .then(r => r.json())
+      .then(d => {
+        cookieCheckDone = true;
+        cookieCheckOk = d.ok;
+        setCookieStatus(d.ok, d.reason);
+      })
+      .catch(() => {
+        cookieCheckDone = true;
+        cookieCheckOk = true;
+        setCookieStatus(true, 'Could not verify — proceeding anyway');
+      });
+  }
+
+  // Auto-check on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(checkCookiesNow, 600);
+  });
+
+  // Block form submit if session expired
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function (e) {
+      if (cookieCheckDone && !cookieCheckOk) {
+        e.preventDefault();
+        const block = document.getElementById('cookie-check-block');
+        if (block) {
+          block.style.outline = '2px solid #f43f5e';
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => block.style.outline = '', 2000);
+        }
+      }
+    });
+  });
+  // ── Depth card selection ──
+  function initDepthCards() {
+    const cards = document.querySelectorAll('.depth-card');
+    cards.forEach(card => {
+      const radio = card.querySelector('input[type="radio"]');
+      const val = radio?.value;
+
+      const update = () => {
+        cards.forEach(c => {
+          c.classList.remove('selected-light', 'selected-medium', 'selected-deep');
+        });
+        if (val) card.classList.add('selected-' + val);
+      };
+
+      card.addEventListener('click', () => {
+        if (radio) { radio.checked = true; update(); }
+      });
+
+      if (radio?.checked) update();
+    });
+  }
+  initDepthCards();
+
+  // ── Checkbox toggle ──
+  const cb = document.getElementById('enrich-cb');
+  const box = document.getElementById('check-box');
+  if (cb && box) {
+    const updateBox = () => {
+      box.classList.toggle('checked', cb.checked);
+      box.textContent = cb.checked ? '✓' : '';
+    };
+    updateBox();
+    document.getElementById('enrich-row')?.addEventListener('click', (e) => {
+      if (e.target !== cb) { cb.checked = !cb.checked; updateBox(); }
+    });
+  }
+
+  // ── URL counter ──
+  const ta = document.getElementById('urls-ta');
+  const counter = document.getElementById('url-counter');
+  if (ta && counter) {
+    ta.addEventListener('input', () => {
+      const n = ta.value.split('\n').filter(l => l.trim()).length;
+      counter.textContent = `${n} / 15 URLs`;
+      counter.classList.toggle('over', n > 15);
+    });
+  }
+
+  // ── Submit loading state ──
+  const form = document.getElementById('scan-form');
+  const btn = document.getElementById('submit-btn');
+  if (form && btn) {
+    form.addEventListener('submit', () => {
+      btn.innerHTML = '<span>Starting...</span>';
+      btn.disabled = true;
+    });
+  }
+</script>
+{% endblock %}

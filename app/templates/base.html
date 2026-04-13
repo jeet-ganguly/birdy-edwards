@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}BIRDY-EDWARDS{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
+    rel="stylesheet">
+    
+  <style>
+    /* Pure system sans-serif — no CDN, no font loading delay */
+    :root {
+      --font-head: "Google Sans", sans-serif;
+      /*-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;*/
+      --font-mono: "Google Sans", sans-serif;
+      /*'Consolas', 'Cascadia Code', 'Courier New', sans-serif;*/
+      --font-body: "Google Sans", sans-serif;
+      /*-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;*/
+    }
+
+    * {
+      font-family: "Google Sans", sans-serif;
+    }
+
+    code,
+    pre,
+    .mono {
+      font-family: "Google Sans", sans-serif;
+    }
+  </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+
+  <div class="blur-overlay" id="blur-overlay" onclick="dismissLift()"></div>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <a href="{{ url_for('home') }}" class="nav-logo-link">
+        <div class="nav-logo">
+          <img src="{{ url_for('serve_logo') }}" alt="BE"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div class="nav-logo-fallback">BE</div>
+        </div>
+      </a>
+      <div class="nav-titles">
+        <div class="nav-brand" style="font-family: sans-serif;">BIRDY-EDWARDS</div>
+        <div class="nav-tagline" style="font-family: sans-serif;">Infiltrate &amp; Expose</div>
+      </div>
+    </div>
+    <div class="nav-center">{% block nav_center %}{% endblock %}</div>
+    <div class="nav-right">
+      <span class="npill np-model" title="Auto-selected based on RAM">⚙ {{ model | default('gemma3:4b') }}</span>
+      {% block nav_actions %}{% endblock %}
+      <a href="{{ url_for('home') }}" class="nav-home-btn">Home</a>
+    </div>
+  </nav>
+
+  <main class="page-main">{% block content %}{% endblock %}</main>
+
+  <footer class="page-footer">
+    <div class="footer-left">
+      <span class="footer-pulse"></span>
+      <!--<span class="footer-text">BIRDY-EDWARDS &nbsp;·&nbsp; Infiltrate &amp; Expose &nbsp;·&nbsp; Jeet Ganguly</span>-->
+    </div>
+    <div class="footer-right">
+      <span class="footer-model"> &nbsp;·&nbsp; localhost:5000</span>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>
