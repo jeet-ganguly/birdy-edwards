@@ -106,7 +106,11 @@ Environment="OLLAMA_HOST=0.0.0.0:11434"
 sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
 
-- **Windows:** Ollama listens on all interfaces by default — no extra configuration needed.
+- **Windows:** Ollama listens on all interfaces by default — no extra configuration needed. If no then,
+```ps
+$env:OLLAMA_HOST="0.0.0.0"
+ollama serve
+```
 
 ---
 
