@@ -115,8 +115,8 @@ sudo systemctl daemon-reload && sudo systemctl restart ollama
 **Step 1 — Clone the repository**
 
 ```bash
-git clone https://github.com/jeet-ganguly/birdy-edwards-1.0.git
-cd birdy-edwards-1.0
+git clone https://github.com/jeet-ganguly/birdy-edwards.git
+cd birdy-edwards
 ```
 
 **Step 2 — Create required files and directories**
