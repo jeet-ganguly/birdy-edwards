@@ -47,13 +47,21 @@
 
 ## ⚠️ Disclaimer
 
-> BIRDY-EDWARDS is developed strictly for **authorized intelligence, law enforcement, and academic research purposes only**.
+> BIRDY-EDWARDS is developed strictly for **authorized intelligence, law enforcement, and academic research purposes only.**
 >
-> This tool must only be used on Facebook profiles and content where you have explicit legal authorization to collect and analyze data. Use without authorization may violate Facebook's Terms of Service, applicable privacy laws (GDPR, IT Act, DPDP Act), and local regulations.
+> **Scope of data access:**
+> - This tool operates exclusively using a valid Facebook session authenticated by the operator
+> - It only accesses **publicly visible** profile data, posts, photos, reels, and comments
+> - It does **not** access private messages, locked profiles, restricted content, or any data not visible to a logged-in user
+> - It does **not** use bots, fake accounts, or automated account creation — the operator supplies their own authenticated session
 >
-> The developer assumes **no liability** for misuse, unauthorized data collection, or any harm caused by improper use. All investigations are the sole responsibility of the operator.
+> **Legal responsibility:**
+> - This tool must only be used on profiles and content where you have **explicit legal authorization** to collect and analyze data
+> - Use without authorization may violate Facebook's Terms of Service, applicable privacy laws (GDPR, IT Act, DPDP Act), and local regulations
+> - The developer assumes **no liability** for misuse, unauthorized data collection, or any harm caused by improper use
+> - All investigations are the **sole responsibility of the operator**
 >
-> By using BIRDY-EDWARDS, you confirm your use is lawful, authorized, and compliant with all applicable laws in your jurisdiction.
+> By using BIRDY-EDWARDS, you confirm that your use is lawful, authorized, and compliant with all applicable laws in your jurisdiction.
 
 ---
 
