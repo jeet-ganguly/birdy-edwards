@@ -45,6 +45,16 @@
 
 ---
 
+## Documentation
+
+Full usage guides for both investigation modes are available on the project website:
+
+- [Click Here](https://jeet-ganguly.github.io/profile/edwards.html)
+
+[![Documentation](https://img.shields.io/badge/Docs-Available-blue?style=flat-square)](https://jeet-ganguly.github.io/profile/edwards.html)
+
+---
+
 ## ⚠️ Disclaimer
 
 > BIRDY-EDWARDS is developed strictly for **authorized intelligence, law enforcement, and academic research purposes only.**
