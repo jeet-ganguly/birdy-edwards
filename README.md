@@ -211,6 +211,20 @@ BIRDY-EDWARDS requires a valid Facebook session. Use the **Cookie-Editor** brows
 
 ---
 
+## How You Can Help
+
+If you find BIRDY-EDWARDS useful or interesting, here are a few ways you can support the project:
+
+- ⭐ **Star the repository** — it helps others discover the tool
+- 🐛 **Report bugs** — open an Issue if something isn't working
+- 🔧 **Contribute** — check the [Contributing](#contributing) section to get started
+- 📢 **Share it** — post it in OSINT communities, forums, X or with colleagues who might find it useful
+- 💬 **Give feedback** — suggestions for new features or improvements are always welcome
+
+Every contribution, big or small, helps build better tools for the OSINT and threat intelligence community.
+
+---
+
 ## Troubleshooting
 
 **Ollama not reachable from Docker**
