@@ -118,9 +118,11 @@ def check_cookies_valid():
     """
     cookie_path = os.path.join(BASE_DIR, 'fb_cookies.pkl')
 
+    size = os.path.getsize(cookie_path)
     if not os.path.exists(cookie_path):
         return False, 'Cookie file not found — refresh session first'
-
+    if size < 700:
+        return False, 'Cookie is not imported'
     try:
         import pickle
         import time
