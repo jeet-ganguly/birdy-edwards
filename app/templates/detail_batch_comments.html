@@ -1,0 +1,1951 @@
+{% extends 'base.html' %}
+{% block title %}Interaction Intelligence — BIRDY-EDWARDS{% endblock %}
+
+{% block nav_center %}
+<a href="{{ url_for('dashboard_batch', batch_id=batch_id) }}" class="back-btn">← Dashboard</a>
+{% endblock %}
+
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+    rel="stylesheet">
+<style>
+    *,
+    *::before,
+    *::after {
+        font-family: 'Inter', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        box-sizing: border-box;
+    }
+
+    body {
+        background: linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%) !important;
+    }
+
+    .detail-wrap {
+        padding: 20px 28px 60px;
+        max-width: 1500px;
+        margin: 0 auto;
+        background: linear-gradient(180deg, #0a0f1a 0%, #0d1420 100%) !important;
+    }
+
+    .detail-header {
+        margin-bottom: 20px;
+    }
+
+    .detail-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .detail-sub {
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    /* Stats */
+    .intel-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    @media(max-width:768px) {
+        .intel-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .istat-card {
+        background: #0f2744;
+        border: 1px solid rgba(56, 189, 248, 0.1);
+        border-radius: 10px;
+        padding: 16px 20px;
+    }
+
+    .istat-n {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .istat-l {
+        font-size: 10px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 6px;
+    }
+
+    .istat-pct {
+        font-size: 11px;
+        color: #475569;
+        margin-top: 2px;
+    }
+
+    /* Charts row */
+    .detail-row2 {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    @media(max-width:900px) {
+        .detail-row2 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .detail-card {
+        background: #0f2744;
+        border: 1px solid rgba(56, 189, 248, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .dc-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+        background: rgba(10, 22, 40, 0.6);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .dc-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .dc-badge {
+        font-size: 9px;
+        font-weight: 600;
+        color: #64748b;
+        background: rgba(56, 189, 248, 0.1);
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .dc-body {
+        padding: 16px 20px;
+    }
+
+    /* Sentiment donut */
+    .sentiment-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .chart-container {
+        position: relative;
+        width: 180px;
+        height: 180px;
+    }
+
+    .chart-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .chart-center-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 2px;
+    }
+
+    .chart-center-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+    }
+
+    .sentiment-stats {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .sentiment-stat-box {
+        flex: 1;
+        max-width: 90px;
+        background: rgba(10, 22, 40, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.1);
+        border-radius: 8px;
+        padding: 12px 8px;
+        text-align: center;
+    }
+
+    .sentiment-stat-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+    }
+
+    .sentiment-stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .sentiment-stat-box.positive .sentiment-stat-value {
+        color: #10b981;
+    }
+
+    .sentiment-stat-box.neutral .sentiment-stat-value {
+        color: #94a3b8;
+    }
+
+    .sentiment-stat-box.negative .sentiment-stat-value {
+        color: #f43f5e;
+    }
+
+    /* Language bars */
+    .lang-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        height: 100%;
+        justify-content: center;
+    }
+
+    .lang-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .lang-name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        width: 70px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .lang-bar-wrap {
+        flex: 1;
+        height: 14px;
+        background: rgba(10, 22, 40, 0.8);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .lang-bar {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+        transition: width 0.5s ease-out;
+    }
+
+    .lang-pct {
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        width: 42px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    /* Section */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .section-subtitle {
+        font-size: 13px;
+        color: #e5effe;
+        margin-top: 2px;
+    }
+
+    /* Graph */
+    .graph-wrap {
+        position: relative;
+        background: #0f2744;
+        border: 1px solid rgba(56, 189, 248, 0.15);
+        border-radius: 12px;
+        overflow: hidden;
+        height: calc(100vh - 220px);
+        min-height: 500px;
+    }
+
+    #graph-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .graph-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .spin {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #1e3a5f;
+        border-top-color: #38bdf8;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .graph-legend {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        background: rgba(15, 39, 68, 0.9);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        pointer-events: none;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    /* Comment panel */
+    .comment-panel {
+        position: absolute;
+        top: 0;
+        right: -340px;
+        width: 320px;
+        height: 100%;
+        background: #0a1628;
+        border-left: 1px solid rgba(56, 189, 248, 0.2);
+        transition: right 0.3s ease;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .comment-panel.open {
+        right: 0;
+    }
+
+    .cp-header {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+        flex-shrink: 0;
+    }
+
+    .cp-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cp-meta {
+        font-size: 10px;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+
+    .cp-score {
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .cp-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        cursor: pointer;
+        color: #64748b;
+        font-size: 18px;
+        line-height: 1;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: color 0.2s;
+    }
+
+    .cp-close:hover {
+        color: #38bdf8;
+    }
+
+    .cp-comments {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 14px;
+    }
+
+    .cp-comments::-webkit-scrollbar {
+        width: 3px;
+    }
+
+    .cp-comments::-webkit-scrollbar-thumb {
+        background: #1e3a5f;
+        border-radius: 2px;
+    }
+
+    .cp-comment-item {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+    }
+
+    .cp-comment-item:last-child {
+        border-bottom: none;
+    }
+
+    .cp-sentiment {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .sent-positive {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .sent-negative {
+        background: rgba(244, 63, 94, 0.12);
+        color: #f43f5e;
+        border: 1px solid rgba(244, 63, 94, 0.25);
+    }
+
+    .sent-neutral {
+        background: rgba(107, 114, 128, 0.12);
+        color: #9ca3af;
+        border: 1px solid rgba(107, 114, 128, 0.2);
+    }
+
+    .cp-comment-text {
+        font-size: 12px;
+        color: #e2e8f0;
+        font-weight: 500;
+        line-height: 1.4;
+        margin-bottom: 5px;
+    }
+
+    .cp-post-link {
+        font-size: 10px;
+        color: #64748b;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.2s;
+    }
+
+    .cp-post-link:hover {
+        color: #38bdf8;
+    }
+
+    .cp-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Zoom */
+    .zoom-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        background: rgba(10, 22, 40, 0.9);
+        color: #38bdf8;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        line-height: 1;
+    }
+
+    .zoom-btn:hover {
+        background: rgba(56, 189, 248, 0.15);
+    }
+
+    .zoom-btn.reset {
+        font-size: 9px;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.05em;
+    }
+
+    .action-btn {
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid #38bdf8;
+        background: rgba(56, 189, 248, 0.1);
+        color: #38bdf8;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .action-btn:hover {
+        background: rgba(56, 189, 248, 0.2);
+    }
+
+    /* ── STANCE GRAPH ── */
+    .stance-graph-wrap {
+        position: relative;
+        background: #0f2744;
+        border: 1px solid rgba(56, 189, 248, 0.15);
+        border-radius: 12px;
+        overflow: hidden;
+        height: 520px;
+        margin-top: 28px;
+    }
+
+    /* ── COUNTRY STANCE TABLE ── */
+    .country-stance-wrap {
+        margin-top: 28px;
+    }
+
+    .cs-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .cs-table th {
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+        text-align: left;
+    }
+
+    .cs-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.05);
+        vertical-align: middle;
+    }
+
+    .cs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .cs-table tr:hover td {
+        background: rgba(56, 189, 248, 0.03);
+    }
+
+    .cs-flag {
+        font-size: 20px;
+        margin-right: 8px;
+    }
+
+    .cs-country {
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .cs-total {
+        font-size: 12px;
+        font-weight: 700;
+        color: #38bdf8;
+    }
+
+    .stance-bar-wrap {
+        display: flex;
+        height: 18px;
+        border-radius: 4px;
+        overflow: hidden;
+        gap: 1px;
+        min-width: 120px;
+    }
+
+    .stance-seg {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+        transition: width 0.5s ease;
+    }
+
+    .stance-support {
+        background: rgba(16, 185, 129, 0.7);
+        color: #d1fae5;
+    }
+
+    .stance-neutral {
+        background: rgba(100, 116, 139, 0.7);
+        color: #e2e8f0;
+    }
+
+    .stance-oppose {
+        background: rgba(244, 63, 94, 0.7);
+        color: #ffe4e6;
+    }
+
+    .stance-pct-label {
+        font-size: 10px;
+        color: #64748b;
+        white-space: nowrap;
+    }
+
+    /* ── REPEAT INTERACTORS TABLE ── */
+    .repeat-wrap {
+        margin-top: 28px;
+    }
+
+    .repeat-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .repeat-table th {
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.1);
+        text-align: left;
+    }
+
+    .repeat-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(56, 189, 248, 0.05);
+        vertical-align: top;
+        font-size: 12px;
+        color: #e2e8f0;
+    }
+
+    .repeat-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .repeat-table tr:hover td {
+        background: rgba(56, 189, 248, 0.03);
+    }
+
+    .repeat-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .repeat-country {
+        font-size: 10px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .repeat-profile-link {
+        font-size: 10px;
+        color: #38bdf8;
+        text-decoration: none;
+    }
+
+    .repeat-profile-link:hover {
+        text-decoration: underline;
+    }
+
+    .repeat-posts-count {
+        font-size: 20px;
+        font-weight: 700;
+        color: #f59e0b;
+    }
+
+    .repeat-posts-label {
+        font-size: 9px;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .appearance-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .appearance-item {
+        background: rgba(10, 22, 40, 0.6);
+        border: 1px solid rgba(56, 189, 248, 0.08);
+        border-radius: 6px;
+        padding: 8px 10px;
+    }
+
+    .appearance-comment {
+        font-size: 11px;
+        color: #e2e8f0;
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+
+    .appearance-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .appearance-stance {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 8px;
+        text-transform: uppercase;
+    }
+
+    .stance-support-pill {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .stance-neutral-pill {
+        background: rgba(100, 116, 139, 0.15);
+        color: #94a3b8;
+        border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+
+    .stance-oppose-pill {
+        background: rgba(244, 63, 94, 0.15);
+        color: #f43f5e;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .appearance-url {
+        font-size: 9px;
+        color: #64748b;
+        text-decoration: none;
+    }
+
+    .appearance-url:hover {
+        color: #38bdf8;
+    }
+
+    .repeat-score {
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+    <div class="detail-header">
+        <div class="detail-title">Interaction Intelligence</div>
+        <div class="detail-sub">{{ intel.total or 0 }} interactions analyzed · {{ intel.languages|length if
+            intel.languages else 0 }} languages detected · Batch investigation</div>
+    </div>
+
+    <!-- ══ SUMMARY STATS ══ -->
+    <div class="intel-stats">
+        <div class="istat-card">
+            <div class="istat-n" style="color:#10b981;">{{ intel.positive or 0 }}</div>
+            <div class="istat-l">Positive</div>
+            <div class="istat-pct">{{ "%.1f"|format((intel.positive or 0)/(intel.total or 1)*100) }}%</div>
+        </div>
+        <div class="istat-card">
+            <div class="istat-n" style="color:#94a3b8;">{{ intel.neutral or 0 }}</div>
+            <div class="istat-l">Neutral</div>
+            <div class="istat-pct">{{ "%.1f"|format((intel.neutral or 0)/(intel.total or 1)*100) }}%</div>
+        </div>
+        <div class="istat-card">
+            <div class="istat-n" style="color:#f43f5e;">{{ intel.negative or 0 }}</div>
+            <div class="istat-l">Negative</div>
+            <div class="istat-pct">{{ "%.1f"|format((intel.negative or 0)/(intel.total or 1)*100) }}%</div>
+        </div>
+        <div class="istat-card">
+            <div class="istat-n" style="color:#ffffff;">{{ intel.total or 0 }}</div>
+            <div class="istat-l">Total Analyzed</div>
+            <div class="istat-pct">Primary: {{ intel.primary_language or '—' }}</div>
+        </div>
+    </div>
+
+    <!-- ══ CHARTS ══ -->
+    <div class="detail-row2">
+        <div class="detail-card">
+            <div class="dc-header">
+                <div class="dc-title">Sentiment Distribution</div>
+            </div>
+            <div class="dc-body">
+                <div class="sentiment-wrapper">
+                    <div class="chart-container">
+                        <canvas id="sentiment-chart" width="180" height="180"></canvas>
+                        <div class="chart-center">
+                            <div class="chart-center-label">Pos Rate</div>
+                            <div class="chart-center-value">
+                                {{ "%.2f"|format((intel.positive or 0)/(intel.total or 1)) }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sentiment-stats">
+                        <div class="sentiment-stat-box positive">
+                            <div class="sentiment-stat-label">POS</div>
+                            <div class="sentiment-stat-value">{{ "%.0f"|format((intel.positive or 0)/(intel.total or
+                                1)*100) }}%</div>
+                        </div>
+                        <div class="sentiment-stat-box neutral">
+                            <div class="sentiment-stat-label">NEU</div>
+                            <div class="sentiment-stat-value">{{ "%.0f"|format((intel.neutral or 0)/(intel.total or
+                                1)*100) }}%</div>
+                        </div>
+                        <div class="sentiment-stat-box negative">
+                            <div class="sentiment-stat-label">NEG</div>
+                            <div class="sentiment-stat-value">{{ "%.0f"|format((intel.negative or 0)/(intel.total or
+                                1)*100) }}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-card">
+            <div class="dc-header">
+                <div class="dc-title">Language Distribution</div>
+                <span class="dc-badge">Global Set</span>
+            </div>
+            <div class="dc-body" style="min-height:260px;">
+                <div class="lang-list">
+                    {% set total_comments = intel.total or 1 %}
+                    {% set max_count = (intel.languages.values()|list|max) if intel.languages else 1 %}
+                    {% for name, count in (intel.languages|dictsort(by='value',reverse=True))[:8] %}
+                    <div class="lang-item">
+                        <div class="lang-name">{{ name }}</div>
+                        <div class="lang-bar-wrap">
+                            <div class="lang-bar" style="width:{{ (count/max_count*100)|round }}%;"></div>
+                        </div>
+                        <div class="lang-pct">{{ "%.0f"|format(count/total_comments*100) }}%</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ SECOND CHARTS ROW ══ -->
+    <div class="detail-row2" style="margin-top:16px;">
+
+        <!-- Stance Distribution Donut -->
+        <div class="detail-card">
+            <div class="dc-header">
+                <div class="dc-title">Stance Distribution</div>
+            </div>
+            <div class="dc-body">
+                <div class="sentiment-wrapper">
+                    <div class="chart-container">
+                        <canvas id="stance-chart" width="180" height="180"></canvas>
+                        <div class="chart-center">
+                            <div class="chart-center-label">Support</div>
+                            <div class="chart-center-value" id="stance-center-val">—</div>
+                        </div>
+                    </div>
+                    <div class="sentiment-stats">
+                        <div class="sentiment-stat-box" style="border-color:rgba(245,158,11,0.2);">
+                            <div class="sentiment-stat-label">Support</div>
+                            <div class="sentiment-stat-value" id="stance-sup-pct" style="color:#f59e0b;">—</div>
+                        </div>
+                        <div class="sentiment-stat-box" style="border-color:rgba(236,72,153,0.2);">
+                            <div class="sentiment-stat-label">Neutral</div>
+                            <div class="sentiment-stat-value" id="stance-neu-pct" style="color:#ec4899;">—</div>
+                        </div>
+                        <div class="sentiment-stat-box" style="border-color:rgba(244,63,94,0.2);">
+                            <div class="sentiment-stat-label">Oppose</div>
+                            <div class="sentiment-stat-value" id="stance-opp-pct" style="color:#f43f5e;">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Support vs Oppose Country -->
+        <div class="detail-card">
+            <div class="dc-header">
+                <div class="dc-title">Country Stance Extremes</div>
+                <span class="dc-badge">From intelligence data</span>
+            </div>
+            <div class="dc-body"
+                style="display:flex;flex-direction:column;gap:20px;justify-content:center;min-height:260px;">
+
+                <!-- Most Support -->
+                <div
+                    style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:16px 20px;">
+                    <div
+                        style="font-size:9px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">
+                        Most Supportive Country</div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div id="top-support-flag" style="font-size:28px;line-height:1;"></div>
+                        <div>
+                            <div id="top-support-name" style="font-size:18px;font-weight:700;color:#fff;">—</div>
+                            <div id="top-support-pct"
+                                style="font-size:13px;color:#f59e0b;font-weight:600;margin-top:2px;">—</div>
+                        </div>
+                        <div style="margin-left:auto;text-align:right;">
+                            <div id="top-support-count" style="font-size:24px;font-weight:700;color:#f59e0b;">—</div>
+                            <div style="font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;">actors
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Most Oppose -->
+                <div
+                    style="background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;">
+                    <div
+                        style="font-size:9px;font-weight:700;color:#f43f5e;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">
+                        Most Opposing Country</div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div id="top-oppose-flag" style="font-size:28px;line-height:1;"></div>
+                        <div>
+                            <div id="top-oppose-name" style="font-size:18px;font-weight:700;color:#fff;">—</div>
+                            <div id="top-oppose-pct"
+                                style="font-size:13px;color:#f43f5e;font-weight:600;margin-top:2px;">—</div>
+                        </div>
+                        <div style="margin-left:auto;text-align:right;">
+                            <div id="top-oppose-count" style="font-size:24px;font-weight:700;color:#f43f5e;">—</div>
+                            <div style="font-size:9px;color:#64748b;font-weight:600;text-transform:uppercase;">actors
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MAIN INTERACTION GRAPH 
+    <div style="margin-top:28px;">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Interaction Network Graph</div>
+                <div class="section-subtitle">Frequency-based · Click node to view interactions</div>
+            </div>
+            <button class="action-btn" onclick="resetZoom()">Re-Plot</button>
+        </div>
+        <div class="graph-wrap" id="graph-wrap" style="height:620px;">
+            <div class="graph-loading" id="graph-loading">
+                <div class="spin"></div>Loading network...
+            </div>
+            <canvas id="graph-canvas"></canvas>
+            <div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:5;">
+                <button onclick="zoomIn()" class="zoom-btn">+</button>
+                <button onclick="zoomOut()" class="zoom-btn">−</button>
+                <button onclick="resetZoom()" class="zoom-btn reset">RST</button>
+            </div>
+            <div class="graph-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b;"></div>10+
+                    Interactions
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#ec4899;box-shadow:0 0 6px #ec4899;"></div>5+ Interactions
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#fcd34d;box-shadow:0 0 6px #fcd34d;"></div>2+ Interactions
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b981;"></div>1 Interaction
+                </div>
+            </div>
+            <div class="comment-panel" id="comment-panel">
+                <span class="cp-close" onclick="closePanel()">✕</span>
+                <div class="cp-header">
+                    <div class="cp-name" id="cp-name">—</div>
+                    <div class="cp-meta" id="cp-meta">—</div>
+                    <div class="cp-score" id="cp-score">—</div>
+                </div>
+                <div class="cp-comments" id="cp-comments">
+                    <div class="cp-empty">Select a node</div>
+                </div>
+            </div>
+        </div>
+    </div>══ -->
+    <!-- ══ STANCE-BASED FORCE GRAPH ══ -->
+    <div class="stance-graph-wrap" style="margin-top:28px;height:860px;">
+        <div style="position:absolute;top:12px;left:16px;z-index:5;">
+            <div class="section-title" style="color:#94a3b8;">Stance Network</div>
+            <div style="font-size:10px;color:#475569;margin-top:2px;">Support → center · Neutral → mid · Oppose → outer
+                · Click node to view</div>
+        </div>
+
+        <!-- Comment panel lives here so openPanel() can find it -->
+        <div class="comment-panel" id="comment-panel">
+            <span class="cp-close" onclick="closePanel()">✕</span>
+            <div class="cp-header">
+                <div class="cp-name" id="cp-name">—</div>
+                <div class="cp-meta" id="cp-meta">—</div>
+                <div class="cp-score" id="cp-score">—</div>
+            </div>
+            <div class="cp-comments" id="cp-comments">
+                <div class="cp-empty">Select a node to view interactions</div>
+            </div>
+        </div>
+        <div class="graph-loading" id="stance-loading">
+            <div class="spin"></div>Building stance graph...
+        </div>
+        <canvas id="stance-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+        <div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:5;">
+            <button onclick="sgZoomIn()" class="zoom-btn">+</button>
+            <button onclick="sgZoomOut()" class="zoom-btn">−</button>
+            <button onclick="sgResetZoom()" class="zoom-btn reset">RST</button>
+        </div>
+        <div class="graph-legend" style="flex-direction:row;flex-wrap:wrap;gap:12px;">
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#00fab6;box-shadow:0 0 6px #00fab6;"></div>Support
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#ebebeb;box-shadow:0 0 6px #ebebeb;"></div>Neutral
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background:#f43f5e;box-shadow:0 0 6px #f43f5e;"></div>Oppose
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ COUNTRY × STANCE BREAKDOWN ══ -->
+    <div class="country-stance-wrap">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Country × Stance Breakdown</div>
+                <div class="section-subtitle">Interactor origin and stance distribution per country</div>
+            </div>
+        </div>
+        <div class="detail-card">
+            <div class="dc-header">
+                <div class="dc-title">Country Intelligence</div>
+                <span class="dc-badge" id="cs-badge">Loading...</span>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="cs-table" id="cs-table">
+                    <thead>
+                        <tr>
+                            <th>Country</th>
+                            <th>Total</th>
+                            <th style="min-width:160px;">Stance Distribution</th>
+                            <th>Support %</th>
+                            <th>Neutral %</th>
+                            <th>Oppose %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cs-tbody">
+                        <tr>
+                            <td colspan="6" class="empty-state">Loading country data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ REPEAT INTERACTORS ══ -->
+    <div class="repeat-wrap">
+        <div class="section-header">
+            <div>
+                <div class="section-title">Repeat Interactors</div>
+                <div class="section-subtitle">Actors who appeared across multiple posts — potential coordination signal
+                </div>
+            </div>
+            <span id="repeat-badge"
+                style="font-size:10px;color:#f59e0b;font-weight:700;background:rgba(245,158,11,0.1);padding:4px 10px;border-radius:6px;border:1px solid rgba(245,158,11,0.3);">Loading...</span>
+        </div>
+        <div id="repeat-container">
+            <div class="detail-card">
+                <div class="dc-body">
+                    <div class="empty-state">Loading repeat interactors...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const intel = {{ intel | tojson }};
+    const BATCH_ID = '{{ batch_id }}';
+    const GRAPH_API = `/api/comment-graph/batch/${BATCH_ID}`;
+    const CS_API = `/api/batch-country-stance/${BATCH_ID}`;
+    const REPEAT_API = `/api/batch-repeat-interactors/${BATCH_ID}`;
+
+    const FLAGS = {
+        'India': '🇮🇳', 'Pakistan': '🇵🇰', 'Bangladesh': '🇧🇩', 'Nepal': '🇳🇵',
+        'Sri Lanka': '🇱🇰', 'Afghanistan': '🇦🇫', 'Maldives': '🇲🇻', 'Bhutan': '🇧🇹',
+        'Myanmar': '🇲🇲', 'Thailand': '🇹🇭', 'Vietnam': '🇻🇳', 'Philippines': '🇵🇭',
+        'Indonesia': '🇮🇩', 'Malaysia': '🇲🇾', 'Singapore': '🇸🇬', 'Cambodia': '🇰🇭',
+        'Laos': '🇱🇦', 'Brunei': '🇧🇳', 'Timor-Leste': '🇹🇱',
+        'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷', 'North Korea': '🇰🇵',
+        'Taiwan': '🇹🇼', 'Mongolia': '🇲🇳', 'Hong Kong': '🇭🇰', 'Macau': '🇲🇴',
+        'Saudi Arabia': '🇸🇦', 'UAE': '🇦🇪', 'Iran': '🇮🇷', 'Iraq': '🇮🇶',
+        'Turkey': '🇹🇷', 'Israel': '🇮🇱', 'Jordan': '🇯🇴', 'Kuwait': '🇰🇼',
+        'Qatar': '🇶🇦', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲', 'Yemen': '🇾🇪',
+        'Syria': '🇸🇾', 'Lebanon': '🇱🇧', 'Palestine': '🇵🇸',
+        'Kazakhstan': '🇰🇿', 'Uzbekistan': '🇺🇿', 'Turkmenistan': '🇹🇲',
+        'Kyrgyzstan': '🇰🇬', 'Tajikistan': '🇹🇯', 'Azerbaijan': '🇦🇿',
+        'Armenia': '🇦🇲', 'Georgia': '🇬🇪',
+        'Russia': '🇷🇺', 'United Kingdom': '🇬🇧', 'Germany': '🇩🇪', 'France': '🇫🇷',
+        'Italy': '🇮🇹', 'Spain': '🇪🇸', 'Portugal': '🇵🇹', 'Netherlands': '🇳🇱',
+        'Belgium': '🇧🇪', 'Switzerland': '🇨🇭', 'Austria': '🇦🇹', 'Poland': '🇵🇱',
+        'Czech Republic': '🇨🇿', 'Slovakia': '🇸🇰', 'Hungary': '🇭🇺', 'Romania': '🇷🇴',
+        'Bulgaria': '🇧🇬', 'Greece': '🇬🇷', 'Sweden': '🇸🇪', 'Norway': '🇳🇴',
+        'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Iceland': '🇮🇸', 'Ireland': '🇮🇪',
+        'Ukraine': '🇺🇦', 'Belarus': '🇧🇾', 'Serbia': '🇷🇸', 'Croatia': '🇭🇷',
+        'Slovenia': '🇸🇮', 'Bosnia': '🇧🇦', 'Albania': '🇦🇱', 'North Macedonia': '🇲🇰',
+        'Kosovo': '🇽🇰', 'Montenegro': '🇲🇪', 'Moldova': '🇲🇩', 'Estonia': '🇪🇪',
+        'Latvia': '🇱🇻', 'Lithuania': '🇱🇹', 'Luxembourg': '🇱🇺', 'Malta': '🇲🇹',
+        'Cyprus': '🇨🇾', 'Monaco': '🇲🇨', 'Liechtenstein': '🇱🇮', 'Andorra': '🇦🇩',
+        'San Marino': '🇸🇲', 'Vatican': '🇻🇦',
+        'Nigeria': '🇳🇬', 'Egypt': '🇪🇬', 'South Africa': '🇿🇦', 'Kenya': '🇰🇪',
+        'Ethiopia': '🇪🇹', 'Ghana': '🇬🇭', 'Tanzania': '🇹🇿', 'Uganda': '🇺🇬',
+        'Algeria': '🇩🇿', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Libya': '🇱🇾',
+        'Sudan': '🇸🇩', 'Somalia': '🇸🇴', 'Senegal': '🇸🇳', 'Cameroon': '🇨🇲',
+        'Ivory Coast': '🇨🇮', 'Angola': '🇦🇴', 'Mozambique': '🇲🇿', 'Zambia': '🇿🇲',
+        'Zimbabwe': '🇿🇼', 'Madagascar': '🇲🇬', 'Malawi': '🇲🇼', 'Rwanda': '🇷🇼',
+        'Botswana': '🇧🇼', 'Namibia': '🇳🇦',
+        'United States': '🇺🇸', 'Canada': '🇨🇦', 'Mexico': '🇲🇽', 'Brazil': '🇧🇷',
+        'Argentina': '🇦🇷', 'Colombia': '🇨🇴', 'Chile': '🇨🇱', 'Peru': '🇵🇪',
+        'Venezuela': '🇻🇪', 'Ecuador': '🇪🇨', 'Bolivia': '🇧🇴', 'Paraguay': '🇵🇾',
+        'Uruguay': '🇺🇾', 'Cuba': '🇨🇺', 'Haiti': '🇭🇹', 'Dominican Republic': '🇩🇴',
+        'Guatemala': '🇬🇹', 'Honduras': '🇭🇳', 'El Salvador': '🇸🇻', 'Nicaragua': '🇳🇮',
+        'Costa Rica': '🇨🇷', 'Panama': '🇵🇦', 'Jamaica': '🇯🇲', 'Trinidad': '🇹🇹',
+        'Guyana': '🇬🇾', 'Suriname': '🇸🇷', 'Belize': '🇧🇿', 'Barbados': '🇧🇧',
+        'Australia': '🇦🇺', 'New Zealand': '🇳🇿', 'Fiji': '🇫🇯', 'Papua New Guinea': '🇵🇬',
+        'Samoa': '🇼🇸', 'Tonga': '🇹🇴', 'Vanuatu': '🇻🇺', 'Solomon Islands': '🇸🇧',
+        'Unknown': '🏳️',
+    };
+
+    // ── Sentiment Donut ──
+    new Chart(document.getElementById('sentiment-chart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [intel.positive || 0, intel.neutral || 0, intel.negative || 0],
+                backgroundColor: ['#10b981', '#64748b', '#f43f5e'],
+                borderWidth: 0, hoverOffset: 8, borderRadius: 4
+            }]
+        },
+        options: {
+            cutout: '72%', responsive: true, maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: '#0f2744', borderColor: '#38bdf8', borderWidth: 1, titleColor: '#fff', bodyColor: '#94a3b8', padding: 12, cornerRadius: 8 }
+            },
+            animation: { duration: 1200, easing: 'easeOutQuart' }
+        }
+    });
+
+    // ══════════════════════════════════════════════════════════════════
+    //  MAIN INTERACTION GRAPH (frequency-based, same as profile page)
+    // ══════════════════════════════════════════════════════════════════
+    let graphData = [], nodes = [], selectedNode = null, animFrame = null;
+    let isDragging = false, dragNode = null, panOffset = { x: 0, y: 0 };
+    let isPanning = false, panStart = { x: 0, y: 0 }, lastPanOffset = { x: 0, y: 0 };
+    let zoomScale = 1.0;
+    const ZOOM_MIN = 0.3, ZOOM_MAX = 3.0;
+    const _threatIcon = new Image(); _threatIcon.src = '/icons/threat.png';
+
+    function nodeColor(count) {
+        if (count >= 10) return '#f59e0b'; if (count >= 5) return '#ec4899';
+        if (count >= 2) return '#fcd34d'; return '#10b981';
+    }
+    function nodeRadius(count) { return Math.max(14, Math.min(28, 14 + Math.sqrt(count) * 4)); }
+
+    function loadGraph() {
+        fetch(GRAPH_API).then(r => r.json()).then(d => {
+            graphData = d.commentors || [];
+            document.getElementById('graph-loading').style.display = 'none';
+            initGraph();
+        }).catch(e => { document.getElementById('graph-loading').textContent = 'Failed to load'; });
+    }
+
+    function initGraph() {
+        const wrap = document.getElementById('graph-wrap');
+        const canvas = document.getElementById('graph-canvas');
+        canvas.width = wrap.offsetWidth; canvas.height = wrap.offsetHeight;
+        const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2;
+
+        const rings = [
+            { min: 10, R: Math.min(W, H) * 0.18, nodes: [] }, { min: 5, R: Math.min(W, H) * 0.32, nodes: [] },
+            { min: 2, R: Math.min(W, H) * 0.44, nodes: [] }, { min: 0, R: Math.min(W, H) * 0.56, nodes: [] },
+        ];
+        graphData.forEach(c => {
+            const cnt = c.comment_count || 0;
+            if (cnt >= 10) rings[0].nodes.push(c); else if (cnt >= 5) rings[1].nodes.push(c);
+            else if (cnt >= 2) rings[2].nodes.push(c); else rings[3].nodes.push(c);
+        });
+
+        nodes = [];
+        rings.forEach(ring => {
+            const total = ring.nodes.length;
+            ring.nodes.forEach((c, i) => {
+                const angle = (i / (total || 1)) * Math.PI * 2 - Math.PI / 2;
+                nodes.push({
+                    x: cx + ring.R * Math.cos(angle), y: cy + ring.R * Math.sin(angle),
+                    r: nodeRadius(c.comment_count || 0), col: nodeColor(c.comment_count || 0),
+                    data: c, vx: 0, vy: 0, fixed: false
+                });
+            });
+        });
+        nodes.unshift({ x: cx, y: cy, r: 26, col: '#f43f5e', data: { name: 'TARGET', comment_count: 0 }, isTarget: true, fixed: true, vx: 0, vy: 0 });
+        setupInteraction(canvas);
+        render(canvas);
+    }
+
+    function render(canvas) {
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        if (animFrame) cancelAnimationFrame(animFrame);
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.save();
+            ctx.translate(W / 2 + panOffset.x, H / 2 + panOffset.y);
+            ctx.scale(zoomScale, zoomScale);
+            ctx.translate(-W / 2, -H / 2);
+            const target = nodes[0];
+
+            nodes.slice(1).forEach(n => {
+                const g = ctx.createLinearGradient(target.x, target.y, n.x, n.y);
+                g.addColorStop(0, '#38bdf8'); g.addColorStop(1, n.col + '22');
+                ctx.strokeStyle = g; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+                ctx.beginPath(); ctx.moveTo(target.x, target.y); ctx.lineTo(n.x, n.y); ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            nodes.slice(1).forEach(n => {
+                const isSel = selectedNode && selectedNode.data.commentor_id === n.data.commentor_id;
+                const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.2);
+                gr.addColorStop(0, n.col + (isSel ? '55' : '22')); gr.addColorStop(1, 'transparent');
+                ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 2.2, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowColor = n.col; ctx.shadowBlur = isSel ? 18 : 8;
+                ctx.fillStyle = '#0a1628'; ctx.strokeStyle = n.col; ctx.lineWidth = isSel ? 2.5 : 1.5;
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0;
+                const initials = (n.data.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                ctx.fillStyle = n.col; ctx.font = `bold ${Math.max(8, Math.floor(n.r * 0.55))}px Google Sans,sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(initials, n.x, n.y);
+                const firstName = (n.data.name || '?').split(' ')[0];
+                const label = firstName.length > 8 ? firstName.slice(0, 7) + '…' : firstName;
+                ctx.fillStyle = '#ffffff'; ctx.font = '9px Google Sans,sans-serif'; ctx.textBaseline = 'top';
+                ctx.fillText(label, n.x, n.y + n.r + 4);
+            });
+
+            const t = nodes[0];
+            const tg = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
+            tg.addColorStop(0, '#f43f5e'); tg.addColorStop(1, '#38bdf8');
+            ctx.fillStyle = tg; ctx.shadowColor = '#f43f5e'; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#f43f5e55'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(t.x, t.y, t.r + 6, 0, Math.PI * 2); ctx.stroke();
+            if (_threatIcon.complete && _threatIcon.naturalWidth > 0) {
+                ctx.save(); ctx.beginPath(); ctx.arc(t.x, t.y, t.r - 2, 0, Math.PI * 2); ctx.clip();
+                ctx.drawImage(_threatIcon, t.x - t.r + 2, t.y - t.r + 2, (t.r - 2) * 2, (t.r - 2) * 2); ctx.restore();
+            } else {
+                ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px Google Sans,sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('TGT', t.x, t.y);
+                _threatIcon.onload = () => render(canvas);
+            }
+            ctx.restore();
+            animFrame = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function setupInteraction(canvas) {
+        let mouseDownPos = null, mouseDownTime = 0;
+        canvas.addEventListener('mousedown', e => {
+            const pos = getPos(canvas, e); mouseDownPos = pos; mouseDownTime = Date.now();
+            const hit = hitTest(pos);
+            if (hit && !hit.isTarget) { dragNode = hit; isDragging = false; }
+            else { isPanning = true; lastPanOffset = { ...panOffset }; panStart = { x: e.clientX, y: e.clientY }; }
+        });
+        canvas.addEventListener('mousemove', e => {
+            const pos = getPos(canvas, e);
+            if (dragNode) { isDragging = true; dragNode.x = pos.x - panOffset.x; dragNode.y = pos.y - panOffset.y; return; }
+            if (isPanning) { panOffset.x = lastPanOffset.x + (e.clientX - panStart.x); panOffset.y = lastPanOffset.y + (e.clientY - panStart.y); return; }
+            const hit = hitTest(pos); canvas.style.cursor = (hit && !hit.isTarget) ? 'pointer' : 'grab';
+        });
+        canvas.addEventListener('mouseup', e => {
+            const wasDragging = isDragging; dragNode = null; isPanning = false; isDragging = false;
+            if (!wasDragging && mouseDownPos) {
+                const pos = getPos(canvas, e);
+                if (Math.hypot(pos.x - mouseDownPos.x, pos.y - mouseDownPos.y) < 8 && Date.now() - mouseDownTime < 400) handleClick(pos);
+            }
+            mouseDownPos = null;
+        });
+        canvas.addEventListener('mouseleave', () => { dragNode = null; isPanning = false; });
+        canvas.addEventListener('wheel', e => { e.preventDefault(); zoomScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomScale * (e.deltaY > 0 ? 0.9 : 1.1))); }, { passive: false });
+    }
+
+    function getPos(canvas, e) { const br = canvas.getBoundingClientRect(); return { x: (e.clientX - br.left) * (canvas.width / br.width), y: (e.clientY - br.top) * (canvas.height / br.height) }; }
+    function hitTest(pos) { const canvas = document.getElementById('graph-canvas'); const W2 = canvas.width, H2 = canvas.height; const ax = (pos.x - W2 / 2 - panOffset.x) / zoomScale + W2 / 2; const ay = (pos.y - H2 / 2 - panOffset.y) / zoomScale + H2 / 2; for (const n of nodes) { if (Math.hypot(ax - n.x, ay - n.y) <= n.r + 4) return n; } return null; }
+    function handleClick(pos) { const hit = hitTest(pos); if (!hit || hit.isTarget) { closePanel(); selectedNode = null; return; } if (selectedNode && selectedNode.data.commentor_id === hit.data.commentor_id) { closePanel(); selectedNode = null; } else { selectedNode = hit; openPanel(hit.data); } }
+
+    function openPanel(c) {
+        document.getElementById('cp-name').textContent = c.name || 'Unknown';
+        const flag = FLAGS[c.identified_country] || '🌍';
+        document.getElementById('cp-meta').textContent = `${flag} ${c.identified_country || '— Unknown'} · ${c.comment_count || 0} Interactions`;
+        const score = parseFloat(c.total_score || 0);
+        const scoreColor = score >= 0.5 ? '#10b981' : score >= 0.1 ? '#38bdf8' : score >= -0.1 ? '#64748b' : score >= -0.5 ? '#f59e0b' : '#f43f5e';
+        document.getElementById('cp-score').innerHTML = `<span style="color:${scoreColor};">Score: ${score.toFixed(3)}</span><span style="color:#fff;margin-left:8px;font-size:10px;">${c.tier || '—'}</span>`;
+        const comments = c.comments || [];
+        if (!comments.length) { document.getElementById('cp-comments').innerHTML = '<div class="cp-empty">No analyzed interactions yet</div>'; }
+        else {
+            document.getElementById('cp-comments').innerHTML = comments.map(cm => {
+                const sent = (cm.sentiment || 'neutral').toLowerCase();
+                const sentClass = sent === 'positive' ? 'sent-positive' : sent === 'negative' ? 'sent-negative' : 'sent-neutral';
+                const sentIcon = sent === 'positive' ? '🟢' : sent === 'negative' ? '🔴' : '🟡';
+                const text = cm.comment_text || '[No text]';
+                return `<div class="cp-comment-item"><div class="cp-sentiment ${sentClass}">${sentIcon} ${sent}</div><div class="cp-comment-text" style="color:#ffffff">${text.substring(0, 120)}${text.length > 120 ? '…' : ''}</div><a href="${cm.post_url || '#'}" target="_blank" class="cp-post-link">🔗 URL ↗</a></div>`;
+            }).join('');
+        }
+        document.getElementById('comment-panel').classList.add('open');
+    }
+    function closePanel() { document.getElementById('comment-panel').classList.remove('open'); selectedNode = null; }
+    function zoomIn() { zoomScale = Math.min(ZOOM_MAX, zoomScale * 1.2); }
+    function zoomOut() { zoomScale = Math.max(ZOOM_MIN, zoomScale * 0.8); }
+    function resetZoom() { zoomScale = 1.0; panOffset = { x: 0, y: 0 }; }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  STANCE GRAPH — support=close, neutral=mid, oppose=far
+    // ══════════════════════════════════════════════════════════════════
+    let sgNodes = [], sgAnimFrame = null, sgZoom = 1.0, sgPan = { x: 0, y: 0 };
+    let sgLastPan = { x: 0, y: 0 }, sgPanStart = { x: 0, y: 0 }, sgIsPanning = false;
+    let sgDrag = null, sgIsDragging = false, sgSelected = null;
+    const SG_ZOOM_MIN = 0.2, SG_ZOOM_MAX = 3.0;
+
+    function stanceColor(stance) {
+        const s = (stance || '').toLowerCase();
+        if (s === 'support') return '#00fab6';   // green
+        if (s === 'oppose') return '#fa0043';   // red
+        return '#ebebeb';                     // grey
+    }
+
+    function stanceRadius(stance) {
+        const s = (stance || '').toLowerCase();
+        if (s === 'support') return Math.min(W, H) * 0.18;
+        if (s === 'oppose') return Math.min(W, H) * 0.50;
+        return Math.min(W, H) * 0.33;
+    }
+
+    let sgW = 0, sgH = 0;
+
+    function buildStanceGraph(commentors) {
+        const wrap = document.getElementById('stance-canvas').parentElement;
+        const canvas = document.getElementById('stance-canvas');
+        sgW = canvas.width = Math.max(wrap.offsetWidth, 1400);
+        sgH = canvas.height = Math.max(wrap.offsetHeight, 900);
+        const cx = sgW / 2, cy = sgH / 2;
+
+        const groups = { support: [], neutral: [], oppose: [] };
+        commentors.forEach(c => {
+            const dominantStance = getDominantStance(c.comments || []);
+            c._stance = dominantStance;
+            if (dominantStance === 'support') groups.support.push(c);
+            else if (dominantStance === 'oppose') groups.oppose.push(c);
+            else groups.neutral.push(c);
+        });
+
+        sgNodes = [];
+        Object.entries(groups).forEach(([stance, list]) => {
+            const R = stance === 'support' ? Math.min(sgW, sgH) * 0.15 : stance === 'neutral' ? Math.min(sgW, sgH) * 0.35 : Math.min(sgW, sgH) * 0.56;
+            list.forEach((c, i) => {
+                const angle = (i / (list.length || 1)) * Math.PI * 2 - Math.PI / 2;
+                sgNodes.push({
+                    x: cx + R * Math.cos(angle),
+                    y: cy + R * Math.sin(angle),
+                    r: Math.max(12, Math.min(22, 12 + Math.sqrt(c.comment_count || 1) * 3)),
+                    col: stanceColor(stance),
+                    stance: stance,
+                    data: c,
+                    vx: 0, vy: 0,
+                });
+            });
+        });
+
+        // center node
+        sgNodes.unshift({ x: cx, y: cy, r: 24, col: '#f43f5e', data: { name: 'TARGET' }, isTarget: true, vx: 0, vy: 0 });
+
+        document.getElementById('stance-loading').style.display = 'none';
+        setupSGInteraction(canvas);
+        runSG(canvas);
+    }
+
+    function getDominantStance(comments) {
+        let support = 0, oppose = 0, neutral = 0;
+        comments.forEach(c => {
+            const s = (c.stance || '').toLowerCase().trim();
+            if (s.startsWith('support')) support++;
+            else if (s.startsWith('oppose')) oppose++;
+            else neutral++;
+        });
+        if (!support && !oppose && !neutral) return 'neutral';
+        if (support >= oppose && support >= neutral) return 'support';
+        if (oppose > support && oppose >= neutral) return 'oppose';
+        return 'neutral';
+    }
+
+    function runSG(canvas) {
+        if (sgAnimFrame) cancelAnimationFrame(sgAnimFrame);
+        const W = sgW, H = sgH;
+        const cx = W / 2, cy = H / 2;
+
+        const supportNodes = sgNodes.slice(1).filter(n => n.stance === 'support');
+        const neutralNodes = sgNodes.slice(1).filter(n => n.stance === 'neutral');
+        const opposeNodes = sgNodes.slice(1).filter(n => n.stance === 'oppose');
+
+        const R_MIN = Math.min(W, H) * 0.12;
+        const R_MAX = Math.min(W, H) * 0.46;
+
+        const sectors = {
+            support: { start: -Math.PI / 2, end: -Math.PI / 2 + (2 * Math.PI / 3) },
+            neutral: { start: -Math.PI / 2 + (2 * Math.PI / 3), end: -Math.PI / 2 + (4 * Math.PI / 3) },
+            oppose: { start: -Math.PI / 2 + (4 * Math.PI / 3), end: -Math.PI / 2 + (2 * Math.PI) },
+        };
+
+        function packInSector(list, sector) {
+            const { start, end } = sector;
+            const total = list.length;
+            if (total === 0) return;
+
+            if (total === 1) {
+                const angle = (start + end) / 2;
+                const R = (R_MIN + R_MAX) / 2;
+                list[0].x = cx + R * Math.cos(angle);
+                list[0].y = cy + R * Math.sin(angle);
+                return;
+            }
+
+            // Place nodes in concentric sub-rings within sector
+            // Each sub-ring fits as many nodes as arc allows at that radius
+            const NODE_GAP = 32; // min px between centers
+            let remaining = [...list];
+            let ringNum = 0;
+
+            while (remaining.length > 0) {
+                // Radius for this sub-ring
+                const totalSubRings = Math.max(1, Math.ceil(Math.log2(total + 1)));
+                const R = R_MIN + (ringNum + 0.5) * (R_MAX - R_MIN) / Math.max(totalSubRings, 1);
+
+                // Arc length at this radius
+                const arcLen = (end - start) * R;
+
+                // How many nodes fit
+                const fit = Math.max(1, Math.floor(arcLen / NODE_GAP));
+                const batch = remaining.splice(0, fit);
+
+                const padding = (end - start) * 0.04;
+                batch.forEach((n, i) => {
+                    const angle = batch.length === 1
+                        ? (start + end) / 2
+                        : start + padding + (i / (batch.length - 1)) * (end - start - padding * 2);
+                    n.x = cx + R * Math.cos(angle);
+                    n.y = cy + R * Math.sin(angle);
+                });
+
+                ringNum++;
+                // Safety — if more rings than space, spread remaining at outer edge
+                if (ringNum > 8) {
+                    remaining.forEach((n, i) => {
+                        const angle = start + padding + (i / Math.max(remaining.length - 1, 1)) * (end - start - padding * 2);
+                        n.x = cx + R_MAX * Math.cos(angle);
+                        n.y = cy + R_MAX * Math.sin(angle);
+                    });
+                    break;
+                }
+            }
+        }
+
+        packInSector(supportNodes, sectors.support);
+        packInSector(neutralNodes, sectors.neutral);
+        packInSector(opposeNodes, sectors.oppose);
+
+        sgNodes[0].x = cx;
+        sgNodes[0].y = cy;
+
+        function draw() {
+            drawSG(canvas, W, H);
+            sgAnimFrame = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+
+    function drawSG(canvas, W, H) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, W, H);
+        ctx.save();
+        ctx.translate(W / 2 + sgPan.x, H / 2 + sgPan.y);
+        ctx.scale(sgZoom, sgZoom);
+        ctx.translate(-W / 2, -H / 2);
+
+        const cx = W / 2, cy = H / 2;
+        const t = sgNodes[0];
+
+        // ── Ring guide lines ──
+        const R_MIN = Math.min(W, H) * 0.12;
+        const R_MAX = Math.min(W, H) * 0.46;
+
+        // Draw 3 sector zones like donut slices
+        const zones = [
+            { col: '#00fab6', start: -Math.PI / 2, end: -Math.PI / 2 + (2 * Math.PI / 3), label: 'Support' },
+            { col: '#ebebeb', start: -Math.PI / 2 + (2 * Math.PI / 3), end: -Math.PI / 2 + (4 * Math.PI / 3), label: 'Neutral' },
+            { col: '#f43f5e', start: -Math.PI / 2 + (4 * Math.PI / 3), end: -Math.PI / 2 + (2 * Math.PI), label: 'Oppose' },
+        ];
+
+        zones.forEach(zone => {
+            // Filled sector background
+            ctx.beginPath();
+            ctx.moveTo(cx + R_MIN * Math.cos(zone.start), cy + R_MIN * Math.sin(zone.start));
+            ctx.arc(cx, cy, R_MAX, zone.start, zone.end);
+            ctx.arc(cx, cy, R_MIN, zone.end, zone.start, true);
+            ctx.closePath();
+            ctx.fillStyle = zone.col + '0d';
+            ctx.fill();
+            ctx.strokeStyle = zone.col + '33';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Sector divider lines
+            ctx.strokeStyle = zone.col + '44';
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([4, 5]);
+            ctx.beginPath();
+            ctx.moveTo(cx + R_MIN * Math.cos(zone.start), cy + R_MIN * Math.sin(zone.start));
+            ctx.lineTo(cx + R_MAX * Math.cos(zone.start), cy + R_MAX * Math.sin(zone.start));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Label at sector midpoint
+            const midAngle = (zone.start + zone.end) / 2;
+            const labelR = R_MAX + 22;
+            ctx.fillStyle = zone.col + 'cc';
+            ctx.font = 'bold 11px Google Sans,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(zone.label, cx + labelR * Math.cos(midAngle), cy + labelR * Math.sin(midAngle));
+        });
+
+
+        // ── Only 3 edges — one per sector to its midpoint ──
+        const R_MID = Math.min(W, H) * 0.29;
+        const sectorMids = [
+            { angle: -Math.PI / 2 + Math.PI / 3, col: '#00fab6' },
+            { angle: -Math.PI / 2 + Math.PI, col: '#ebebeb' },
+            { angle: -Math.PI / 2 + (5 * Math.PI / 3), col: '#f43f5e' },
+        ];
+        sectorMids.forEach(s => {
+            const ex = cx + R_MID * Math.cos(s.angle);
+            const ey = cy + R_MID * Math.sin(s.angle);
+            const g = ctx.createLinearGradient(t.x, t.y, ex, ey);
+            g.addColorStop(0, s.col);
+            g.addColorStop(1, s.col + '22');
+            ctx.strokeStyle = g;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(t.x, t.y);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+        });
+
+        // ── Commentor nodes ──
+        sgNodes.slice(1).forEach(n => {
+            const isSel = sgSelected && sgSelected.data.commentor_id === n.data.commentor_id;
+
+            // Glow halo
+            const gr = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 2.2);
+            gr.addColorStop(0, n.col + (isSel ? '55' : '22'));
+            gr.addColorStop(1, 'transparent');
+            ctx.fillStyle = gr;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.r * 2.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Node circle
+            ctx.shadowColor = n.col;
+            ctx.shadowBlur = isSel ? 18 : 8;
+            ctx.fillStyle = '#0a1628';
+            ctx.strokeStyle = n.col;
+            ctx.lineWidth = isSel ? 2.5 : 1.5;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Initials
+            const initials = (n.data.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            ctx.fillStyle = n.col;
+            ctx.font = `bold ${Math.max(8, Math.floor(n.r * 0.55))}px Google Sans,sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(initials, n.x, n.y);
+
+            // Name below
+            const firstName = (n.data.name || '?').split(' ')[0];
+            const label = firstName.length > 8 ? firstName.slice(0, 7) + '…' : firstName;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '9px Google Sans,sans-serif';
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, n.x, n.y + n.r + 4);
+
+            // Comment count badge
+            ctx.fillStyle = n.col + 'bb';
+            ctx.font = 'bold 8px Google Sans,sans-serif';
+            ctx.fillText(`${n.data.comment_count || 0}`, n.x, n.y + n.r + 14);
+        });
+
+        // ── Center target node ──
+        const tg = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r);
+        tg.addColorStop(0, '#f43f5e');
+        tg.addColorStop(1, '#38bdf8');
+        ctx.fillStyle = tg;
+        ctx.shadowColor = '#f43f5e';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Outer ring pulse
+        ctx.strokeStyle = '#f43f5e55';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r + 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Threat icon
+        if (_threatIcon.complete && _threatIcon.naturalWidth > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.r - 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(_threatIcon, t.x - t.r + 2, t.y - t.r + 2, (t.r - 2) * 2, (t.r - 2) * 2);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px Google Sans,sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('TGT', t.x, t.y);
+            _threatIcon.onload = () => { };
+        }
+
+        ctx.restore();
+    }
+
+    function setupSGInteraction(canvas) {
+        let mdPos = null, mdTime = 0;
+        canvas.addEventListener('mousedown', e => {
+            const pos = getSGPos(canvas, e); mdPos = pos; mdTime = Date.now();
+            const hit = sgHitTest(canvas, pos);
+            if (hit && !hit.isTarget) { sgDrag = hit; sgIsDragging = false; hit.isDragged = true; }
+            else { sgIsPanning = true; sgLastPan = { ...sgPan }; sgPanStart = { x: e.clientX, y: e.clientY }; }
+        });
+        canvas.addEventListener('mousemove', e => {
+            const pos = getSGPos(canvas, e);
+            if (sgDrag) { sgIsDragging = true; const W = canvas.width, H = canvas.height; sgDrag.x = (pos.x - W / 2 - sgPan.x) / sgZoom + W / 2; sgDrag.y = (pos.y - H / 2 - sgPan.y) / sgZoom + H / 2; return; }
+            if (sgIsPanning) { sgPan.x = sgLastPan.x + (e.clientX - sgPanStart.x); sgPan.y = sgLastPan.y + (e.clientY - sgPanStart.y); return; }
+            const hit = sgHitTest(canvas, pos); canvas.style.cursor = (hit && !hit.isTarget) ? 'pointer' : 'grab';
+        });
+        canvas.addEventListener('mouseup', e => {
+            const wasDrag = sgIsDragging;
+            if (sgDrag) sgDrag.isDragged = false;
+            sgDrag = null; sgIsPanning = false; sgIsDragging = false;
+            if (!wasDrag && mdPos) {
+                const pos = getSGPos(canvas, e);
+                if (Math.hypot(pos.x - mdPos.x, pos.y - mdPos.y) < 8 && Date.now() - mdTime < 400) {
+                    const hit = sgHitTest(canvas, pos);
+                    if (hit && !hit.isTarget) {
+                        if (sgSelected && sgSelected.data.commentor_id === hit.data.commentor_id) {
+                            sgSelected = null; closePanel();
+                        } else {
+                            sgSelected = hit;
+                            openPanel(hit.data);
+                        }
+                    } else {
+                        sgSelected = null; closePanel();
+                    }
+                }
+            }
+            mdPos = null;
+        });
+        canvas.addEventListener('mouseleave', () => { if (sgDrag) sgDrag.isDragged = false; sgDrag = null; sgIsPanning = false; });
+        canvas.addEventListener('wheel', e => { e.preventDefault(); sgZoom = Math.min(SG_ZOOM_MAX, Math.max(SG_ZOOM_MIN, sgZoom * (e.deltaY > 0 ? 0.9 : 1.1))); }, { passive: false });
+    }
+
+    function getSGPos(canvas, e) { const br = canvas.getBoundingClientRect(); return { x: (e.clientX - br.left) * (canvas.width / br.width), y: (e.clientY - br.top) * (canvas.height / br.height) }; }
+    function sgHitTest(canvas, pos) { const W = canvas.width, H = canvas.height; const ax = (pos.x - W / 2 - sgPan.x) / sgZoom + W / 2; const ay = (pos.y - H / 2 - sgPan.y) / sgZoom + H / 2; for (const n of sgNodes) { if (Math.hypot(ax - n.x, ay - n.y) <= n.r + 4) return n; } return null; }
+    function sgZoomIn() { sgZoom = Math.min(SG_ZOOM_MAX, sgZoom * 1.2); }
+    function sgZoomOut() { sgZoom = Math.max(SG_ZOOM_MIN, sgZoom * 0.8); }
+    function sgResetZoom() { sgZoom = 1.0; sgPan = { x: 0, y: 0 }; }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  COUNTRY × STANCE TABLE
+    // ══════════════════════════════════════════════════════════════════
+    function loadCountryStance() {
+        fetch(CS_API).then(r => r.json()).then(rows => {
+            document.getElementById('cs-badge').textContent = `${rows.length} countries`;
+            const tbody = document.getElementById('cs-tbody');
+            if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No country data yet — run country detection first</td></tr>'; return; }
+            tbody.innerHTML = rows.map(row => {
+                const total = row.total || 1;
+                const sup = row.support || 0, neu = row.neutral || 0, opp = row.oppose || 0;
+                const supPct = Math.round(sup / total * 100), neuPct = Math.round(neu / total * 100), oppPct = Math.round(opp / total * 100);
+                const flag = FLAGS[row.identified_country] || '🏳️';
+                const country = row.identified_country || 'Unknown';
+                return `<tr>
+        <td><span class="cs-flag">${flag}</span><span class="cs-country">${country}</span></td>
+        <td><span class="cs-total">${row.total}</span></td>
+        <td>
+          <div class="stance-bar-wrap">
+            ${sup > 0 ? `<div class="stance-seg stance-support" style="width:${supPct}%;">${supPct > 10 ? supPct + '%' : ''}</div>` : ''}
+            ${neu > 0 ? `<div class="stance-seg stance-neutral" style="width:${neuPct}%;">${neuPct > 10 ? neuPct + '%' : ''}</div>` : ''}
+            ${opp > 0 ? `<div class="stance-seg stance-oppose" style="width:${oppPct}%;">${oppPct > 10 ? oppPct + '%' : ''}</div>` : ''}
+          </div>
+        </td>
+        <td><span style="color:#10b981;font-weight:700;font-size:12px;">${supPct}%</span></td>
+        <td><span style="color:#94a3b8;font-weight:700;font-size:12px;">${neuPct}%</span></td>
+        <td><span style="color:#f43f5e;font-weight:700;font-size:12px;">${oppPct}%</span></td>
+      </tr>`;
+            }).join('');
+
+            // ── Stance donut ──
+            let totalSup = 0, totalNeu = 0, totalOpp = 0;
+            rows.forEach(r => { totalSup += r.support || 0; totalNeu += r.neutral || 0; totalOpp += r.oppose || 0; });
+            const stanceTotal = totalSup + totalNeu + totalOpp || 1;
+            const supPctAll = Math.round(totalSup / stanceTotal * 100);
+            const neuPctAll = Math.round(totalNeu / stanceTotal * 100);
+            const oppPctAll = Math.round(totalOpp / stanceTotal * 100);
+
+            document.getElementById('stance-center-val').textContent = supPctAll + '%';
+            document.getElementById('stance-sup-pct').textContent = supPctAll + '%';
+            document.getElementById('stance-neu-pct').textContent = neuPctAll + '%';
+            document.getElementById('stance-opp-pct').textContent = oppPctAll + '%';
+
+            if (window._stanceChart) window._stanceChart.destroy();
+            window._stanceChart = new Chart(document.getElementById('stance-chart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Support', 'Neutral', 'Oppose'],
+                    datasets: [{
+                        data: [totalSup, totalNeu, totalOpp],
+                        backgroundColor: ['#f59e0b', '#ec4899', '#f43f5e'],
+                        borderWidth: 0, hoverOffset: 8, borderRadius: 4
+                    }]
+                },
+                options: {
+                    cutout: '72%', responsive: true, maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f2744', borderColor: '#38bdf8', borderWidth: 1,
+                            titleColor: '#fff', bodyColor: '#94a3b8', padding: 12, cornerRadius: 8
+                        }
+                    },
+                    animation: { duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+
+            // ── Top support country — read from rendered table rows ──
+            let bestSupportRow = null, bestSupportCount = 0, bestSupportTotal = 0;
+            let bestOpposeRow = null, bestOpposeCount = 0, bestOpposeTotal = 0;
+
+            rows.forEach(row => {
+                const sup = row.support || 0;
+                const opp = row.oppose || 0;
+                if (sup > bestSupportCount) {
+                    bestSupportCount = sup;
+                    bestSupportTotal = row.total || 1;
+                    bestSupportRow = row.identified_country || 'Unknown';
+                }
+                if (opp > bestOpposeCount) {
+                    bestOpposeCount = opp;
+                    bestOpposeTotal = row.total || 1;
+                    bestOpposeRow = row.identified_country || 'Unknown';
+                }
+            });
+
+            if (bestSupportRow) {
+                const pct = Math.round(bestSupportCount / bestSupportTotal * 100);
+                document.getElementById('top-support-flag').textContent = FLAGS[bestSupportRow] || '🏳️';
+                document.getElementById('top-support-name').textContent = bestSupportRow;
+                document.getElementById('top-support-pct').textContent = `${bestSupportCount} support · ${pct}% of ${bestSupportTotal} from this country`;
+                document.getElementById('top-support-count').textContent = bestSupportCount;
+            }
+
+            if (bestOpposeRow) {
+                const pct = Math.round(bestOpposeCount / bestOpposeTotal * 100);
+                document.getElementById('top-oppose-flag').textContent = FLAGS[bestOpposeRow] || '🏳️';
+                document.getElementById('top-oppose-name').textContent = bestOpposeRow;
+                document.getElementById('top-oppose-pct').textContent = `${bestOpposeCount} oppose · ${pct}% of ${bestOpposeTotal} from this country`;
+                document.getElementById('top-oppose-count').textContent = bestOpposeCount;
+            }
+            console.log('rows sample:', rows[0]);
+            console.log('bestSupportRow:', bestSupportRow, 'bestOpposeRow:', bestOpposeRow);
+        }).catch(e => { document.getElementById('cs-badge').textContent = 'Error'; });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  REPEAT INTERACTORS TABLE
+    // ══════════════════════════════════════════════════════════════════
+    function loadRepeatInteractors() {
+        fetch(REPEAT_API).then(r => r.json()).then(rows => {
+            const badge = document.getElementById('repeat-badge');
+            badge.textContent = `${rows.length} repeat actor${rows.length !== 1 ? 's' : ''} found`;
+            const container = document.getElementById('repeat-container');
+            if (!rows.length) {
+                container.innerHTML = '<div class="detail-card"><div class="dc-body"><div class="empty-state">No repeat interactors found — all actors appeared in only one post</div></div></div>';
+                return;
+            }
+            container.innerHTML = `<div class="detail-card"><div style="overflow-x:auto;">
+      <table class="repeat-table">
+        <thead><tr>
+          <th>Actor</th>
+          <th>Posts</th>
+          <th>Score</th>
+          <th>Appearances & Comments</th>
+        </tr></thead>
+        <tbody>${rows.map(row => {
+                const flag = FLAGS[row.identified_country] || '🌍';
+                const score = parseFloat(row.total_score || 0);
+                const scoreColor = score >= 0.5 ? '#10b981' : score >= 0.1 ? '#38bdf8' : score >= -0.1 ? '#64748b' : score >= -0.5 ? '#f59e0b' : '#f43f5e';
+                const appearances = (row.appearances || []).map(a => {
+                    const stance = (a.stance || 'neutral').toLowerCase();
+                    const stancePill = stance === 'support' ? 'stance-support-pill' : stance === 'oppose' ? 'stance-oppose-pill' : 'stance-neutral-pill';
+                    const text = a.comment_text || '[No text]';
+                    const shortUrl = (a.post_url || '').replace('https://www.facebook.com/', 'fb.com/').substring(0, 40);
+                    return `<div class="appearance-item">
+              <div class="appearance-comment">${text.substring(0, 100)}${text.length > 100 ? '…' : ''}</div>
+              <div class="appearance-meta">
+                <span class="appearance-stance ${stancePill}">${stance}</span>
+                <a href="${a.post_url || '#'}" target="_blank" class="appearance-url">🔗 ${shortUrl}…</a>
+                ${a.date_text ? `<span style="font-size:9px;color:#475569;">${a.date_text}</span>` : ''}
+              </div>
+            </div>`;
+                }).join('');
+                return `<tr>
+            <td>
+              <div class="repeat-name">${row.name || 'Unknown'}</div>
+              <div class="repeat-country">${flag} ${row.identified_country || '—'} · ${row.tier || '—'}</div>
+              <a href="${row.profile_url || '#'}" target="_blank" class="repeat-profile-link">View Profile ↗</a>
+            </td>
+            <td style="text-align:center;">
+              <div class="repeat-posts-count">${row.post_count}</div>
+              <div class="repeat-posts-label">posts</div>
+            </td>
+            <td><span class="repeat-score" style="color:${scoreColor};">${score.toFixed(3)}</span></td>
+            <td><div class="appearance-list">${appearances}</div></td>
+          </tr>`;
+            }).join('')}</tbody>
+      </table>
+    </div></div>`;
+        }).catch(e => { document.getElementById('repeat-badge').textContent = 'Error'; });
+    }
+
+    // ── Boot ──
+    document.addEventListener('DOMContentLoaded', () => {
+        loadGraph();
+        loadCountryStance();
+        loadRepeatInteractors();
+        // Stance graph loads after main graph data arrives
+        fetch(GRAPH_API).then(r => r.json()).then(d => {
+            console.log('Sample commentor comments:', d.commentors[0]?.comments?.slice(0, 3));
+            buildStanceGraph(d.commentors || []);
+        });
+    });
+</script>
+{% endblock %}

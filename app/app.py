@@ -1380,7 +1380,7 @@ def detail_batch_posts(batch_id):
 @app.route('/batch/<batch_id>/interactions')
 def detail_batch_interactions(batch_id):
     intel = get_comment_intelligence(batch_id=batch_id)
-    return render_template('detail_comments.html',
+    return render_template('detail_batch_comments.html',
         intel=intel, batch_id=batch_id)
 
 @app.route('/profile/<int:profile_id>/faces')
@@ -1744,6 +1744,80 @@ def api_comment_graph_batch(batch_id):
  
     return jsonify({'commentors': results})
 
+#For batch investigation country wise distribution
+@app.route('/api/batch-country-stance/<batch_id>')
+def api_batch_country_stance(batch_id):
+    """Country × stance breakdown for batch interactions."""
+    con = db_connect(manual=True)
+    if not con: return jsonify([])
+    cur = con.cursor()
+    rows = []
+    try:
+        cur.execute("""
+            SELECT 
+                COALESCE(cc.identified_country, 'Unknown') as identified_country,
+                COUNT(DISTINCT c.commentor_id) as total,
+                SUM(CASE WHEN LOWER(TRIM(ca.stance)) LIKE 'support%' THEN 1 ELSE 0 END) as support,
+                SUM(CASE WHEN LOWER(TRIM(ca.stance)) LIKE 'neutral%' THEN 1 ELSE 0 END) as neutral,
+                SUM(CASE WHEN LOWER(TRIM(ca.stance)) LIKE 'oppose%'  THEN 1 ELSE 0 END) as oppose
+            FROM comments c
+            JOIN manual_posts mp ON mp.id = c.post_id AND mp.batch_id = ?
+            LEFT JOIN comment_analysis ca ON ca.comment_id = c.id
+                AND ca.db_source = 'manual'
+            LEFT JOIN commentor_country cc ON cc.commentor_id = c.commentor_id
+            GROUP BY COALESCE(cc.identified_country, 'Unknown')
+            ORDER BY total DESC
+        """, (batch_id,))
+        rows = [dict(r) for r in cur.fetchall()]
+    except Exception as e:
+        print(f"Country stance error: {e}")
+    con.close()
+    return jsonify(rows)
+
+#For batch investigation if repeated person present
+@app.route('/api/batch-repeat-interactors/<batch_id>')
+def api_batch_repeat_interactors(batch_id):
+    """Interactors who appeared in more than one post in the batch."""
+    con = db_connect(manual=True)
+    if not con: return jsonify([])
+    cur = con.cursor()
+    results = []
+    try:
+        cur.execute("""
+            SELECT co.id as commentor_id, co.name, co.profile_url,
+                   COUNT(DISTINCT c.post_id) as post_count,
+                   COALESCE(bcs.total_score, 0) as total_score,
+                   COALESCE(bcs.tier, 'Unknown') as tier,
+                   cc.identified_country
+            FROM comments c
+            JOIN commentors co ON co.id = c.commentor_id
+            JOIN manual_posts mp ON mp.id = c.post_id AND mp.batch_id = ?
+            LEFT JOIN batch_commentor_scores bcs ON bcs.commentor_id = co.id AND bcs.batch_id = ?
+            LEFT JOIN commentor_country cc ON cc.commentor_id = co.id
+            GROUP BY co.id
+            HAVING post_count > 1
+            ORDER BY post_count DESC, total_score DESC
+        """, (batch_id, batch_id))
+
+        for row in cur.fetchall():
+            r = dict(row)
+            # Get their comments per post
+            cur.execute("""
+                SELECT c.comment_text, mp.url as post_url,
+                       mp.type, mp.date_text,
+                       ca.stance, ca.sentiment
+                FROM comments c
+                JOIN manual_posts mp ON mp.id = c.post_id AND mp.batch_id = ?
+                LEFT JOIN comment_analysis ca ON ca.comment_id = c.id AND ca.db_source = 'manual'
+                WHERE c.commentor_id = ?
+                ORDER BY mp.id
+            """, (batch_id, row['commentor_id']))
+            r['appearances'] = [dict(a) for a in cur.fetchall()]
+            results.append(r)
+    except Exception as e:
+        print(f"Repeat interactors error: {e}")
+    con.close()
+    return jsonify(results)
 
 #CO-COMMENTOR graph
 @app.route('/api/cocomment-graph/profile/<int:profile_id>')
