@@ -1203,8 +1203,7 @@
         'Costa Rica': '🇨🇷', 'Panama': '🇵🇦', 'Jamaica': '🇯🇲', 'Trinidad': '🇹🇹',
         'Guyana': '🇬🇾', 'Suriname': '🇸🇷', 'Belize': '🇧🇿', 'Barbados': '🇧🇧',
         'Australia': '🇦🇺', 'New Zealand': '🇳🇿', 'Fiji': '🇫🇯', 'Papua New Guinea': '🇵🇬',
-        'Samoa': '🇼🇸', 'Tonga': '🇹🇴', 'Vanuatu': '🇻🇺', 'Solomon Islands': '🇸🇧',
-        'Unknown': '🏳️',
+        'Samoa': '🇼🇸', 'Tonga': '🇹🇴', 'Vanuatu': '🇻🇺', 'Solomon Islands': '🇸🇧', 'Northern Ireland': '🏴󠁧󠁢󠁮󠁩󠁲󠁿', 'Sierra Leone': '🇸🇱', 'Unknown': '🏳️',
     };
 
     // ── Sentiment Donut ──
@@ -1389,7 +1388,7 @@
                 const sentClass = sent === 'positive' ? 'sent-positive' : sent === 'negative' ? 'sent-negative' : 'sent-neutral';
                 const sentIcon = sent === 'positive' ? '🟢' : sent === 'negative' ? '🔴' : '🟡';
                 const text = cm.comment_text || '[No text]';
-                return `<div class="cp-comment-item"><div class="cp-sentiment ${sentClass}">${sentIcon} ${sent}</div><div class="cp-comment-text" style="color:#ffffff">${text.substring(0, 120)}${text.length > 120 ? '…' : ''}</div><a href="${cm.post_url || '#'}" target="_blank" class="cp-post-link">🔗 URL ↗</a></div>`;
+                return `<div class="cp-comment-item"><div class="cp-sentiment ${sentClass}">Sentiment: ${sentIcon} ${sent}</div><div class="cp-comment-text" style="color:#ffffff">${text.substring(0, 120)}${text.length > 120 ? '…' : ''}</div><a href="${cm.post_url || '#'}" target="_blank" class="cp-post-link">🔗 URL ↗</a></div>`;
             }).join('');
         }
         document.getElementById('comment-panel').classList.add('open');
@@ -1840,22 +1839,26 @@
                 }
             });
 
-            // ── Top support country — read from rendered table rows ──
+            // ── Top support and oppose — skip Unknown ──
             let bestSupportRow = null, bestSupportCount = 0, bestSupportTotal = 0;
             let bestOpposeRow = null, bestOpposeCount = 0, bestOpposeTotal = 0;
 
             rows.forEach(row => {
+                const country = row.identified_country || '';
+                if (!country || country === 'Unknown' || country.trim() === '') return;
+
                 const sup = row.support || 0;
                 const opp = row.oppose || 0;
+
                 if (sup > bestSupportCount) {
                     bestSupportCount = sup;
                     bestSupportTotal = row.total || 1;
-                    bestSupportRow = row.identified_country || 'Unknown';
+                    bestSupportRow = country;
                 }
                 if (opp > bestOpposeCount) {
                     bestOpposeCount = opp;
                     bestOpposeTotal = row.total || 1;
-                    bestOpposeRow = row.identified_country || 'Unknown';
+                    bestOpposeRow = country;
                 }
             });
 
