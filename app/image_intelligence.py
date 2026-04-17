@@ -38,6 +38,27 @@ CREATE TABLE IF NOT EXISTS image_analysis (
 );
 """
 
+def robust_json_parse(raw):
+    """Robustly extract JSON from LLM response."""
+    import re
+    raw = re.sub(r'```json\s*', '', raw)
+    raw = re.sub(r'```\s*', '', raw)
+    raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    match = re.search(r'(\{.*\})', raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except Exception:
+            pass
+    cleaned = re.sub(r',\s*([}\]])', r'\1', raw)
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        return None
 
 def extract_text_ocr(image_bytes):
     """Extract text from image using EasyOCR — accurate for Urdu/Arabic/Hindi/Bengali."""
@@ -328,7 +349,7 @@ def analyze_image_ollama(image_b64, mime_type, prompt):
                 raw = raw[4:]
         raw = raw.strip()
 
-        return json.loads(raw)
+        return robust_json_parse(raw)
 
     except json.JSONDecodeError as e:
         print(f"      JSON parse error: {e}")
@@ -525,6 +546,92 @@ def analyze_images(db_file=DB_FILE):
     print(f"\n{'═'*65}")
     print(f" Done — {success} analyzed, {skipped} skipped out of {total}")
 
+def fetch_unanalyzed_batch_photos(db_file, batch_id):
+    """Fetch photo type posts from manual batch that need image analysis."""
+    con = sqlite3.connect(db_file)
+    cur = con.cursor()
+    cur.executescript(IMAGE_ANALYSIS_SCHEMA)
+    con.commit()
+    photos = []
+    try:
+        cur.execute("""
+            SELECT mp.id, mp.url, mp.image_src, mp.caption, mp.date_text
+            FROM manual_posts mp
+            WHERE mp.batch_id = ? AND mp.type = 'photo'
+            AND mp.image_src IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM image_analysis ia
+                WHERE ia.photo_post_id = mp.id
+            )
+        """, (batch_id,))
+        for row in cur.fetchall():
+            photos.append({
+                'id': row[0], 'photo_url': row[1],
+                'image_src': row[2], 'caption': row[3], 'date': row[4]
+            })
+    except Exception as e:
+        print(f"    Batch photo fetch error: {e}")
+    con.close()
+    return photos
+
+
+def analyze_batch_images(db_file, batch_id):
+    """Analyze photo URLs from manual batch investigation."""
+    print(f"\n{'═'*65}")
+    print(f"Image Intelligence — Manual Batch")
+    print(f"Batch : {batch_id}")
+    print(f"Model : {OLLAMA_MODEL}")
+    print("═"*65)
+
+    if not check_ollama():
+        return
+
+    photos = fetch_unanalyzed_batch_photos(db_file, batch_id)
+    total  = len(photos)
+    print(f"   {total} unanalyzed batch photo posts found")
+
+    if total == 0:
+        print("   All batch images already analyzed")
+        return
+
+    success = skipped = 0
+
+    for i, photo in enumerate(photos, 1):
+        print(f"\n   [{i}/{total}] {photo['photo_url'][:70]}")
+        b64, mime = download_image_base64(photo['image_src'])
+        if not b64:
+            skipped += 1
+            continue
+
+        text_ratio = detect_text_ratio(b64)
+        if text_ratio >= TEXT_RATIO_THRESHOLD:
+            result = {
+                'scene_type': 'text_image', 'objects': [],
+                'activity': 'displaying text', 'crowd_size': 'none',
+                'political_symbols': None, 'religious_symbols': None,
+                'weapons_visible': None, 'cultural_context': None,
+                'text_in_image': None, 'text_language': None,
+                'location_clues': None, 'estimated_location': None, 'confidence': 0
+            }
+        elif text_ratio >= TEXT_MID_THRESHOLD:
+            ocr_text = extract_text_from_image(b64)
+            prompt = build_text_aware_prompt(ocr_text, photo['caption'], photo['date'])
+            result = analyze_image_ollama(b64, mime, prompt)
+        else:
+            prompt = build_vision_only_prompt(photo['caption'], photo['date'])
+            result = analyze_image_ollama(b64, mime, prompt)
+
+        if result:
+            save_image_result(db_file, photo['id'], result)
+            success += 1
+            print(f"      scene: {result.get('scene_type')} | location: {result.get('estimated_location') or 'Unknown'}")
+        else:
+            skipped += 1
+            print(f"      Analysis failed — skipping")
+
+        time.sleep(DELAY)
+
+    print(f"\n Done — {success} analyzed, {skipped} skipped")
 
 if __name__ == "__main__":
     analyze_images()

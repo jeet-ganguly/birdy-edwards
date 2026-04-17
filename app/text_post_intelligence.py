@@ -32,11 +32,31 @@ CREATE TABLE IF NOT EXISTS text_post_analysis (
     key_entities      TEXT,
     threat_indicators TEXT,
     ocr_used          INTEGER DEFAULT 1,
-    analyzed_at       TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (text_post_id) REFERENCES text_posts(id)
+    analyzed_at       TEXT DEFAULT (datetime('now'))
 );
 """
 
+def robust_json_parse(raw):
+    """Robustly extract JSON from LLM response."""
+    import re
+    raw = re.sub(r'```json\s*', '', raw)
+    raw = re.sub(r'```\s*', '', raw)
+    raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        pass
+    match = re.search(r'(\{.*\})', raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except Exception:
+            pass
+    cleaned = re.sub(r',\s*([}\]])', r'\1', raw)
+    try:
+        return json.loads(cleaned)
+    except Exception:
+        return None
 
 #  PYTESSERACT TEXT EXTRACTION
 
@@ -188,7 +208,7 @@ def analyze_with_ollama(extracted_text, post_date, language):
                 raw = raw[4:]
         raw = raw.strip()
 
-        return json.loads(raw)
+        return robust_json_parse(raw)
 
     except json.JSONDecodeError as e:
         print(f"      JSON parse error: {e}")
@@ -236,6 +256,7 @@ def fetch_unanalyzed_text_posts(db_file):
 
 def save_result(db_file, text_post_id, extracted_text, language, analysis):
     con = sqlite3.connect(db_file)
+    con.execute("PRAGMA foreign_keys = OFF")
     cur = con.cursor()
 
     try:
@@ -335,6 +356,78 @@ def analyze_text_posts(db_file=DB_FILE):
     print(f"\n{'═'*65}")
     print(f" Done — {success} analyzed, {skipped} skipped out of {total}")
 
+
+def fetch_unanalyzed_batch_text_posts(db_file, batch_id):
+    """Fetch post type URLs from manual batch that have screenshots."""
+    con = sqlite3.connect(db_file)
+    cur = con.cursor()
+    cur.executescript(TEXT_POST_ANALYSIS_SCHEMA)
+    con.commit()
+    posts = []
+    try:
+        cur.execute("""
+            SELECT mp.id, mp.url, mp.screenshot_path, mp.date_text
+            FROM manual_posts mp
+            WHERE mp.batch_id = ? AND mp.type = 'post'
+            AND mp.screenshot_path IS NOT NULL
+            AND NOT EXISTS (
+                SELECT 1 FROM text_post_analysis tpa
+                WHERE tpa.text_post_id = mp.id
+            )
+        """, (batch_id,))
+        for row in cur.fetchall():
+            posts.append({
+                'id': row[0], 'post_url': row[1],
+                'screenshot_path': row[2], 'date': row[3]
+            })
+    except Exception as e:
+        print(f"    Batch text post fetch error: {e}")
+    con.close()
+    return posts
+
+
+def analyze_batch_text_posts(db_file, batch_id):
+    """Analyze post type URLs from manual batch investigation."""
+    print(f"\n{'═'*65}")
+    print(f"Text Post Intelligence — Manual Batch")
+    print(f"Batch : {batch_id}")
+    print(f"Model : {OLLAMA_MODEL}")
+    print("═"*65)
+
+    if not check_ollama():
+        return
+
+    posts = fetch_unanalyzed_batch_text_posts(db_file, batch_id)
+    total = len(posts)
+    print(f"   {total} unanalyzed batch text posts found")
+
+    if total == 0:
+        print("   All batch text posts already analyzed")
+        return
+
+    success = skipped = 0
+
+    for i, post in enumerate(posts, 1):
+        print(f"\n   [{i}/{total}] {post['post_url'][:70]}")
+        extracted_text, language = extract_text_tesseract(post['screenshot_path'])
+
+        if not extracted_text or len(extracted_text.strip()) < MIN_TEXT_LENGTH:
+            save_result(db_file, post['id'], extracted_text, language, None)
+            skipped += 1
+            continue
+
+        analysis = analyze_with_ollama(extracted_text, post['date'], language)
+        save_result(db_file, post['id'], extracted_text, language, analysis)
+
+        if analysis:
+            success += 1
+            print(f"      topic: {analysis.get('topic') or 'None'}")
+        else:
+            skipped += 1
+
+        time.sleep(DELAY)
+
+    print(f"\n Done — {success} analyzed, {skipped} skipped")
 
 if __name__ == "__main__":
     analyze_text_posts()

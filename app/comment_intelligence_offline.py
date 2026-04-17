@@ -10,7 +10,7 @@ OLLAMA_MODEL   = "gemma3:4b"          # It can be overwrite from web panel not n
 
 DB_FILE        = "socmint.db"
 MANUAL_DB_FILE = "socmint_manual.db"
-BATCH_SIZE     = 5
+BATCH_SIZE     = 3
 DELAY          = 0.5            # ollama is local — no rate limit needed
 
 #  SCHEMA
@@ -62,6 +62,7 @@ Comment #{i+1}:
   Commentor Profile : {c['profile_url']}
   Post Caption      : {c['post_caption'] or 'N/A'}
   Post Date         : {c['post_date'] or 'N/A'}
+  Post Context      : {c.get('post_context') or 'N/A'}
   Comment Text      : {c['comment_text']}
 ---"""
 
@@ -78,6 +79,9 @@ Rules:
 - For non-text comments like [Emoji] or [Sticker] use sentiment="neutral", emotion="support", stance="neutral_discussion"
 - For aggressive/hateful content set emotion="aggressive" and sentiment="negative"
 - Sarcasm should be detected even in non-English languages
+- CRITICAL: Use Post Context to determine stance — a positive comment on a negative post = oppose_post
+- Example: Post about "enemy winning" + comment "Great!" = oppose_post not support_post
+- Stance is always relative to the POST NARRATIVE, not the comment tone alone
 
 {comments_text}
 
@@ -232,28 +236,39 @@ def fetch_unanalyzed_comments(db_file):
 
     comments = []
 
+    # Photo comments — with image analysis context
     try:
         cur.execute("""
             SELECT pc.id, 'photo', co.name, co.profile_url,
-                   pp.caption, pp.date_text, pc.comment_text
+                   pp.caption, pp.date_text, pc.comment_text,
+                   ia.scene_type, ia.activity, ia.political_symbols,
+                   ia.text_in_image
             FROM photo_comments pc
             JOIN commentors co ON co.id = pc.commentor_id
             JOIN photo_posts pp ON pp.id = pc.photo_post_id
+            LEFT JOIN image_analysis ia ON ia.photo_post_id = pp.id
             WHERE NOT EXISTS (
                 SELECT 1 FROM comment_analysis ca
                 WHERE ca.comment_id = pc.id AND ca.db_source = 'photo'
             )
         """)
         for row in cur.fetchall():
+            context_parts = []
+            if row[7]: context_parts.append(f"Scene: {row[7]}")
+            if row[8]: context_parts.append(f"Activity: {row[8]}")
+            if row[9]: context_parts.append(f"Political symbols: {row[9]}")
+            if row[10]: context_parts.append(f"Text in image: {row[10]}")
             comments.append({
                 'id': row[0], 'db_source': row[1],
                 'name': row[2] or '', 'profile_url': row[3] or '',
                 'post_caption': row[4] or '', 'post_date': row[5] or '',
-                'comment_text': row[6] or ''
+                'comment_text': row[6] or '',
+                'post_context': ' | '.join(context_parts) if context_parts else None
             })
     except Exception as e:
         print(f"    photo_comments fetch error: {e}")
 
+    # Reel comments — no image context available
     try:
         cur.execute("""
             SELECT rc.id, 'reel', co.name, co.profile_url,
@@ -270,29 +285,37 @@ def fetch_unanalyzed_comments(db_file):
                 'id': row[0], 'db_source': row[1],
                 'name': row[2] or '', 'profile_url': row[3] or '',
                 'post_caption': row[4] or '', 'post_date': row[5] or '',
-                'comment_text': row[6] or ''
+                'comment_text': row[6] or '',
+                'post_context': None
             })
     except Exception as e:
         print(f"    reel_comments fetch error: {e}")
 
+    # Text post comments — with text post analysis context
     try:
         cur.execute("""
             SELECT tc.id, 'text', co.name, co.profile_url,
-                   NULL, tp.date_text, tc.comment_text
+                   NULL, tp.date_text, tc.comment_text,
+                   tpa.topic, tpa.narrative_type
             FROM text_comments tc
             JOIN commentors co ON co.id = tc.commentor_id
             JOIN text_posts tp ON tp.id = tc.text_post_id
+            LEFT JOIN text_post_analysis tpa ON tpa.text_post_id = tp.id
             WHERE NOT EXISTS (
                 SELECT 1 FROM comment_analysis ca
                 WHERE ca.comment_id = tc.id AND ca.db_source = 'text'
             )
         """)
         for row in cur.fetchall():
+            context_parts = []
+            if row[7]: context_parts.append(f"Post topic: {row[7]}")
+            if row[8]: context_parts.append(f"Narrative: {row[8]}")
             comments.append({
                 'id': row[0], 'db_source': row[1],
                 'name': row[2] or '', 'profile_url': row[3] or '',
                 'post_caption': row[4] or '', 'post_date': row[5] or '',
-                'comment_text': row[6] or ''
+                'comment_text': row[6] or '',
+                'post_context': ' | '.join(context_parts) if context_parts else None
             })
     except Exception as e:
         print(f"    text_comments fetch error: {e}")
@@ -312,10 +335,16 @@ def fetch_unanalyzed_manual_comments(db_file, batch_id=None):
         if batch_id:
             cur.execute("""
                 SELECT c.id, 'manual', co.name, co.profile_url,
-                       mp.caption, mp.date_text, c.comment_text
+                       mp.caption, mp.date_text, c.comment_text,
+                       mp.type,
+                       ia.scene_type, ia.activity, ia.political_symbols,
+                       ia.text_in_image,
+                       tpa.topic, tpa.narrative_type
                 FROM comments c
                 JOIN commentors co ON co.id = c.commentor_id
                 JOIN manual_posts mp ON mp.id = c.post_id
+                LEFT JOIN image_analysis ia ON ia.photo_post_id = mp.id
+                LEFT JOIN text_post_analysis tpa ON tpa.text_post_id = mp.id
                 WHERE mp.batch_id = ?
                 AND c.id NOT IN (
                     SELECT comment_id FROM comment_analysis
@@ -335,11 +364,23 @@ def fetch_unanalyzed_manual_comments(db_file, batch_id=None):
                 )
             """)
         for row in cur.fetchall():
+            # Build post context from image/text analysis
+            post_type = row[7] or ''
+            context_parts = []
+            if row[8]: context_parts.append(f"Scene: {row[8]}")
+            if row[9]: context_parts.append(f"Activity: {row[9]}")
+            if row[10]: context_parts.append(f"Political symbols: {row[10]}")
+            if row[11]: context_parts.append(f"Text in image: {row[11]}")
+            if row[12]: context_parts.append(f"Post topic: {row[12]}")
+            if row[13]: context_parts.append(f"Narrative: {row[13]}")
+            post_context = ' | '.join(context_parts) if context_parts else None
+
             comments.append({
                 'id': row[0], 'db_source': row[1],
                 'name': row[2] or '', 'profile_url': row[3] or '',
                 'post_caption': row[4] or '', 'post_date': row[5] or '',
-                'comment_text': row[6] or ''
+                'comment_text': row[6] or '',
+                'post_context': post_context
             })
     except Exception as e:
         print(f"    manual comments fetch error: {e}")

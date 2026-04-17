@@ -922,12 +922,7 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
         # Phase 3 — AI Analysis (inject correct model) 
         write_status(key, {**read_status(key), 'phase': 'analyzing'})
 
-        import comment_intelligence_offline
-        comment_intelligence_offline.OLLAMA_MODEL = model
-        comment_intelligence_offline.analyze_comments(
-            socmint_db_import.DB_FILE, label='socmint'
-        )
-
+        # Image and text analysis FIRST — so context is available for comments
         import image_intelligence
         image_intelligence.OLLAMA_MODEL = model
         image_intelligence.analyze_images(socmint_db_import.DB_FILE)
@@ -935,6 +930,13 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
         import text_post_intelligence
         text_post_intelligence.OLLAMA_MODEL = model
         text_post_intelligence.analyze_text_posts(socmint_db_import.DB_FILE)
+
+        # Comment analysis AFTER — can now use image/text context
+        import comment_intelligence_offline
+        comment_intelligence_offline.OLLAMA_MODEL = model
+        comment_intelligence_offline.analyze_comments(
+            socmint_db_import.DB_FILE, label='socmint'
+        )
 
         import face_intelligence
         face_intelligence.analyze_faces(
@@ -1020,8 +1022,19 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
         })
 
         # Phase 3 — AI Analysis (inject correct model)
+        # Phase 3 — AI Analysis
         write_status(key, {**read_status(key), 'phase': 'analyzing'})
 
+        # Image and text FIRST so context is ready for comment analysis
+        import image_intelligence
+        image_intelligence.OLLAMA_MODEL = model
+        image_intelligence.analyze_batch_images(socmint_manual_db.DB_FILE, batch_id)
+
+        import text_post_intelligence
+        text_post_intelligence.OLLAMA_MODEL = model
+        text_post_intelligence.analyze_batch_text_posts(socmint_manual_db.DB_FILE, batch_id)
+
+        # Comment analysis AFTER — uses image/text context for stance
         import comment_intelligence_offline
         comment_intelligence_offline.OLLAMA_MODEL = model
         comment_intelligence_offline.analyze_comments(

@@ -643,11 +643,30 @@ def scrape_post(sb, url, idx, total):
     comments = sb.execute_script(f"(function(){{ {SCRAPE_COMMENTS_JS} }})()") or []
     print(f"    [comments]  {len(comments)} scraped")
 
+    # Take screenshot of post
+    import os, re
+    os.makedirs("post_screenshots", exist_ok=True)
+    fbid = re.search(r'pfbid(\w+)|/posts/(\w+)', url)
+    if fbid:
+        name = next(g for g in fbid.groups() if g)
+    else:
+        name = str(idx)
+    screenshot_path = os.path.join("post_screenshots", f"post_{name}.png")
+    try:
+        sb.execute_script("(function(){ window.scrollTo(0, 0); })()")
+        time.sleep(1)
+        sb.save_screenshot(screenshot_path)
+        print(f"    📸 Screenshot saved: {screenshot_path}")
+    except Exception as e:
+        print(f"    ⚠️  Screenshot failed: {e}")
+        screenshot_path = None
+
     return {
-        'url':      url,
-        'type':     'post',
-        'date':     date,
-        'comments': comments
+        'url':             url,
+        'type':            'post',
+        'date':            date,
+        'screenshot_path': screenshot_path,
+        'comments':        comments
     }
 
 def scrape_reel(sb, url, idx, total):

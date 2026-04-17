@@ -21,15 +21,16 @@ CREATE TABLE IF NOT EXISTS batches (
 
 -- Manual entries (photo / post / reel mixed)
 CREATE TABLE IF NOT EXISTS manual_posts (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    batch_id     TEXT NOT NULL,
-    url          TEXT NOT NULL,
-    type         TEXT,
-    date_text    TEXT,
-    image_src    TEXT,
-    caption      TEXT,
-    profile_url  TEXT,
-    scraped_at   TEXT DEFAULT (datetime('now')),
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id        TEXT NOT NULL,
+    url             TEXT NOT NULL,
+    type            TEXT,
+    date_text       TEXT,
+    image_src       TEXT,
+    caption         TEXT,
+    screenshot_path TEXT,
+    profile_url     TEXT,
+    scraped_at      TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
     UNIQUE(batch_id, url)
 );
@@ -241,6 +242,15 @@ def import_manual(manual_json=MANUAL_JSON, db_file=DB_FILE, batch_id=None, label
         print(f"  Migration skipped: {e}")
 
     # Register batch
+    # Migration — add screenshot_path column if missing
+    try:
+        cur.execute("ALTER TABLE manual_posts ADD COLUMN screenshot_path TEXT")
+        con.commit()
+        print("  Migration: added screenshot_path column")
+    except Exception:
+        pass  # column already exists
+
+    # Register batch
     get_or_create_batch(cur, batch_id, label)
     con.commit()
 
@@ -263,20 +273,23 @@ def import_manual(manual_json=MANUAL_JSON, db_file=DB_FILE, batch_id=None, label
         try:
             cur.execute("""
                 INSERT OR IGNORE INTO manual_posts
-                    (batch_id, url, type, date_text, image_src, caption, profile_url)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (batch_id, url, type, date_text, image_src, caption, screenshot_path, profile_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 batch_id, url, itype,
                 item.get("date"),
                 item.get("image_src"),
                 item.get("caption"),
+                item.get("screenshot_path"),
                 profile_url
             ))
         except Exception as e:
             print(f"  Insert error for {url}: {e}")
             continue
 
+        # Migration — add screenshot_path column if missing
         cur.execute("SELECT id FROM manual_posts WHERE batch_id = ? AND url = ?", (batch_id, url,))
+        
         row = cur.fetchone()
         if not row:
             continue
