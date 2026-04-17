@@ -177,6 +177,11 @@ docker compose logs -f
 http://localhost:5000
 ```
 
+**Step6 - Import session cookies**
+```
+http://localhost:5000/tools/import-cookies
+```
+
 ---
 
 ### Pull an AI Model
