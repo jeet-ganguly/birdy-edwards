@@ -33,7 +33,7 @@
 
 ## Features
 
-- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, and about data
+- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, about data also comments, commentors profile link and name
 - 🧠 **Interaction intelligence** — AI sentiment, stance, emotion, and language analysis per interaction
 - 📊 **Actor scoring** — Weighted composite score with 5-tier classification system
 - 🌍 **Country detection** — LLM identifies country of origin from profile signals
