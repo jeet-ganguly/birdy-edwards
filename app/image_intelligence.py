@@ -247,7 +247,7 @@ def detect_text_ratio(image_b64):
 
 
 TEXT_RATIO_THRESHOLD  = 0.75  # ≥ 75% → heavily text, skip gemma
-TEXT_MID_THRESHOLD    = 0.40  # 40-74% → OCR + text-aware gemma prompt
+TEXT_MID_THRESHOLD    = 0.50  # 40-74% → OCR + text-aware gemma prompt
 
 
 def extract_text_from_image(b64):
