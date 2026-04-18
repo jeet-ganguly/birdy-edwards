@@ -827,7 +827,7 @@ def build_cover(data, S):
     story.append(tbl)
     story.append(Spacer(1, 1*cm))
     story.append(HRFlowable(width='100%', thickness=0.5, color=C_BORDER, spaceAfter=10))
-    story.append(Paragraph("Developed by:  Jeet Ganguly", S['dev']))
+    story.append(Paragraph("Developed for:  Investigators", S['dev']))
     story.append(Spacer(1, 0.3*cm))
     story.append(Paragraph("CONFIDENTIAL  —  FOR  AUTHORIZED  USE  ONLY", S['confidential']))
     story.append(PageBreak())
