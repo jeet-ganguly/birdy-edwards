@@ -1005,53 +1005,7 @@
         </div>
     </div>
 
-    <!-- ══ MAIN INTERACTION GRAPH 
-    <div style="margin-top:28px;">
-        <div class="section-header">
-            <div>
-                <div class="section-title">Interaction Network Graph</div>
-                <div class="section-subtitle">Frequency-based · Click node to view interactions</div>
-            </div>
-            <button class="action-btn" onclick="resetZoom()">Re-Plot</button>
-        </div>
-        <div class="graph-wrap" id="graph-wrap" style="height:620px;">
-            <div class="graph-loading" id="graph-loading">
-                <div class="spin"></div>Loading network...
-            </div>
-            <canvas id="graph-canvas"></canvas>
-            <div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:5;">
-                <button onclick="zoomIn()" class="zoom-btn">+</button>
-                <button onclick="zoomOut()" class="zoom-btn">−</button>
-                <button onclick="resetZoom()" class="zoom-btn reset">RST</button>
-            </div>
-            <div class="graph-legend">
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b;"></div>10+
-                    Interactions
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:#ec4899;box-shadow:0 0 6px #ec4899;"></div>5+ Interactions
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:#fcd34d;box-shadow:0 0 6px #fcd34d;"></div>2+ Interactions
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b981;"></div>1 Interaction
-                </div>
-            </div>
-            <div class="comment-panel" id="comment-panel">
-                <span class="cp-close" onclick="closePanel()">✕</span>
-                <div class="cp-header">
-                    <div class="cp-name" id="cp-name">—</div>
-                    <div class="cp-meta" id="cp-meta">—</div>
-                    <div class="cp-score" id="cp-score">—</div>
-                </div>
-                <div class="cp-comments" id="cp-comments">
-                    <div class="cp-empty">Select a node</div>
-                </div>
-            </div>
-        </div>
-    </div>══ -->
+    <!-- ══ MAIN INTERACTION GRAPH -->
     <!-- ══ STANCE-BASED FORCE GRAPH ══ -->
     <div class="stance-graph-wrap" style="margin-top:28px;height:860px;">
         <div style="position:absolute;top:12px;left:16px;z-index:5;">
@@ -1227,9 +1181,6 @@
         }
     });
 
-    // ══════════════════════════════════════════════════════════════════
-    //  MAIN INTERACTION GRAPH (frequency-based, same as profile page)
-    // ══════════════════════════════════════════════════════════════════
     let graphData = [], nodes = [], selectedNode = null, animFrame = null;
     let isDragging = false, dragNode = null, panOffset = { x: 0, y: 0 };
     let isPanning = false, panStart = { x: 0, y: 0 }, lastPanOffset = { x: 0, y: 0 };
@@ -1399,7 +1350,7 @@
     function resetZoom() { zoomScale = 1.0; panOffset = { x: 0, y: 0 }; }
 
     // ══════════════════════════════════════════════════════════════════
-    //  STANCE GRAPH — support=close, neutral=mid, oppose=far
+    //  STANCE GRAPH — 
     // ══════════════════════════════════════════════════════════════════
     let sgNodes = [], sgAnimFrame = null, sgZoom = 1.0, sgPan = { x: 0, y: 0 };
     let sgLastPan = { x: 0, y: 0 }, sgPanStart = { x: 0, y: 0 }, sgIsPanning = false;
