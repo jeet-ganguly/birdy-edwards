@@ -29,18 +29,21 @@ MODEL_FILE     = os.path.join(BASE_DIR, '.ollama_model')
 # Available models — verified on Ollama library
 AVAILABLE_MODELS = {
     '8GB RAM (4B–7B Models)': [
-        ('gemma3:4b',       'Gemma 3 4B       — recommended for 8GB'),
+        ('gemma4:e2b',       'Gemma 4 e2B       — recommended for 8GB'),
+        ('gemma3:4b',       'Gemma 3 4B       — Latest Gemma4 for 8GB'),
         ('llava:7b',        'LLaVA 7B         — vision capable'),
         ('qwen2-vl:7b',     'Qwen2-VL 7B      — strong vision'),
     ],
     '16GB RAM (8B–13B Models)': [
         ('gemma3:12b',      'Gemma 3 12B      — recommended for 16GB'),
+        ('gemma4:e4b',       'Gemma 4 4B       — Latest Gemma4'),
         ('minicpm-v:8b',    'MiniCPM-V 8B     — best OCR + vision'),
         ('qwen2.5-vl:7b',   'Qwen2.5-VL 7B   — flagship vision'),
         ('llava:13b',       'LLaVA 13B        — high quality vision'),
     ],
     '32GB RAM (27B+ Models)': [
         ('gemma3:27b',      'Gemma 3 27B      — high accuracy'),
+        ('gemma4:26b',      'Gemma 4 26B      — Latest Gemma4'),
         ('qwen2.5-vl:32b',  'Qwen2.5-VL 32B  — premium vision'),
         ('llava:34b',       'LLaVA 34B        — top vision quality'),
     ],
