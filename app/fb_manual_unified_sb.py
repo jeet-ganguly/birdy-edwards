@@ -270,36 +270,157 @@ return Object.values(seen);
 DATE_JS = """
 var months = 'January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
 var datePattern = new RegExp('^(\\\\d{1,2}\\\\s+(' + months + ')(\\\\s+\\\\d{4})?|(' + months + ')\\\\s+\\\\d{1,2},?(\\\\s+\\\\d{4})?|\\\\d{1,2}\\\\s+(' + months + ')\\\\s+at\\\\s+\\\\d{2}:\\\\d{2})$');
+var relPattern = /^(yesterday|moments? ago|\\d+\\s+(second|minute|min|hour|hr|day|week|month|year)s?\\s+ago|about\\s+(a|an|\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+(second|minute|min|hour|hr|day|week|month|year)s?\\s+ago)$/i;
 
-// Strategy 1 — _r_ / _R_ span
-var dateEl =
-    document.querySelector('.__fb-light-mode > span[id^="_r_"]') ||
-    document.querySelector('.__fb-dark-mode > span[id^="_r_"]')  ||
-    document.querySelector('.__fb-light-mode > span[id^="_R_"]') ||
-    document.querySelector('.__fb-dark-mode > span[id^="_R_"]');
-if (dateEl) {
-    var t = dateEl.innerText.trim();
-    if (t && t.length > 0) return t;
+var uiSkip = ['see more', 'see less', 'like', 'comment', 'share', 'follow',
+              'reply', 'hide', 'edit', 'delete', 'report', 'just now'];
+
+function isAbsoluteDate(t) {
+    if (!t || t.length < 3) return false;
+    return datePattern.test(t.trim());
 }
 
-// Strategy 2 — scan all _r_ / _R_ prefix spans
+function isRelativeDate(t) {
+    if (!t || t.length < 3) return false;
+    var lower = t.toLowerCase().trim();
+    for (var k = 0; k < uiSkip.length; k++) {
+        if (lower === uiSkip[k]) return false;
+    }
+    return relPattern.test(lower);
+}
+
+function convertAbbrev(t) {
+    if (/^\\d+[dhmsw]$/.test(t)) {
+        var num = t.slice(0, -1);
+        var unit = t.slice(-1);
+        var units = {d: 'days', h: 'hours', m: 'minutes', s: 'seconds', w: 'weeks'};
+        return num + ' ' + (units[unit] || unit) + ' ago';
+    }
+    return null;
+}
+
+// ── PHASE 1: Absolute date only ──────────────────────────────
+
+// Strategy 1 — _r_ / _R_ span
 var allSpans = document.querySelectorAll('span[id]');
 for (var i = 0; i < allSpans.length; i++) {
     if (/^_[rR]_/.test(allSpans[i].id)) {
-        var t2 = allSpans[i].innerText.trim();
-        if (t2 && t2.length > 0) return t2;
+        var t = allSpans[i].innerText.trim();
+        if (isAbsoluteDate(t)) return t;
     }
 }
 
-// Strategy 3 — scan all spans direct text
+// Strategy 2 — /posts/ and story_fbid links
+var links = document.querySelectorAll('a[href*="/posts/"] span, a[href*="story_fbid"] span');
+for (var j = 0; j < links.length; j++) {
+    var t2 = links[j].innerText.trim();
+    if (isAbsoluteDate(t2)) return t2;
+}
+
+// Strategy 3 — all spans direct text
 var candidates = document.querySelectorAll('span');
-for (var j = 0; j < candidates.length; j++) {
+for (var k2 = 0; k2 < candidates.length; k2++) {
     var directText = '';
-    candidates[j].childNodes.forEach(function(node) {
+    candidates[k2].childNodes.forEach(function(node) {
         if (node.nodeType === 3) directText += node.textContent;
     });
     directText = directText.trim();
-    if (datePattern.test(directText)) return directText;
+    if (isAbsoluteDate(directText)) return directText;
+}
+
+// ── PHASE 2: Relative time — only if no absolute date found ──
+
+var currentUrl = window.location.href;
+var profileMatch = currentUrl.match(/facebook\\.com\\/([^/?#]+)/);
+var profileSlug = profileMatch ? profileMatch[1] : null;
+var skipSlugs = ['permalink', 'photo', 'reel', 'posts', 'watch', 'video', 'groups', 'pages'];
+var cftDateAnchors = document.querySelectorAll('a[href*="__cft__"]');
+
+// Strategy 4 — absolute href anchor with profile slug match
+if (profileSlug && skipSlugs.indexOf(profileSlug) === -1) {
+    for (var cd = 0; cd < cftDateAnchors.length; cd++) {
+        var href4 = cftDateAnchors[cd].getAttribute('href') || '';
+        if (href4.indexOf('facebook.com') === -1) continue;
+        var cdSpans = cftDateAnchors[cd].querySelectorAll('span');
+        var dateText = null;
+        for (var cds = 0; cds < cdSpans.length; cds++) {
+            var cdT = cdSpans[cds].innerText.trim();
+            if ((isRelativeDate(cdT) || /^\\d+[dhmsw]$/.test(cdT)) && cdT.length < 30) {
+                dateText = cdT;
+                break;
+            }
+        }
+        if (!dateText) continue;
+        var parent = cftDateAnchors[cd].parentElement;
+        for (var pi = 0; pi < 8; pi++) {
+            if (!parent) break;
+            parent = parent.parentElement;
+        }
+        var profileLink = parent ? parent.querySelector('a[href*="' + profileSlug + '"]') : null;
+        if (profileLink) {
+            var converted = convertAbbrev(dateText);
+            return converted || dateText;
+        }
+    }
+}
+
+// Strategy 5 — relative href anchor with profile slug match (second pass)
+if (profileSlug && skipSlugs.indexOf(profileSlug) === -1) {
+    for (var cd2 = 0; cd2 < cftDateAnchors.length; cd2++) {
+        var cdSpans2 = cftDateAnchors[cd2].querySelectorAll('span');
+        var dateText2 = null;
+        for (var cds2 = 0; cds2 < cdSpans2.length; cds2++) {
+            var cdT2 = cdSpans2[cds2].innerText.trim();
+            if ((isRelativeDate(cdT2) || /^\\d+[dhmsw]$/.test(cdT2)) && cdT2.length < 30) {
+                dateText2 = cdT2;
+                break;
+            }
+        }
+        if (!dateText2) continue;
+        var parent2 = cftDateAnchors[cd2].parentElement;
+        for (var pi2 = 0; pi2 < 8; pi2++) {
+            if (!parent2) break;
+            parent2 = parent2.parentElement;
+        }
+        var profileLink2 = parent2 ? parent2.querySelector('a[href*="' + profileSlug + '"]') : null;
+        if (profileLink2) {
+            var converted2 = convertAbbrev(dateText2);
+            return converted2 || dateText2;
+        }
+    }
+}
+
+// Strategy 6 — postId anchor abbreviated format
+var postIdMatch = currentUrl.match(/pfbid([\\w]+)|\\/([0-9]{10,})/);
+var postId = postIdMatch ? (postIdMatch[1] || postIdMatch[2]) : null;
+if (postId) {
+    var postAnchors = document.querySelectorAll('a[href*="' + postId + '"] span');
+    for (var pa = 0; pa < postAnchors.length; pa++) {
+        var tpa = postAnchors[pa].innerText.trim();
+        var conv = convertAbbrev(tpa);
+        if (conv) return conv;
+        if (isRelativeDate(tpa)) return tpa;
+    }
+}
+
+// Strategy 7 — __cft__ token from URL
+var cftMatch = currentUrl.match(/__cft__\\[0\\]=([\\w-]+)/);
+var cftToken = cftMatch ? cftMatch[1] : null;
+if (cftToken) {
+    var cftAnchors = document.querySelectorAll('a[href*="' + cftToken + '"] span');
+    for (var ct = 0; ct < cftAnchors.length; ct++) {
+        var tct = cftAnchors[ct].innerText.trim();
+        var conv2 = convertAbbrev(tct);
+        if (conv2) return conv2;
+        if (isRelativeDate(tct)) return tct;
+    }
+}
+
+// Strategy 8 — #?agf anchor fallback
+var agfAnchors = document.querySelectorAll('a[href$="#?agf"] span');
+for (var ag = 0; ag < agfAnchors.length; ag++) {
+    var tAg = agfAnchors[ag].innerText.trim();
+    if (isRelativeDate(tAg)) return tAg;
 }
 
 return null;
