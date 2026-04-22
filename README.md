@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)]()
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)]()
 
-**AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency.**
+**AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency. For lite version check this repo [click here](https://github.com/jeet-ganguly/birdy-edwards-lite)**
 
 [Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer) . [Contributing](#contributing)
 
