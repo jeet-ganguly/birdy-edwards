@@ -36,13 +36,13 @@ def get_reels_url(profile_url):
 
 #  PHASE 1 — Collect reel URLs
 
-COLLECT_REEL_LINKS_JS = """
+COLLECT_REEL_LINKS_JS = r"""
 var seen = new Set();
 var result = [];
 document.querySelectorAll('a').forEach(function(link) {
     var href = link.href || '';
     if (!href.includes('facebook.com')) return;
-    if (!href.includes('/reel/') && !href.includes('/reels/')) return;
+    if (!href.match(/\/reel\/[a-zA-Z0-9]+/) && !href.match(/\/reels\/[a-zA-Z0-9]+/)) return;
     if (seen.has(href)) return;
     seen.add(href);
     result.push(href.split('?')[0]);
