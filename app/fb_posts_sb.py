@@ -598,7 +598,7 @@ def phase2_scrape_post(sb, post_url, idx, total):
 
 
 
-def main(profile_url="https://www.facebook.com/fozia.s.qazi", max_posts=10):
+def main(profile_url, max_posts=10):
     if not profile_url:
         profile_url = input("Enter profile URL: ").strip()
 
