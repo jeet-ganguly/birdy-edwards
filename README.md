@@ -206,7 +206,7 @@ Or use the **AI Model panel** in the web UI — select a model and click **Apply
 
 BIRDY-EDWARDS requires a valid Facebook session. Use the **Cookie-Editor** browser extension — works on all platforms, no Selenium required.
 
-> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **sock puppet account** for investigations rather than your personal Facebook account. This protects your identity and prevents your primary account from being flagged or restricted.
+> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **burner account** for investigations rather than your personal Facebook account. This protects your identity and prevents your primary account from being flagged or restricted.
 
 1. Install Cookie-Editor → [Chrome](https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) · [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/)
 2. Log into your **dedicated investigation account** on Facebook
