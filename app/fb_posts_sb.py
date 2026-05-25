@@ -483,7 +483,15 @@ def phase1_collect_urls(sb, profile_url, max_posts):
             break
 
     print(f"\n  Total posts found: {len(post_links)}")
-    return post_links
+    final_links = []
+    for i in post_links:
+        if profile_url in i:
+            final_links.append(i)
+        else:
+            continue
+    print(f"\n Final validated urls found: {len(final_links)}")
+    print(final_links)
+    return final_links
 
 
 #  PHASE 2 — Scrape each post: text + date + comments
