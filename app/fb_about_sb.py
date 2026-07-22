@@ -105,12 +105,12 @@ return false;
 
 GET_OWNER_NAME_JS = """
 // Try profile name from the cover photo area — most reliable
-// Facebook puts the name in a span inside h1 on the profile page
 var selectors = [
-    'h1 span',                          // name inside h1 span
-    '[data-overviewsection] h1',        // about section h1
-    'div[data-pagelet="ProfileActions"] ~ div h1',  // near action buttons
+    'h1 span',
+    '[data-overviewsection] h1',
+    'div[data-pagelet="ProfileActions"] ~ div h1',
 ];
+
 for (var i = 0; i < selectors.length; i++) {
     var el = document.querySelector(selectors[i]);
     if (el) {
@@ -118,6 +118,7 @@ for (var i = 0; i < selectors.length; i++) {
         if (name.length > 1 && name !== 'Notifications') return name;
     }
 }
+
 // Fallback — all h1s, pick first that is not a UI label
 var h1s = document.querySelectorAll('h1');
 for (var j = 0; j < h1s.length; j++) {
@@ -125,19 +126,53 @@ for (var j = 0; j < h1s.length; j++) {
     var skip = ['Notifications', 'Facebook', 'Menu', 'Search', 'Home'];
     var bad = false;
     for (var k = 0; k < skip.length; k++) {
-        if (name === skip[k]) { bad = true; break; }
+        if (name === skip[k]) {
+            bad = true;
+            break;
+        }
     }
     if (!bad && name.length > 1) return name;
 }
+
+// Fallback — Facebook new UI (name rendered as role=button inside span[dir="auto"])
+var btn = document.querySelector('span[dir="auto"] > div[role="button"]');
+if (btn && btn.childNodes.length > 0) {
+    var name = (btn.childNodes[0].textContent || '').trim();
+    if (
+        name.length > 1 &&
+        !['Notifications', 'Facebook', 'Menu', 'Search', 'Home'].includes(name)
+    ) {
+        return name;
+    }
+}
+
+// Fallback — any role=button that looks like a person's name
+var buttons = document.querySelectorAll('div[role="button"]');
+for (var i = 0; i < buttons.length; i++) {
+    var txt = (
+        buttons[i].childNodes.length
+            ? buttons[i].childNodes[0].textContent
+            : buttons[i].textContent
+    ).trim();
+
+    if (
+        txt.length > 1 &&
+        /^[A-Za-zÀ-ÿ'.\\- ]+$/.test(txt) &&
+        !['Notifications', 'Facebook', 'Menu', 'Search', 'Home'].includes(txt)
+    ) {
+        return txt;
+    }
+}
+
 // Fallback — og:title meta tag
 var meta = document.querySelector('meta[property="og:title"]');
 if (meta) {
     var name = (meta.getAttribute('content') || '').trim();
     if (name.length > 1) return name;
 }
+
 return null;
 """
-
 
 # Page source parsers 
 
