@@ -1,5 +1,7 @@
 from seleniumbase import SB
 import pickle, time, os, subprocess, json, re
+import random
+import time
 
 if os.name != 'nt':
     try:
@@ -62,15 +64,17 @@ def decode_unicode(val):
         except Exception:
             return val
 
+def human_delay(min_s=1.5, max_s=4.0):
+    time.sleep(random.uniform(min_s, max_s))
 
 def login(sb):
     sb.open("https://www.facebook.com")
-    time.sleep(3)
+    human_delay(2.0, 5.0)
     for c in pickle.load(open(COOKIE_FILE, "rb")):
         try: sb.driver.add_cookie(c)
         except: pass
     sb.driver.refresh()
-    time.sleep(5)
+    human_delay(2.0, 5.0)
     print("Logged in")
 
 
@@ -174,6 +178,7 @@ if (meta) {
 return null;
 """
 
+
 # Page source parsers 
 
 def parse_page_source(source, section):
@@ -275,11 +280,16 @@ def main(PROFILE_URL=PROFILE_URL):
             window_size="1280,900") as sb:
 
         login(sb)
+        print("  Warming up session...")
+        sb.open('https://www.facebook.com')
+        human_delay(3.0, 6.0)
+        sb.execute_script("(function(){ window.scrollBy(0, 400); })()")
+        human_delay(2.0, 4.0)
 
         # Step 1: Open profile page — check locked + get owner name
         print(f"\n   Checking profile...")
         sb.open(PROFILE_URL)
-        time.sleep(6)
+        human_delay(2.0, 6.0)
 
         # Get owner name
         owner_name = sb.execute_script(f"(function(){{ {GET_OWNER_NAME_JS} }})()")
@@ -294,12 +304,13 @@ def main(PROFILE_URL=PROFILE_URL):
 
         # Step 2: Scrape directory sections 
         for section in DIRECTORY_SECTIONS:
+            human_delay(2.0, 4.0)
             url = get_directory_url(PROFILE_URL, section)
             print(f"\n   {section}")
             print(f"     {url}")
 
             sb.open(url)
-            time.sleep(5)
+            human_delay(2.0, 5.0)
 
             source = sb.get_page_source()
             if section == "activities":

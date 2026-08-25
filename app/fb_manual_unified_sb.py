@@ -179,7 +179,8 @@ return window.scrollY;
 
 SCRAPE_COMMENTS_JS = """
 var profiles = document.querySelectorAll('div.x1rg5ohu');
-var seen = {};
+var results = [];
+var seenKeys = new Set();
 profiles.forEach(function(div) {
     var parent = div.parentElement;
     var isReply = false;
@@ -204,8 +205,6 @@ profiles.forEach(function(div) {
         url.includes('/photos/')       || url.includes('/videos/')   ||
         url.includes('/hashtag/')) return;
 
-    var key = url;
-    if (seen[key]) return;
 
     var text = '';
     var spans = div.querySelectorAll('div[dir="auto"] span, span[dir="auto"]');
@@ -258,10 +257,12 @@ profiles.forEach(function(div) {
             if (text) break;
         }
     }
-
-    seen[key] = { name: name, profile_url: url, comment_text: text || '[Non-text comment]' };
+    var key = url + '||' + (text || '[Non-text comment]');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    results.push({ name: name, profile_url: url, comment_text: text || '[Non-text comment]' });
 });
-return Object.values(seen);
+return results;
 """
 
 #  PHOTO JS
@@ -423,6 +424,18 @@ for (var ag = 0; ag < agfAnchors.length; ag++) {
     if (isRelativeDate(tAg)) return tAg;
 }
 
+// Strategy 9 — First comment aria-label timestamp (Facebook Page posts)
+// "Comment by Name X hours/days ago" → extract the time part
+var commentDivs = document.querySelectorAll('[aria-label^="Comment by"]');
+if (commentDivs.length > 0) {
+    var firstComment = commentDivs[0].getAttribute('aria-label') || '';
+    // Extract "7 hours ago", "4 days ago", "2 minutes ago" etc.
+    var timeMatch = firstComment.match(/(\d+\s+(?:second|minute|min|hour|hr|day|week|month|year)s?\s+ago)$/i);
+    if (timeMatch) {
+        return timeMatch[1];
+    }
+}
+
 return null;
 """
 
@@ -478,6 +491,36 @@ if (!caption) {
     }
 }
 return caption;
+"""
+
+CLICK_SEE_MORE_REEL_JS = """
+var containers = document.querySelectorAll('div.xu06os2.x1ok221b');
+for (var i = 0; i < containers.length; i++) {
+    var btns = containers[i].querySelectorAll('div[role="button"]');
+    for (var j = 0; j < btns.length; j++) {
+        if (btns[j].innerText.trim() === 'See more') {
+            btns[j].click();
+            return true;
+        }
+    }
+}
+return false;
+"""
+
+SCRAPE_REEL_CAPTION_JS = """
+var containers = document.querySelectorAll('div.xu06os2.x1ok221b');
+for (var i = 0; i < containers.length; i++) {
+    var inner = containers[i].querySelector(
+        'div.xdj266r.x14z9mp.xat24cr.x1lziwak.x1vvkbs.x126k92a'
+    );
+    if (inner) {
+        var text = inner.innerText || '';
+        // Remove trailing "See less" / "See more" artifacts
+        text = text.replace(/\\s*See less\\s*$/, '').replace(/\\s*See more\\s*$/, '').trim();
+        if (text.length > 0) return text;
+    }
+}
+return null;
 """
 
 #  POST JS
@@ -790,35 +833,52 @@ def scrape_post(sb, url, idx, total):
         'comments':        comments
     }
 
+def human_delay(min_s=1.5, max_s=4.0):
+    import random
+    time.sleep(random.uniform(min_s, max_s))
+
 def scrape_reel(sb, url, idx, total):
     print(f"\n   [{idx}/{total}] [reel] {url}")
     sb.open(url)
     time.sleep(8)
 
+    # ── Caption ──────────────────────────────────────────────
+    see_more = sb.execute_script(f"(function(){{ {CLICK_SEE_MORE_REEL_JS} }})()")
+    if see_more:
+        print("    [caption] 'See more' clicked — expanding...")
+        time.sleep(2)
+    caption = sb.execute_script(f"(function(){{ {SCRAPE_REEL_CAPTION_JS} }})()") or None
+    print(f"    [caption] {'Found: ' + caption[:60] if caption else 'Not found'}")
+
+    # ── Comments ─────────────────────────────────────────────
+    # ... rest unchanged ...
     print("    [comments] Clicking comment icon...")
     clicked = sb.execute_script(f"(function(){{ {CLICK_COMMENT_ICON_JS} }})()")
     if not clicked:
-        print("      Comment icon not found")
-    time.sleep(4)
+        print("    Comment icon not found")
+    human_delay(1.5, 3.5)
 
-    print("    [comments] Switching to All comments...")
+    # Switch to All comments
+    print("    [comments] Clicking sort dropdown...")
     sb.execute_script(f"(function(){{ {CLICK_MOST_RELEVANT_JS} }})()")
-    time.sleep(3)
+    human_delay(1.5, 3.5)
     sb.execute_script(f"(function(){{ {CLICK_ALL_COMMENTS_JS} }})()")
-    time.sleep(3)
+    human_delay(1.5, 3.5)
 
-    print("    [comments] Scrolling panel...")
+    # Scroll panel
+    print("    [comments] Scrolling comment panel...")
     scroll_panel(sb)
 
+    # Scrape
     comments = sb.execute_script(f"(function(){{ {SCRAPE_COMMENTS_JS} }})()") or []
-    print(f"    [comments]  {len(comments)} scraped")
+    print(f"    [comments] scraped {len(comments)} comments")
 
     return {
         'url':      url,
         'type':     'reel',
+        'caption':  caption,       # ← added
         'comments': comments
     }
-
 
 def scrape_video(sb, url, idx, total):
     """

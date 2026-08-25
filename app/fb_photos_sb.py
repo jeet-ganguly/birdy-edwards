@@ -1,5 +1,7 @@
 from seleniumbase import SB
-import pickle, time, os, subprocess, json
+import pickle, os, subprocess, json
+import random
+import time
 
 if os.name != 'nt':
     try:
@@ -15,7 +17,8 @@ PROFILE_URL  = "REDACTED"
 MAX_PHOTOS   = 12
 OUTPUT_FILE  = "fb_photos.json"
 
-
+def human_delay(min_s=1.5, max_s=4.0):
+    time.sleep(random.uniform(min_s, max_s))
 def js(sb, script, *args):
     """Wrap all JS in IIFE — required for SeleniumBase UC/CDP mode."""
     if args:
@@ -27,12 +30,12 @@ def js(sb, script, *args):
 
 def login(sb):
     sb.open("https://www.facebook.com")
-    time.sleep(3)
+    human_delay(2.0, 5.0)
     for c in pickle.load(open(COOKIE_FILE, "rb")):
         try: sb.driver.add_cookie(c)
         except: pass
     sb.driver.refresh()
-    time.sleep(5)
+    human_delay(2.0, 5.0)
     print("Logged in")
 
 
@@ -106,7 +109,7 @@ def phase1_collect_photos(sb,PROFILE_URL=PROFILE_URL,MAX_PHOTOS=MAX_PHOTOS):
     photos_url = get_photos_url(PROFILE_URL)
     print(f"Opening: {photos_url}")
     sb.open(photos_url)
-    time.sleep(6)
+    human_delay(4.0, 6.0)
 
     photo_links = []
     seen        = set()
@@ -144,9 +147,9 @@ def phase1_collect_photos(sb,PROFILE_URL=PROFILE_URL,MAX_PHOTOS=MAX_PHOTOS):
         step_y    = current_y + 200
         while step_y <= target_y:
             sb.execute_script(f"(function(){{ window.scrollTo(0, {step_y}); }})()")
-            time.sleep(0.8)
+            time.sleep(random.uniform(0.7, 1.2))
             step_y += 200
-        time.sleep(5)
+        time.sleep(random.uniform(4.5, 6.0))
 
         scroll_n += 1
 
@@ -304,7 +307,8 @@ return clicked;
 
 SCRAPE_COMMENTS_JS = """
 var profiles = document.querySelectorAll('div.x1rg5ohu');
-var seen = {};
+var results = [];
+var seenKeys = new Set();
 profiles.forEach(function(div) {
     var parent = div.parentElement;
     var isReply = false;
@@ -329,8 +333,6 @@ profiles.forEach(function(div) {
         url.includes('/photos/')       || url.includes('/videos/')   ||
         url.includes('/hashtag/')) return;
 
-    var key = url;
-    if (seen[key]) return;
 
     var text = '';
     var spans = div.querySelectorAll('div[dir="auto"] span, span[dir="auto"]');
@@ -383,10 +385,12 @@ profiles.forEach(function(div) {
             if (text) break;
         }
     }
-
-    seen[key] = { name: name, profile_url: url, comment_text: text || '[Non-text comment]' };
+    var key = url + '||' + (text || '[Non-text comment]');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    results.push({ name: name, profile_url: url, comment_text: text || '[Non-text comment]' });
 });
-return Object.values(seen);
+return results;
 """
 
 
@@ -401,7 +405,7 @@ def scroll_to_bottom(sb):
         clicked = sb.execute_script(f"(function(){{ {EXPAND_COMMENTS_JS} }})()") or 0
         if clicked:
             print(f"      [expand] clicked {clicked} new buttons — waiting for load...")
-            time.sleep(3)
+            time.sleep(random.uniform(2.5, 4.5))
             cur_count = sb.execute_script(
                 "(function(){ return document.querySelectorAll('div.x1rg5ohu').length; })()"
             ) or 0
@@ -416,11 +420,11 @@ def scroll_to_bottom(sb):
             continue
 
         sb.execute_script("(function(){ window.scrollBy(0, 300); })()")
-        time.sleep(2)
+        time.sleep(random.uniform(1.5, 3.5))
         clicked = sb.execute_script(f"(function(){{ {EXPAND_COMMENTS_JS} }})()") or 0
         if clicked:
             print(f"      [expand] clicked {clicked} new buttons after scroll...")
-            time.sleep(3)
+            time.sleep(random.uniform(3.5, 4.5))
             no_new = 0
         else:
             no_new += 1
@@ -431,14 +435,14 @@ def scroll_to_bottom(sb):
                 break
 
     sb.execute_script("(function(){ window.scrollTo(0, document.body.scrollHeight); })()")
-    time.sleep(2)
+    time.sleep(random.uniform(1.5, 3.5))
 
 
 def phase2_scrape_photo(sb, photo_url, idx, total):
     print(f"\n  [{idx}/{total}] {photo_url}")
 
     sb.open(photo_url)
-    time.sleep(8)
+    human_delay(4.0, 8.0)
 
     # Grab image src
     # Retry date/image/caption up to 3 times for slow-loading posts
@@ -465,9 +469,9 @@ def phase2_scrape_photo(sb, photo_url, idx, total):
     # Switch to All Comments
     print("    [comments] Clicking sort dropdown...")
     sb.execute_script(f"(function(){{ {CLICK_MOST_RELEVANT_JS} }})()")
-    time.sleep(3)
+    time.sleep(random.uniform(3.5, 4.5))
     sb.execute_script(f"(function(){{ {CLICK_ALL_COMMENTS_JS} }})()")
-    time.sleep(3)
+    time.sleep(random.uniform(3.5, 4.5))
 
     # Scroll to load all comments
     print("    [comments] Scrolling to load all comments...")
@@ -495,6 +499,11 @@ def main(PROFILE_URL=PROFILE_URL,MAX_PHOTOS=MAX_PHOTOS):
             window_size="1280,900",agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") as sb:
 
         login(sb)
+        print("  Warming up session...")
+        sb.open('https://www.facebook.com')
+        human_delay(3.0, 6.0)
+        sb.execute_script("(function(){ window.scrollBy(0, 400); })()")
+        human_delay(2.0, 4.0)
 
         # Phase 1
         all_photos  = phase1_collect_photos(sb,PROFILE_URL,MAX_PHOTOS)
@@ -519,7 +528,7 @@ def main(PROFILE_URL=PROFILE_URL,MAX_PHOTOS=MAX_PHOTOS):
                     'comments':  [],
                     'error':     str(e)
                 })
-            time.sleep(3)
+            human_delay(4.0, 8.0)
 
     # Save
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

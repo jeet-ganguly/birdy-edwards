@@ -5,12 +5,12 @@ import os
 
 
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
-OLLAMA_MODEL   = "gemma3:4b"          # It can be overwrite from web panel not need to change from here
+OLLAMA_MODEL   = ""          # It can be overwrite from web panel not need to change from here
 
 
 DB_FILE        = "socmint.db"
 MANUAL_DB_FILE = "socmint_manual.db"
-BATCH_SIZE     = 3
+BATCH_SIZE     = 2
 DELAY          = 0.5            # ollama is local — no rate limit needed
 
 #  SCHEMA
@@ -57,46 +57,44 @@ def build_prompt(comments_batch):
     comments_text = ""
     for i, c in enumerate(comments_batch):
         comments_text += f"""
-Comment #{i+1}:
+#{i+1}
   Commentor Name    : {c['name']}
-  Commentor Profile : {c['profile_url']}
   Post Caption      : {c['post_caption'] or 'N/A'}
-  Post Date         : {c['post_date'] or 'N/A'}
   Post Context      : {c.get('post_context') or 'N/A'}
   Comment Text      : {c['comment_text']}
 ---"""
 
-    prompt = f"""You are a multilingual SOCMINT analyst. Analyze the following Facebook comments and return structured JSON analysis for each.
+    return f"""You are a multilingual SOCMINT analyst. Analyze these Facebook comments.
 
-For each comment determine:
-1. sentiment   : "positive" | "negative" | "neutral"
-2. emotion     : "support" | "anger" | "sarcasm" | "aggressive"
-3. stance      : "support_post" | "oppose_post" | "neutral_discussion"
-4. language    : detected language name (e.g. "English", "Bengali", "Hindi", "Arabic", "Urdu" etc.)
+For each comment return:
+- sentiment : positive | negative | neutral
+- emotion   : support | anger | sarcasm | aggressive
+- stance    : support_post | oppose_post | neutral_discussion
+- language  : full language name (English, Bengali, Hindi, Arabic, Urdu etc.)
 
 Rules:
-- Analyze in the original language — do NOT translate before analyzing
-- For non-text comments like [Emoji] or [Sticker] use sentiment="neutral", emotion="support", stance="neutral_discussion"
-- For aggressive/hateful content set emotion="aggressive" and sentiment="negative"
-- Sarcasm should be detected even in non-English languages
-- CRITICAL: Use Post Context to determine stance — a positive comment on a negative post = oppose_post
-- Example: Post about "enemy winning" + comment "Great!" = oppose_post not support_post
-- Stance is always relative to the POST NARRATIVE, not the comment tone alone
+- Analyze in the ORIGINAL language, do not translate
+- [Emoji] [Sticker] [GIF] → sentiment=neutral, emotion=support, stance=neutral_discussion
+- Aggressive/hateful → emotion=aggressive, sentiment=negative
+- Detect sarcasm in all languages
+
+Stance = does the commentor AGREE or DISAGREE with the post author's message:
+- support_post      = agrees with what the post is saying
+- oppose_post       = disagrees, OR praises a rival, OR undermines the post subject
+- neutral_discussion = off-topic, general, unrelated to the post
+
+Examples:
+Post "Ronaldo GOAT" + Comment "Ronaldo GOAT" → support_post
+Post "Ronaldo GOAT" + Comment "Messi is better" → oppose_post
+Post "Our party wins" + Comment "Great leader!" → support_post
+Post "Our party wins" + Comment "Opposition is stronger" → oppose_post
+Post "Beautiful sunset" + Comment "Nice photo" → neutral_discussion
 
 {comments_text}
 
-Return ONLY a valid JSON array with exactly {len(comments_batch)} objects in this format:
-[
-  {{
-    "index": 1,
-    "sentiment": "...",
-    "emotion": "...",
-    "stance": "...",
-    "language": "..."
-  }},
-  ...
-]
-Return ONLY the JSON array. No explanation, no markdown, no backticks."""
+Return ONLY a JSON array with exactly {len(comments_batch)} objects:
+[{{"index":1,"sentiment":"...","emotion":"...","stance":"...","language":"..."}}]
+No explanation. No markdown. JSON only."""
 
     return prompt
 
@@ -270,23 +268,63 @@ def fetch_unanalyzed_comments(db_file):
 
     # Reel comments — no image context available
     try:
-        cur.execute("""
-            SELECT rc.id, 'reel', co.name, co.profile_url,
-                   NULL, NULL, rc.comment_text
-            FROM reel_comments rc
-            JOIN commentors co ON co.id = rc.commentor_id
-            WHERE NOT EXISTS (
-                SELECT 1 FROM comment_analysis ca
-                WHERE ca.comment_id = rc.id AND ca.db_source = 'reel'
-            )
-        """)
+        try:
+            cur.execute("""
+                SELECT rc.id, 'reel', co.name, co.profile_url,
+                       rp.caption, rp.scraped_at, rc.comment_text,
+                       rp.caption_context, rp.caption_entities,
+                       rp.caption_hashtags, rp.caption_topic
+                FROM reel_comments rc
+                JOIN commentors co ON co.id = rc.commentor_id
+                JOIN reel_posts rp ON rp.id = rc.reel_post_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM comment_analysis ca
+                    WHERE ca.comment_id = rc.id AND ca.db_source = 'reel'
+                )
+            """)
+        except Exception:
+            # Caption columns not yet migrated — use base query
+            cur.execute("""
+                SELECT rc.id, 'reel', co.name, co.profile_url,
+                       NULL, NULL, rc.comment_text,
+                       NULL, NULL, NULL, NULL
+                FROM reel_comments rc
+                JOIN commentors co ON co.id = rc.commentor_id
+                JOIN reel_posts rp ON rp.id = rc.reel_post_id
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM comment_analysis ca
+                    WHERE ca.comment_id = rc.id AND ca.db_source = 'reel'
+                )
+            """)
         for row in cur.fetchall():
+            caption         = row[4] or ''
+            caption_context = row[7] or ''
+            entities        = row[8] or '[]'
+            hashtags        = row[9] or '[]'
+            topic           = row[10] or ''
+            context_parts = []
+            if caption_context:
+                context_parts.append(caption_context)
+            if topic and topic != 'unknown':
+                context_parts.append(f"Topic: {topic}")
+            try:
+                names = json.loads(entities)
+                if names: context_parts.append(f"People/Orgs: {', '.join(names)}")
+            except Exception:
+                pass
+            try:
+                tags = json.loads(hashtags)
+                if tags: context_parts.append(f"Hashtags: {' '.join(tags)}")
+            except Exception:
+                pass
+            post_context = ' | '.join(context_parts) if context_parts else (caption or None)
             comments.append({
                 'id': row[0], 'db_source': row[1],
                 'name': row[2] or '', 'profile_url': row[3] or '',
-                'post_caption': row[4] or '', 'post_date': row[5] or '',
+                'post_caption': caption,
+                'post_date':    row[5] or '',
                 'comment_text': row[6] or '',
-                'post_context': None
+                'post_context': post_context,
             })
     except Exception as e:
         print(f"    reel_comments fetch error: {e}")

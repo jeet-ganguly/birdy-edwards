@@ -7,7 +7,7 @@ import urllib.request
 import urllib.error
 
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
-OLLAMA_MODEL = "gemma3:4b"   # vision capable model
+OLLAMA_MODEL = ""   # vision capable model
 
 DB_FILE      = "socmint.db"
 DELAY        = 1.0           # seconds between API calls
@@ -135,41 +135,50 @@ def download_image_base64(url):
 #  PROMPT
 
 def build_image_prompt(caption, post_date):
-    return f"""You are a SOCMINT image analyst. Analyze this image carefully for intelligence gathering purposes.
+    return f"""You are a SOCMINT image analyst. Analyze this image carefully.
 
 Post Caption : {caption or 'N/A'}
 Post Date    : {post_date or 'N/A'}
 
-IMPORTANT RULES BEFORE ANALYZING:
-- If the image is primarily TEXT, QUOTE, TYPOGRAPHY or CALLIGRAPHY — set scene_type="text_image", transcribe the text carefully, detect the language, and set all other fields to null
-- Do NOT hallucinate objects, crowds, flags or scenes that are not clearly visible
-- If you are not sure about something set it to null and lower the confidence
-- Only describe what you can clearly see
+STRICT RULES — READ BEFORE ANALYZING:
+- If primarily TEXT/QUOTE/TYPOGRAPHY → scene_type="text_image", transcribe text, all other fields null
+- ONLY describe what is CLEARLY and UNAMBIGUOUSLY visible — do NOT infer or guess
+- If uncertain between two scene types → pick the more CONSERVATIVE/GENERAL one
+- "outdoor_activity" is your default for any outdoor scene without explicit political/military markers
 
-Analyze the image and return ONLY a valid JSON object:
+SCENE TYPE EVIDENCE REQUIREMENTS (must meet ALL criteria):
+- political_rally   : crowd of people + political banners/flags/party symbols + organized setting. A lone person, trees, or small groups = NOT a rally.
+- protest           : crowd + signs/placards/chants visible + confrontational setting
+- military_activity : uniforms + weapons or military vehicles clearly visible
+- religious_ceremony: religious attire + religious venue or ritual clearly visible
+- family_gathering  : multiple people in casual domestic/celebratory setting
+- personal_photo    : 1-3 people in non-political non-military setting
+- celebration       : party/event markers, decorations, joy — NOT political
+- outdoor_activity  : nature, sports, travel, landscape, trees, parks — DEFAULT for ambiguous outdoor
+- indoor_activity   : inside a building — home, office, restaurant
+- other             : cannot be classified above
+
+Return ONLY a valid JSON object:
 
 {{
-  "scene_type": "one of: text_image / personal_photo / family_gathering / religious_ceremony / political_rally / protest / military_activity / celebration / funeral / wedding / outdoor_activity / indoor_activity / other",
-  "objects": ["specific objects clearly visible — flags, banners, weapons, vehicles, religious_items, uniforms, crowd etc. Empty array if text_image"],
-  "activity": "specific activity — marching, praying, celebrating, protesting, posing, mourning, displaying text etc.",
-  "crowd_size": "one of: none / small(2-10) / medium(10-50) / large(50-200) / massive(200+)",
-  "political_symbols": "any political flags, party symbols, banners with slogans — describe or null",
-  "religious_symbols": "any religious items, symbols, attire — describe or null",
-  "weapons_visible": "describe any weapons, uniforms, military gear visible — or null",
-  "cultural_context": "cultural clues — type of clothing, festival, ceremony, region-specific items — or null",
-  "text_in_image": "transcribe ALL text visible in image as accurately as possible — or null if no text",
-  "text_language": "language of text found in image (e.g. Urdu, Arabic, Hindi, Bengali, English) — or null",
-  "location_clues": "landmarks, architecture style, vegetation, geography, signboards — or null",
-  "estimated_location": "best guess city/state/country based on visual clues — or null",
+  "scene_type": "one of the types above",
+  "objects": ["only clearly visible objects — flags, banners, weapons, uniforms, crowd"],
+  "activity": "specific activity clearly visible",
+  "crowd_size": "none / small(2-10) / medium(10-50) / large(50-200) / massive(200+)",
+  "political_symbols": "political flags, party symbols, banners — describe exactly or null",
+  "religious_symbols": "religious items, symbols, attire — describe exactly or null",
+  "weapons_visible": "weapons, military gear — describe exactly or null",
+  "cultural_context": "cultural clues — clothing, festival, region-specific items or null",
+  "text_in_image": "transcribe ALL visible text exactly — or null",
+  "text_language": "language of text in image or null",
+  "location_clues": "landmarks, architecture, signboards, vegetation that hint at location — or null",
+  "estimated_location": "best guess city/country from visual evidence only — or null",
   "confidence": 0
 }}
 
-Rules:
-- confidence is 0-100 integer for location estimate confidence
-- objects must be a JSON array — empty array [] if scene_type is text_image
-- For text_image: focus on accurate text transcription and language detection
+- confidence is 0-100 integer for location estimate
+- objects must be a JSON array, empty [] if text_image
 - Return ONLY the JSON object, no explanation, no markdown, no backticks"""
-
 
 #  TEXT RATIO DETECTION — pre-filter heavy text images
 
@@ -300,29 +309,25 @@ Rules:
 
 
 def build_vision_only_prompt(caption, post_date):
-    """Simple focused prompt for scene images — only what matters for SOCMINT."""
-    return f"""You are a SOCMINT image analyst. Analyze this image.
+    return f"""You are a SOCMINT image analyst.
 
 Post Caption : {caption or 'N/A'}
 Post Date    : {post_date or 'N/A'}
 
-Return ONLY a valid JSON object:
+Classify this image. Default to outdoor_activity for ambiguous outdoor scenes.
+political_rally requires: crowd + political banners/flags. Trees or landscape = outdoor_activity.
 
+Return ONLY valid JSON:
 {{
-  "scene_type": "one of: personal_photo / family_gathering / religious_ceremony / political_rally / protest / military_activity / celebration / outdoor_activity / indoor_activity / other",
-  "objects": ["key objects visible — flags, banners, weapons, uniforms, crowd, religious items etc."],
-  "activity": "what is happening in this image",
-  "text_in_image": "any text visible in the image — or null",
-  "location_clues": "landmarks, architecture, signs, vegetation, geography that hint at location — or null",
-  "estimated_location": "best guess country/city based on visual clues — or null",
+  "scene_type": "personal_photo / family_gathering / religious_ceremony / political_rally / protest / military_activity / celebration / outdoor_activity / indoor_activity / other",
+  "objects": ["clearly visible objects only"],
+  "activity": "what is clearly happening",
+  "text_in_image": "visible text or null",
+  "location_clues": "location hints or null",
+  "estimated_location": "country/city or null",
   "confidence": 0
 }}
-
-Rules:
-- confidence is 0-100 for location estimate
-- objects must be a JSON array
-- Only describe what is clearly visible
-- Return ONLY the JSON object, no markdown, no backticks"""
+Return ONLY the JSON, no markdown, no backticks."""
 
 def analyze_image_ollama(image_b64, mime_type, prompt):
     """Send image to Ollama vision model and return analysis."""
@@ -515,7 +520,7 @@ def analyze_images(db_file=DB_FILE):
         else:
             # < 40% — pure scene analysis prompt
             print(f"       Scene analysis prompt")
-            prompt = build_vision_only_prompt(photo['caption'], photo['date'])
+            prompt = build_image_prompt(photo['caption'], photo['date'])
 
         # Analyze with gemma
         print(f"      Analyzing with {OLLAMA_MODEL}...")
@@ -618,7 +623,7 @@ def analyze_batch_images(db_file, batch_id):
             prompt = build_text_aware_prompt(ocr_text, photo['caption'], photo['date'])
             result = analyze_image_ollama(b64, mime, prompt)
         else:
-            prompt = build_vision_only_prompt(photo['caption'], photo['date'])
+            prompt = build_image_prompt(photo['caption'], photo['date'])
             result = analyze_image_ollama(b64, mime, prompt)
 
         if result:

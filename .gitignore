@@ -5,10 +5,12 @@
 # ── Sensitive / Auth ──────────────────────────────────────────────────────────
 app/fb_cookies.pkl
 app/.ollama_model
+app/.telegram_config
 
 # ── Databases ─────────────────────────────────────────────────────────────────
 app/socmint.db
 app/socmint_manual.db
+app/queue.db
 
 # ── Scraped JSON output ───────────────────────────────────────────────────────
 app/fb_about.json
@@ -46,6 +48,7 @@ test_*.py
 debug_*.py
 app/test.py
 app/test_*.py
+temp.py
 
 # ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store

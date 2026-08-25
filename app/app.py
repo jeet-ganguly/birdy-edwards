@@ -3,11 +3,12 @@ import re
 import sys
 import json
 import sqlite3
-import subprocess
 import threading
 import urllib.request
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, send_file
+from flask import Flask, request, jsonify, Response, send_file
+from queue_manager import queue
+import time
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(32)
@@ -32,7 +33,7 @@ AVAILABLE_MODELS = {
         ('gemma4:e2b',       'Gemma 4 e2B       — recommended for 8GB'),
         ('gemma3:4b',       'Gemma 3 4B       — Latest Gemma4 for 8GB'),
         ('llava:7b',        'LLaVA 7B         — vision capable'),
-        ('qwen2-vl:7b',     'Qwen2-VL 7B      — strong vision'),
+        ('qwen2.5vl:7b',     'Qwen2.5-VL 7B      — strong vision'),
     ],
     '16GB RAM (8B–13B Models)': [
         ('gemma3:12b',      'Gemma 3 12B      — recommended for 16GB'),
@@ -109,7 +110,6 @@ def system_check():
     print(f"  Pulled   : {' Ready' if app.config['MODEL_PULLED'] else f' Run: ollama pull {model}'}")
     print(f"  Cookies  : {' Found' if app.config['COOKIES_OK'] else ' Missing — run: python3 refresh_cookies.py'}")
     print(f"{'═'*60}\n")
-
 
 #  COOKIE VALIDITY CHECK
 
@@ -754,7 +754,7 @@ def get_image_analysis(profile_id):
     rows = []
     try:
         cur.execute("""
-            SELECT pp.photo_url, pp.date_text, pp.image_src, pp.caption,
+            SELECT pp.id, pp.photo_url, pp.date_text, pp.image_src, pp.caption,
                    ia.scene_type, ia.activity, ia.estimated_location,
                    ia.political_symbols, ia.religious_symbols, ia.weapons_visible,
                    ia.text_in_image, ia.confidence
@@ -776,7 +776,7 @@ def get_text_post_analysis(profile_id):
     rows = []
     try:
         cur.execute("""
-            SELECT tp.post_url, tp.date_text, tp.screenshot_path,
+            SELECT tp.id, tp.post_url, tp.date_text, tp.screenshot_path,
                    tpa.topic, tpa.sentiment, tpa.narrative_type,
                    tpa.key_entities, tpa.threat_indicators, tpa.text_language
             FROM text_posts tp
@@ -877,19 +877,39 @@ SCAN_LIMITS = {
     'deep':   {'photos': 20, 'reels': 20, 'posts': 20},
 }
 
-def run_pipeline_auto(profile_url, profile_id, scan_type):
+def run_pipeline_auto(profile_url, profile_id, scan_type,stop_fn=None, detect_all_countries=False,
+                      detect_top7_countries=True):
     """Run automated pipeline in background thread — no input() anywhere."""
+
+    def _stopped():
+        return stop_fn is not None and stop_fn()
+
     key    = f'profile_{profile_id}'
     limits = SCAN_LIMITS.get(scan_type, SCAN_LIMITS['medium'])
-    model  = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
+    #model  = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
+    model = open(MODEL_FILE).read().strip()
+    if not read_status(key):
+        init_status(key, profile_url=profile_url, scan_type=scan_type)
 
     try:
-        # Phase 1 — Data Gathering 
-        write_status(key, {**read_status(key), 'phase': 'gathering'})
+        # Phase 0 — Cookie check
+        write_status(key, {**(read_status(key) or {}), 'phase': 'checking'})
+        _ck_ok, _ck_err = check_cookies_valid()
+        if not _ck_ok:
+            write_status(key, {**(read_status(key) or {}),
+                               'phase': 'error', 'error': f'Session expired: {_ck_err}'})
+            return
+
+        # Phase 1 — Data Gathering
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'gathering'})
 
         sys.path.insert(0, BASE_DIR)
 
-        import multiprocessing
+        """import multiprocessing
         import fb_about_sb, fb_photos_sb, fb_reels_sb, fb_posts_sb
 
         p1 = multiprocessing.Process(target=fb_about_sb.main,  args=(profile_url,))
@@ -898,11 +918,22 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
         p4 = multiprocessing.Process(target=fb_posts_sb.main,  args=(profile_url, limits['posts']))
 
         for p in [p1, p2, p3, p4]: p.start()
-        for p in [p1, p2, p3, p4]: p.join()
+        for p in [p1, p2, p3, p4]: p.join()"""
 
-        write_status(key, {**read_status(key), 'gathering_done': True})
+        import fb_about_sb, fb_photos_sb, fb_reels_sb, fb_posts_sb
+        fb_about_sb.main(profile_url)
+        fb_photos_sb.main(profile_url, limits['photos'])
+        fb_reels_sb.main(profile_url, limits['reels'])
+        fb_posts_sb.main(profile_url, limits['posts'])
 
-        # Phase 2 — DB Import 
+
+        write_status(key, {**(read_status(key) or {}), 'gathering_done': True})
+
+        # Phase 2 — DB Import
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return 
+
         import socmint_db_import
         socmint_db_import.import_all(
             profile_json='fb_about.json',
@@ -922,10 +953,18 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
             'faces_count':      0,
         })
 
-        # Phase 3 — AI Analysis (inject correct model) 
-        write_status(key, {**read_status(key), 'phase': 'analyzing'})
+        # Phase 3 — AI Analysis (inject correct model)
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return 
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'analyzing'})
 
         # Image and text analysis FIRST — so context is available for comments
+        import reel_caption_intelligence
+        reel_caption_intelligence.OLLAMA_MODEL = model
+        reel_caption_intelligence.analyze_reel_captions(socmint_db_import.DB_FILE)
+
         import image_intelligence
         image_intelligence.OLLAMA_MODEL = model
         image_intelligence.analyze_images(socmint_db_import.DB_FILE)
@@ -946,10 +985,14 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
             profile_url, db_file=socmint_db_import.DB_FILE, rerun=True
         )
 
-        write_status(key, {**read_status(key), 'analysis_done': True})
+        write_status(key, {**(read_status(key) or {}), 'analysis_done': True})
 
         # Phase 4 — Intelligence 
-        write_status(key, {**read_status(key), 'phase': 'building'})
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return 
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'building'})
 
         import commentor_scoring
         commentor_scoring.run_scoring(
@@ -962,9 +1005,11 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
 
         import commentor_country
         commentor_country.OLLAMA_MODEL = model
-        commentor_country.run_for_profile(
-            profile_url, db_file=socmint_db_import.DB_FILE
-        )
+        if detect_top7_countries or detect_all_countries:
+            commentor_country.run_for_profile(
+                profile_url, db_file=socmint_db_import.DB_FILE,
+                top7_only=(not detect_all_countries)
+            )
 
         import network_graph
         network_graph.run_for_profile(
@@ -980,26 +1025,66 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
         })
 
         # Phase 5 — Report
-        write_status(key, {**read_status(key), 'phase': 'report'})
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return 
+        
+        write_status(key, {**(read_status(key) or {}), 'phase': 'report'})
 
         import threat_report
         threat_report.generate_report(profile_url=profile_url)
 
-        write_status(key, {**read_status(key), 'report_done': True, 'phase': 'complete'})
+        write_status(key, {**(read_status(key) or {}), 'report_done': True, 'phase': 'complete'})
+
+        # ── Telegram notification ──────────────────────────────────────────
+        from telegram_notify import telegram
+        pdf_path = get_report_file('report',
+                                (get_profile_about(profile_id).get('owner_name') or 'Target')
+                                .replace(' ', '_')[:30], '.pdf')
+        telegram.send_investigation_complete(
+            label      = profile_url.rstrip('/').split('/')[-1],
+            inv_type   = 'profile',
+            scan_level = scan_type,
+            pdf_path   = pdf_path,
+        )
 
     except Exception as e:
-        write_status(key, {**read_status(key), 'error': str(e), 'phase': 'error'})
+        write_status(key, {**(read_status(key) or {}), 'error': str(e), 'phase': 'error'})
         print(f"[Pipeline Error] profile_{profile_id}: {e}")
+        from telegram_notify import telegram
+        telegram.send_investigation_failed(
+            label    = profile_url.rstrip('/').split('/')[-1],
+            inv_type = 'profile',
+            error    = str(e),
+        )
 
 
-def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
+def run_pipeline_manual(batch_id, label, urls, scan_type='medium',stop_fn=None, detect_all_countries=False,detect_top7_countries=True):
     """Run manual batch pipeline in background thread — no input() anywhere."""
+    def _stopped():
+        return stop_fn is not None and stop_fn()
+
     key   = f'batch_{batch_id}'
-    model = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
+    #model = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
+    model = open(MODEL_FILE).read().strip()
+    if not read_status(key):
+        init_status(key, batch_id=batch_id, scan_type=scan_type)
 
     try:
-        # Phase 1 — Data Gathering 
-        write_status(key, {**read_status(key), 'phase': 'gathering'})
+        # Phase 0 — Cookie check
+        write_status(key, {**(read_status(key) or {}), 'phase': 'checking'})
+        _ck_ok, _ck_err = check_cookies_valid()
+        if not _ck_ok:
+            write_status(key, {**(read_status(key) or {}),
+                               'phase': 'error', 'error': f'Session expired: {_ck_err}'})
+            return
+
+        # Phase 1 — Data Gathering
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'gathering'})
 
         sys.path.insert(0, BASE_DIR)
 
@@ -1007,9 +1092,13 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
         # Pass URLs directly — no input() blocking
         fb_manual_unified_sb.main(MAX_URLS=len(urls), urls=urls)
 
-        write_status(key, {**read_status(key), 'gathering_done': True})
+        write_status(key, {**(read_status(key) or {}), 'gathering_done': True})
 
         # Phase 2 — DB Import
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+
         import socmint_manual_db
         socmint_manual_db.import_manual(
             'fb_manual_scrape.json', batch_id=batch_id, label=label
@@ -1024,11 +1113,18 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
             'commentors_count': stats.get('commentors_count', 0),
         })
 
-        # Phase 3 — AI Analysis (inject correct model)
         # Phase 3 — AI Analysis
-        write_status(key, {**read_status(key), 'phase': 'analyzing'})
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'analyzing'})
 
         # Image and text FIRST so context is ready for comment analysis
+        import reel_caption_intelligence
+        reel_caption_intelligence.OLLAMA_MODEL = model
+        reel_caption_intelligence.analyze_reel_captions(socmint_manual_db.DB_FILE)
+
         import image_intelligence
         image_intelligence.OLLAMA_MODEL = model
         image_intelligence.analyze_batch_images(socmint_manual_db.DB_FILE, batch_id)
@@ -1044,10 +1140,14 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
             socmint_manual_db.DB_FILE, label='manual', batch_id=batch_id
         )
 
-        write_status(key, {**read_status(key), 'analysis_done': True})
+        write_status(key, {**(read_status(key) or {}), 'analysis_done': True})
 
         # Phase 4 — Intelligence
-        write_status(key, {**read_status(key), 'phase': 'building'})
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+
+        write_status(key, {**(read_status(key) or {}), 'phase': 'building'})
 
         import commentor_scoring
         commentor_scoring.run_batch_scoring(
@@ -1061,46 +1161,131 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
 
         import commentor_country
         commentor_country.OLLAMA_MODEL = model
-        commentor_country.run_for_batch(
-            batch_id, db_file=socmint_manual_db.DB_FILE
-        )
+        if detect_top7_countries or detect_all_countries:
+            commentor_country.run_for_batch(
+                batch_id,
+                db_file=socmint_manual_db.DB_FILE,
+                top7_only=(not detect_all_countries)
+            )
 
         import network_graph
         network_graph.run_for_batch(
             batch_id, db_file=socmint_manual_db.DB_FILE
         )
 
-        write_status(key, {**read_status(key), 'network_done': True})
+        write_status(key, {**(read_status(key) or {}), 'network_done': True})
 
         # Phase 5 — Report
-        write_status(key, {**read_status(key), 'phase': 'report'})
+        if _stopped():
+            write_status(key, {**(read_status(key) or {}), 'phase': 'stopped'})
+            return
+        write_status(key, {**(read_status(key) or {}), 'phase': 'report'})
 
         import threat_report
         threat_report.generate_report(batch_id=batch_id)
 
-        write_status(key, {**read_status(key), 'report_done': True, 'phase': 'complete'})
+        write_status(key, {**(read_status(key) or {}), 'report_done': True, 'phase': 'complete'})
+        
+        # ── Telegram notification ──────────────────────────────────────────
+        from telegram_notify import telegram
+        pdf_path = get_report_file('report', batch_id[:30], '.pdf', exact_only=True)
+        telegram.send_investigation_complete(
+            label      = label,
+            inv_type   = 'batch',
+            scan_level = scan_type,
+            pdf_path   = pdf_path,
+        )
 
     except Exception as e:
-        write_status(key, {**read_status(key), 'error': str(e), 'phase': 'error'})
+        write_status(key, {**(read_status(key) or {}), 'error': str(e), 'phase': 'error'})
         print(f"[Pipeline Error] batch_{batch_id}: {e}")
+        from telegram_notify import telegram
+        telegram.send_investigation_failed(
+            label    = label,
+            inv_type = 'batch',
+            error    = str(e),
+        )
 
 #  ROUTES
-
 @app.route('/')
-def home():
+def spa_home():
+    """Serve the new SPA home page."""
+    return send_file(os.path.join(BASE_DIR, 'templates', 'home.html'))
+
+@app.route('/start')
+def spa_start():
+    """Serve the new SPA home page."""
+    return send_file(os.path.join(BASE_DIR, 'templates', 'start.html'))
+
+@app.route('/progress/<inv_key>')
+def progress_page(inv_key):
+    return send_file(os.path.join(BASE_DIR, 'templates', 'progress.html')) 
+ 
+@app.route('/analysis/<inv_key>')
+def spa_analysis(inv_key):
+    """Serve the analysis SPA (profile or batch)."""
+    return send_file(os.path.join(BASE_DIR, 'templates', 'analysis.html'))
+
+@app.route('/api/system')
+def api_system():
+    """Return full system status for the home page pre-flight check."""
+    return jsonify({
+        'ram':           app.config.get('RAM_GB', 8),
+        'model':         app.config.get('OLLAMA_MODEL', 'gemma3:4b'),
+        'ollama_ok':     app.config.get('OLLAMA_OK', False),
+        'model_pulled':  app.config.get('MODEL_PULLED', False),
+        'cookies_ok':    app.config.get('COOKIES_OK', False),
+        'available_models': AVAILABLE_MODELS,
+    })
+ 
+
+@app.route('/api/investigations')
+def api_investigations():
+    """Return all past investigations (profiles + batches) for the home page list."""
     profiles = get_all_profiles()
     batches  = get_all_batches()
-    system   = {
-        'ram':         app.config.get('RAM_GB', 8),
-        'model':       app.config.get('OLLAMA_MODEL', 'gemma3:4b'),
-        'ollama_ok':   app.config.get('OLLAMA_OK', False),
-        'cookies_ok':  app.config.get('COOKIES_OK', False),
-        'model_pulled':app.config.get('MODEL_PULLED', False),
-    }
-    return render_template('home.html',
-        profiles=profiles, batches=batches,
-        system=system, available_models=AVAILABLE_MODELS)
-
+ 
+    # Merge and sort by date descending
+    items = []
+    for p in profiles:
+        status = read_status(f'profile_{p["id"]}') or {}
+        items.append({
+            'type':       'profile',
+            'id':         p['id'],
+            'key':        f'profile_{p["id"]}',
+            'label':      p.get('owner_name') or p['profile_url'].rstrip('/').split('/')[-1],
+            'url':        p['profile_url'],
+            'created_at': p.get('scraped_at', ''),
+            'phase':      status.get('phase', 'complete'),
+            'report_done':status.get('report_done', False),
+        })
+    for b in batches:
+        status = read_status(f'batch_{b["batch_id"]}') or {}
+        items.append({
+            'type':       'batch',
+            'id':         b['id'],
+            'key':        f'batch_{b["batch_id"]}',
+            'label':      b.get('label', b['batch_id']),
+            'batch_id':   b['batch_id'],
+            'created_at': b.get('created_at', ''),
+            'phase':      status.get('phase', 'complete'),
+            'report_done':status.get('report_done', False),
+        })
+ 
+    items.sort(key=lambda x: x.get('created_at') or '', reverse=True)
+    return jsonify(items)
+ 
+ 
+@app.route('/api/ollama/models')
+def api_ollama_models():
+    """Return list of all installed Ollama model names."""
+    try:
+        req  = urllib.request.urlopen(f'{OLLAMA_HOST}/api/tags', timeout=5)
+        data = json.loads(req.read())
+        models = [m['name'] for m in data.get('models', [])]
+        return jsonify({'ok': True, 'models': models})
+    except Exception as e:
+        return jsonify({'ok': False, 'models': [], 'error': str(e)})
 
 @app.route('/api/change-model', methods=['POST'])
 def change_model():
@@ -1187,244 +1372,336 @@ def pull_model_stream():
                     headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
-@app.route('/scan/new', methods=['GET', 'POST'])
-def scan_new():
-    if request.method == 'POST':
-        profile_url = request.form.get('profile_url', '').strip()
-        scan_type   = request.form.get('scan_type', 'medium')
-        enrich      = request.form.get('enrich_top14', 'n')
-
-        if not profile_url:
-            return render_template('scan_new.html', error='Please enter a Facebook profile URL.')
-
-        # Create profile record in DB
-        # If DB doesn't exist yet, create schema first
-        import socmint_db_import
-        socmint_db_import.init_db(DB_FILE)
-        con = db_connect()
+# ═══════════════════════════════════════════════════════════════════════════════
+# QUEUE MANAGEMENT
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/queue', methods=['GET'])
+def api_queue_get():
+    """Return current queue state for the UI."""
+    return jsonify({
+        'queue':     queue.get_state(),
+        'running':   queue.get_running(),
+        'max_size':  queue.MAX_SIZE,
+        'cooldown':  queue.COOLDOWN_SEC,
+    })
+ 
+ 
+@app.route('/api/queue/add/profile', methods=['POST'])
+def api_queue_add_profile():
+    """
+    Add a profile investigation to the queue or start immediately.
+    Body JSON:
+        profile_url:           str   (required)
+        scan_level:            str   light|medium|deep (default medium)
+        detect_all_countries:  bool  (default false)
+        detect_top7_countries: bool  (default true)
+        start_now:             bool  (default false — queue vs immediate)
+    """
+    data = request.get_json() or {}
+    profile_url = data.get('profile_url', '').strip()
+ 
+    if not profile_url:
+        return jsonify({'ok': False, 'error': 'profile_url is required'}), 400
+    if 'facebook.com' not in profile_url:
+        return jsonify({'ok': False, 'error': 'Must be a Facebook URL'}), 400
+ 
+    scan_level   = data.get('scan_level', 'medium')
+    detect_all   = bool(data.get('detect_all_countries', False))
+    detect_top7  = bool(data.get('detect_top7_countries', True))
+    start_now    = bool(data.get('start_now', False))
+ 
+    if start_now:
+        # Cookie check first
+        cookie_ok, cookie_err = check_cookies_valid()
+        if not cookie_ok:
+            return jsonify({'ok': False, 'error': f'Session check failed: {cookie_err}'}), 400
+ 
+    # Pre-create profile in DB to get the real profile_id before pipeline starts
+    import socmint_db_import
+    socmint_db_import.init_db(DB_FILE)
+    profile_id = None
+    con = db_connect()
+    if con:
         cur = con.cursor()
         try:
             cur.execute("INSERT OR IGNORE INTO profiles (profile_url) VALUES (?)", (profile_url,))
             con.commit()
             cur.execute("SELECT id FROM profiles WHERE profile_url=?", (profile_url,))
-            profile_id = cur.fetchone()[0]
-        except Exception as e:
-            con.close()
-            return render_template('scan_new.html', error=f'DB error: {e}')
+            row = cur.fetchone()
+            profile_id = row[0] if row else None
+        except Exception:
+            pass
         con.close()
 
-        # Cookie check before launching pipeline ──
-        cookies_ok, cookie_err = check_cookies_valid()
-        if not cookies_ok:
-            con.close() if hasattr(con, 'close') else None
-            return render_template('scan_new.html',
-                error=f' Session check failed: {cookie_err}. '
-                      f'Go to System Tools → Refresh Session Cookies first.')
+    result = queue.add_profile(profile_url, scan_level, detect_all, detect_top7)
+    if result.get('ok') and profile_id:
+        result['profile_id'] = profile_id
+        # Reset status immediately so first poll doesn't see stale 'complete' from old run
+        write_status(f'profile_{profile_id}', {
+            'phase': 'queued', 'gathering_done': False,
+            'numbers_ready': False, 'analysis_done': False,
+            'network_done': False, 'report_done': False,
+            'profile_url': profile_url, 'scan_type': scan_level,
+        })
+    return jsonify(result)
+ 
+ 
+@app.route('/api/queue/add/batch', methods=['POST'])
+def api_queue_add_batch():
+    """
+    Add a manual batch investigation to the queue.
+    Body JSON:
+        label:                 str   (required)
+        urls:                  list  (required, max 10)
+        scan_level:            str   light|medium|deep
+        detect_all_countries:  bool
+    """
+    data = request.get_json() or {}
+    label    = data.get('label', '').strip()
+    urls_raw = data.get('urls', [])
+    urls     = [u.strip() for u in urls_raw if isinstance(u, str) and u.strip()]
+ 
+    if not urls:
+        return jsonify({'ok': False, 'error': 'At least one URL is required'}), 400
+    if len(urls) > 10:
+        return jsonify({'ok': False, 'error': 'Maximum 10 URLs per batch'}), 400
+ 
+    batch_id  = (label.replace(' ', '_').lower() if label
+                 else f'batch_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+    label     = label or batch_id
+    scan_level  = data.get('scan_level', 'medium')
+    detect_all  = bool(data.get('detect_all_countries', False))
+    detect_top7 = bool(data.get('detect_top7_countries', True))
+ 
+    # Pre-create batch record in DB
+    import socmint_manual_db
+    socmint_manual_db.init_db(MANUAL_DB_FILE)
+    con = db_connect(manual=True)
+    if con:
+        try:
+            con.execute("INSERT OR IGNORE INTO batches (batch_id, label) VALUES (?,?)",
+                        (batch_id, label))
+            con.commit()
+        except Exception:
+            pass
+        con.close()
+ 
+    result = queue.add_batch(batch_id, label, urls, scan_level, detect_all, detect_top7)
+    if result.get('ok'):
+        result['batch_id'] = batch_id
+ 
+    return jsonify(result)
+ 
+ 
+@app.route('/api/queue/remove/<int:item_id>', methods=['DELETE'])
+def api_queue_remove(item_id):
+    """Remove a queued item by its queue ID."""
+    return jsonify(queue.remove(item_id))
+ 
+ 
+@app.route('/api/queue/clear', methods=['POST'])
+def api_queue_clear():
+    """Clear all queued (non-running) items."""
+    return jsonify(queue.clear_all())
+ 
+ 
+@app.route('/api/queue/item/<int:item_id>')
+def api_queue_item(item_id):
+    """Get details of a specific queue item."""
+    item = queue.get_item(item_id)
+    if not item:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify(item)
 
-        # Init status
-        init_status(f'profile_{profile_id}', profile_url=profile_url, scan_type=scan_type)
+# ═══════════════════════════════════════════════════════════════════════════════
+# QUEUE COOLDOWN STATUS
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/queue/cooldown')
+def api_queue_cooldown():
+    """Return current cooldown status so UI can show countdown."""
+    path = os.path.join(STATUS_DIR, 'queue_cooldown.json')
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            # If remaining is 0 or negative, not in cooldown
+            if data.get('remaining', 0) > 0:
+                return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({'in_cooldown': False, 'remaining': 0})
 
-        # Launch pipeline in background
-        t = threading.Thread(
-            target=run_pipeline_auto,
-            args=(profile_url, profile_id, scan_type),
-            daemon=True
-        )
-        t.start()
+#@app.route('/scan/new', methods=['GET', 'POST'])
 
-        return redirect(url_for('dashboard_profile', profile_id=profile_id))
-
-    return render_template('scan_new.html')
 
 @app.route('/api/check-cookies')
 def api_check_cookies():
     """Live cookie validity check — called from scan UI before user submits."""
     ok, reason = check_cookies_valid()
     return jsonify({'ok': ok, 'reason': reason or 'Session is active'})
-
+ 
 @app.route('/api/session-screenshot')
 def session_screenshot():
     path = os.path.join(STATUS_DIR, 'session_proof.png')
     if os.path.exists(path):
-        return send_file(path, mimetype='image/png')
+        from email.utils import formatdate
+        mtime = os.path.getmtime(path)
+        resp = send_file(path, mimetype='image/png')
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        resp.headers['Pragma']        = 'no-cache'
+        resp.headers['Expires']       = '0'
+        resp.headers['Last-Modified'] = formatdate(mtime, usegmt=True)
+        return resp
     return '', 404
 
-@app.route('/batch/new', methods=['GET', 'POST'])
-def batch_new():
-    if request.method == 'POST':
-        label    = request.form.get('label', '').strip()
-        urls_raw = request.form.get('urls', '').strip()
-        urls     = [u.strip() for u in urls_raw.splitlines() if u.strip()]
-
-        if not urls:
-            return render_template('scan_new.html', mode='batch', error='Please enter at least one URL.')
-
-        batch_id = label.replace(' ', '_').lower() if label else f'batch_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
-        label    = label or batch_id
-
-        # Create batch record
-        import socmint_manual_db
-        socmint_manual_db.init_db(MANUAL_DB_FILE)
-        con = db_connect(manual=True)
-        if not con:
-            con = db_connect(manual=True)
-
-        cur = con.cursor()
-        try:
-            cur.execute("INSERT OR IGNORE INTO batches (batch_id, label) VALUES (?,?)", (batch_id, label))
-            con.commit()
-        except Exception:
-            pass
-        con.close()
-
-        scan_type = request.form.get('scan_type', 'medium')
-
-        # Cookie check before launching pipeline ──
-        cookies_ok, cookie_err = check_cookies_valid()
-        if not cookies_ok:
-            return render_template('scan_new.html', mode='batch',
-                error=f' Session check failed: {cookie_err}. '
-                      f'Go to System Tools → Refresh Session Cookies first.')
-
-        init_status(f'batch_{batch_id}', batch_id=batch_id)
-        # Store URLs in status so dashboard can display them
-        write_status(f'batch_{batch_id}', {
-            **read_status(f'batch_{batch_id}'),
-            'urls': urls,
-            'label': label,
-        })
-
-        t = threading.Thread(
-            target=run_pipeline_manual,
-            args=(batch_id, label, urls, scan_type),
-            daemon=True
-        )
-        t.start()
-
-        return redirect(url_for('dashboard_batch', batch_id=batch_id))
-
-    return render_template('scan_new.html', mode='batch')
-
+#@app.route('/batch/new', methods=['GET', 'POST'])
 
 # DASHBOARDS ─────────────────────────────────────────────────────────────
 
-@app.route('/profile/<int:profile_id>')
-def dashboard_profile(profile_id):
-    con = db_connect()
-    if not con:
-        return redirect(url_for('home'))
-    cur = con.cursor()
-    cur.execute("SELECT * FROM profiles WHERE id=?", (profile_id,))
-    row = cur.fetchone()
-    con.close()
-    if not row:
-        return redirect(url_for('home'))
+#@app.route('/profile/<int:profile_id>')
 
-    profile  = dict(row)
-    status   = read_status(f'profile_{profile_id}') or {}
-    model    = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
-    about    = get_profile_about(profile_id)
+#@app.route('/batch/<batch_id>')
 
-    # Get network graph path for iframe
-    graph_path = get_network_graph_path(profile.get('owner_name'))
-    graph_url  = f'/reports/top7/{profile_id}' if graph_path else None
-
-    return render_template('dashboard_profile.html',
-        profile=profile,
-        about=about,
-        status=status,
-        model=model,
-        graph_url=graph_url,
-        profile_id=profile_id,
-    )
-
-
-@app.route('/batch/<batch_id>')
-def dashboard_batch(batch_id):
-    con = db_connect(manual=True)
-    if not con:
-        return redirect(url_for('home'))
-    cur = con.cursor()
-    cur.execute("SELECT * FROM batches WHERE batch_id=?", (batch_id,))
-    row = cur.fetchone()
-    con.close()
-    if not row:
-        return redirect(url_for('home'))
-
-    batch    = dict(row)
-    status   = read_status(f'batch_{batch_id}') or {}
-    model    = app.config.get('OLLAMA_MODEL', 'gemma3:4b')
-    graph_path = get_network_graph_path(None, batch_id=batch_id)
-    graph_url  = f'/reports/top7_batch/{batch_id}' if graph_path else None
-
-    return render_template('dashboard_batch.html',
-        batch=batch,
-        status=status,
-        model=model,
-        graph_url=graph_url,
-        batch_id=batch_id,
-    )
 
 
 # DETAIL PAGES
 
-@app.route('/profile/<int:profile_id>/posts')
-def detail_posts(profile_id):
-    about    = get_profile_about(profile_id)
-    activity = get_post_activity(profile_id)
-    images   = get_image_analysis(profile_id)
-    texts    = get_text_post_analysis(profile_id)
-    return render_template('detail_posts.html',
-        profile=about, activity=activity, images=images, texts=texts, profile_id=profile_id)
-
-@app.route('/profile/<int:profile_id>/interactions')
-def detail_interactions(profile_id):
-    about = get_profile_about(profile_id)
-    intel = get_comment_intelligence(profile_id=profile_id)
-    return render_template('detail_comments.html',
-        profile=about, intel=intel, profile_id=profile_id)
-
-@app.route('/batch/<batch_id>/posts')
-def detail_batch_posts(batch_id):
-    posts    = get_batch_post_activity(batch_id)
-    activity = [{'date_text': p['date_text'], 'total': p['comment_count'],
-                 'positive': p['positive'], 'negative': p['negative'],
-                 'neutral': p['neutral'], 'type': p['type']} for p in posts]
-    return render_template('detail_batch_posts.html',
-        posts=posts, activity=activity, batch_id=batch_id)
-
-@app.route('/batch/<batch_id>/interactions')
-def detail_batch_interactions(batch_id):
-    intel = get_comment_intelligence(batch_id=batch_id)
-    return render_template('detail_batch_comments.html',
-        intel=intel, batch_id=batch_id)
-
-@app.route('/profile/<int:profile_id>/faces')
-def detail_faces(profile_id):
-    about   = get_profile_about(profile_id)
-    faces   = get_faces(profile_id)
-    return render_template('detail_faces.html',
-        profile=about, faces=faces, profile_id=profile_id)
-
-@app.route('/profile/<int:profile_id>/network')
-def detail_network(profile_id):
-    about      = get_profile_about(profile_id)
-    commentors = get_commentors(profile_id=profile_id)
-    return render_template('detail_commentors.html',
-        profile=about, commentors=commentors, profile_id=profile_id)
-
-@app.route('/batch/<batch_id>/network')
-def detail_batch_network(batch_id):
-    commentors = get_commentors(batch_id=batch_id)
-    return render_template('detail_commentors.html',
-        commentors=commentors, batch_id=batch_id)
 
 
 # API ENDPOINTS
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANALYSIS DATA (unified endpoint for SPA analysis page)
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/analysis/<inv_key>')
+def api_analysis(inv_key):
+    """
+    Return ALL data needed for the analysis SPA page.
+    inv_key: 'profile_1' or 'batch_my_batch_id'
+    """
+    if inv_key.startswith('profile_'):
+        try:
+            profile_id = int(inv_key.replace('profile_', ''))
+        except ValueError:
+            return jsonify({'error': 'Invalid key'}), 400
+ 
+        status    = read_status(inv_key) or {}
+        about     = get_profile_about(profile_id)
+        stats     = get_profile_stats(profile_id)
+        top7      = get_top7(profile_id=profile_id)
+        commentors = get_commentors(profile_id=profile_id)
+        countries  = get_country_distribution(profile_id=profile_id)
+        tiers      = get_tier_distribution(profile_id=profile_id)
+        activity   = get_post_activity(profile_id)
+        intel      = get_comment_intelligence(profile_id=profile_id)
+        faces      = get_faces(profile_id)
+        images     = get_image_analysis(profile_id)
+        texts      = get_text_post_analysis(profile_id)
+ 
+        graph_path = get_network_graph_path(about.get('owner_name'))
+        graph_url  = f'/reports/top7/{profile_id}' if graph_path else None
+ 
+        return jsonify({
+            'type':       'profile',
+            'status':     status,
+            'about':      about,
+            'stats':      stats,
+            'top7':       top7,
+            'commentors': commentors,
+            'countries':  countries,
+            'tiers':      tiers,
+            'activity':   activity,
+            'intel':      intel,
+            'faces':      faces,
+            'images':     images[:30],
+            'texts':      texts[:30],
+            'graph_url':  graph_url,
+            'model':      app.config.get('OLLAMA_MODEL', ''),
+        })
+ 
+    elif inv_key.startswith('batch_'):
+        batch_id = inv_key.replace('batch_', '', 1)
+ 
+        status     = read_status(inv_key) or {}
+        stats      = get_batch_stats(batch_id)
+        top7       = get_top7(batch_id=batch_id)
+        commentors = get_commentors(batch_id=batch_id)
+        countries  = get_country_distribution(batch_id=batch_id)
+        tiers      = get_tier_distribution(batch_id=batch_id)
+        posts      = get_batch_post_activity(batch_id)
+        intel      = get_comment_intelligence(batch_id=batch_id)
+ 
+        # Repeat interactors (multi-appearance)
+        repeat = []
+        con = db_connect(manual=True)
+        if con:
+            cur = con.cursor()
+            try:
+                cur.execute("""
+                    SELECT c.id, c.name, c.profile_url,
+                           COUNT(DISTINCT cm.post_id) as post_count,
+                           COUNT(cm.id) as comment_count,
+                           GROUP_CONCAT(DISTINCT mp.url) as post_urls
+                    FROM commentors c
+                    JOIN comments cm ON cm.commentor_id = c.id
+                    JOIN manual_posts mp ON mp.id = cm.post_id AND mp.batch_id = ?
+                    GROUP BY c.id
+                    HAVING post_count > 1
+                    ORDER BY post_count DESC, comment_count DESC
+                """, (batch_id,))
+                repeat = [dict(r) for r in cur.fetchall()]
+            except Exception:
+                pass
+            con.close()
+ 
+        graph_path = get_network_graph_path(None, batch_id=batch_id)
+        graph_url  = f'/reports/top7_batch/{batch_id}' if graph_path else None
+ 
+        # Batch info
+        batch_info = {}
+        con2 = db_connect(manual=True)
+        if con2:
+            cur2 = con2.cursor()
+            try:
+                cur2.execute("SELECT * FROM batches WHERE batch_id=?", (batch_id,))
+                row = cur2.fetchone()
+                if row:
+                    batch_info = dict(row)
+            except Exception:
+                pass
+            con2.close()
+ 
+        return jsonify({
+            'type':       'batch',
+            'batch_id':   batch_id,
+            'batch_info': batch_info,
+            'status':     status,
+            'stats':      stats,
+            'top7':       top7,
+            'commentors': commentors,
+            'countries':  countries,
+            'tiers':      tiers,
+            'posts':      posts,
+            'intel':      intel,
+            'repeat':     repeat,
+            'graph_url':  graph_url,
+            'model':      app.config.get('OLLAMA_MODEL', ''),
+        })
+ 
+    return jsonify({'error': f'Unknown key format: {inv_key}'}), 400
+ 
+
 @app.route('/api/status/profile/<int:profile_id>')
 def api_status_profile(profile_id):
     status = read_status(f'profile_{profile_id}') or {'phase': 'unknown'}
+
+    # Never auto-detect when pipeline is actively running or queued
+    active_phases = {'queued','checking','gathering','importing','analyzing','building','report'}
+    if status.get('phase') in active_phases:
+        return jsonify(status)
 
     # Auto-detect completion from DB + reports dir when status.json is missing/stale
     con = db_connect()
@@ -1490,8 +1767,11 @@ def api_status_profile(profile_id):
 def api_status_batch(batch_id):
     status = read_status(f'batch_{batch_id}') or {'phase': 'unknown'}
 
+    active_phases = {'queued','checking','gathering','importing','analyzing','building','report'}
+    if status.get('phase') in active_phases:
+        return jsonify(status)
+
     # Auto-detect from DB — only upgrade flags, never downgrade
-    # (don't overwrite flags already set by pipeline)
     con = db_connect(manual=True)
     if con:
         cur = con.cursor()
@@ -1529,76 +1809,7 @@ def api_status_batch(batch_id):
 
     return jsonify(status)
 
-@app.route('/api/data/profile/<int:profile_id>')
-def api_data_profile(profile_id):
-    """Return all dashboard data as JSON for live updates."""
-    stats      = get_profile_stats(profile_id)
-    countries  = get_country_distribution(profile_id=profile_id)
-    tiers      = get_tier_distribution(profile_id=profile_id)
-    top7       = get_top7(profile_id=profile_id)
-    commentors = get_commentors(profile_id=profile_id)
-    about      = get_profile_about(profile_id)
-    activity   = get_post_activity(profile_id)
 
-    return jsonify({
-        'stats':      stats,
-        'countries':  countries,
-        'tiers':      tiers,
-        'top7':       top7,
-        'commentors': commentors[:50],  # first 50 for dashboard
-        'about':      about,
-        'activity':   activity[:20],
-    })
-
-@app.route('/api/data/batch/<batch_id>')
-def api_data_batch(batch_id):
-    stats      = get_batch_stats(batch_id)
-    countries  = get_country_distribution(batch_id=batch_id)
-    tiers      = get_tier_distribution(batch_id=batch_id)
-    top7       = get_top7(batch_id=batch_id)
-    commentors = get_commentors(batch_id=batch_id)
-
-    # Get batch info for dashboard card
-    batch_info = {}
-    con = db_connect(manual=True)
-    if con:
-        cur = con.cursor()
-        try:
-            cur.execute("SELECT batch_id, label, created_at FROM batches WHERE batch_id=?", (batch_id,))
-            row = cur.fetchone()
-            if row: batch_info = dict(row)
-        except Exception: pass
-        con.close()
-
-    # Get activity (comment counts per post date)
-    activity = []
-    con2 = db_connect(manual=True)
-    if con2:
-        cur2 = con2.cursor()
-        try:
-            cur2.execute("""
-                SELECT mp.date_text, COUNT(cm.id) as total
-                FROM manual_posts mp
-                LEFT JOIN comments cm ON cm.post_id = mp.id
-                WHERE mp.batch_id=?
-                GROUP BY mp.date_text ORDER BY mp.date_text
-            """, (batch_id,))
-            activity = [dict(r) for r in cur2.fetchall()]
-        except Exception: pass
-        con2.close()
-
-    # analyzed count
-    stats['analyzed_count'] = sum(tiers.values()) if tiers else 0
-
-    return jsonify({
-        'stats':      stats,
-        'batch':      batch_info,
-        'countries':  countries,
-        'tiers':      tiers,
-        'top7':       top7,
-        'commentors': commentors[:50],
-        'activity':   activity,
-    })
 
 #Detail commentors page graph
 @app.route('/api/comment-graph/profile/<int:profile_id>')
@@ -1948,7 +2159,86 @@ def api_cocomment_graph_profile(profile_id):
         return jsonify({'nodes': [], 'edges': []})
     finally:
         con.close()
- 
+
+@app.route('/api/cocomment-shared/profile/<int:profile_id>')
+def api_cocomment_shared_profile(profile_id):
+  """
+  Posts (photo, reel, text) where both commentors commented on the same post.
+  Query: c1, c2 = commentor ids (order does not matter).
+  """
+  c1 = request.args.get('c1', type=int)
+  c2 = request.args.get('c2', type=int)
+  if not c1 or not c2 or c1 == c2:
+    return jsonify({'error': 'c1 and c2 required and must differ'}), 400
+
+  lo, hi = min(c1, c2), max(c1, c2)  # optional; EXISTS queries work either way
+
+  con = db_connect()
+  if not con:
+    return jsonify({'posts': [], 'c1': {}, 'c2': {}})
+
+  cur = con.cursor()
+  posts = []
+
+  def fetch_commentors():
+    cur.execute(
+      "SELECT id, name, profile_url FROM commentors WHERE id IN (?, ?)",
+      (c1, c2),
+    )
+    rows = {r['id']: dict(r) for r in cur.fetchall()}
+    return rows.get(c1, {}), rows.get(c2, {})
+
+  try:
+    # Photo posts both commented on
+    cur.execute("""
+      SELECT DISTINCT pp.photo_url AS url, pp.date_text,
+             pp.image_src AS image_src, 'photo' AS type
+      FROM photo_posts pp
+      JOIN photo_comments pc1 ON pc1.photo_post_id = pp.id AND pc1.commentor_id = ?
+      JOIN photo_comments pc2 ON pc2.photo_post_id = pp.id AND pc2.commentor_id = ?
+      WHERE pp.profile_id = ?
+    """, (c1, c2, profile_id))
+    posts.extend(dict(r) for r in cur.fetchall())
+
+    # Reel posts
+    cur.execute("""
+      SELECT DISTINCT rp.reel_url AS url, NULL AS date_text,
+             NULL AS image_src, 'reel' AS type
+      FROM reel_posts rp
+      JOIN reel_comments rc1 ON rc1.reel_post_id = rp.id AND rc1.commentor_id = ?
+      JOIN reel_comments rc2 ON rc2.reel_post_id = rp.id AND rc2.commentor_id = ?
+      WHERE rp.profile_id = ?
+    """, (c1, c2, profile_id))
+    posts.extend(dict(r) for r in cur.fetchall())
+
+    # If reel_posts has date_text in your DB, add rp.date_text in SELECT
+
+    # Text posts
+    cur.execute("""
+      SELECT DISTINCT tp.post_url AS url, tp.date_text,
+             tp.screenshot_path AS image_src, 'text' AS type
+      FROM text_posts tp
+      JOIN text_comments tc1 ON tc1.text_post_id = tp.id AND tc1.commentor_id = ?
+      JOIN text_comments tc2 ON tc2.text_post_id = tp.id AND tc2.commentor_id = ?
+      WHERE tp.profile_id = ?
+    """, (c1, c2, profile_id))
+    posts.extend(dict(r) for r in cur.fetchall())
+
+    c1_info, c2_info = fetch_commentors()
+
+    # Sort: dated first, newest-ish
+    posts.sort(key=lambda p: p.get('date_text') or '', reverse=True)
+
+    return jsonify({
+      'posts': posts,
+      'c1': c1_info,
+      'c2': c2_info,
+    })
+  except Exception as e:
+    print(f'cocomment-shared error: {e}')
+    return jsonify({'posts': [], 'c1': {}, 'c2': {}, 'error': str(e)}), 500
+  finally:
+    con.close() 
  
 @app.route('/api/cocomment-graph/batch/<batch_id>')
 def api_cocomment_graph_batch(batch_id):
@@ -2034,6 +2324,201 @@ def serve_top7_batch(batch_id):
     with open(path, 'r', encoding='utf-8') as f:
         return Response(f.read(), mimetype='text/html')
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# ON-DEMAND COUNTRY DETECTION
+# Rate: caller tracks 4-per-2min (enforced client-side + per-IP throttle here)
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+# Simple in-memory per-IP rate tracker: {ip: [timestamp, ...]}
+_country_detect_tracker = {}
+_country_detect_lock    = threading.Lock()
+COUNTRY_RATE_LIMIT      = 4    # max calls per window
+COUNTRY_RATE_WINDOW     = 180  # seconds (2 minutes)
+ 
+def _check_country_rate(ip):
+    """Return True if request is within rate limit."""
+    now = time.time()
+    with _country_detect_lock:
+        timestamps = _country_detect_tracker.get(ip, [])
+        # Remove old entries
+        timestamps = [t for t in timestamps if now - t < COUNTRY_RATE_WINDOW]
+        if len(timestamps) >= COUNTRY_RATE_LIMIT:
+            wait = COUNTRY_RATE_WINDOW - (now - min(timestamps))
+            return False, int(wait)
+        timestamps.append(now)
+        _country_detect_tracker[ip] = timestamps
+        return True, 0
+ 
+ 
+@app.route('/api/country/detect/<int:commentor_id>', methods=['POST'])
+def api_country_detect(commentor_id):
+    """
+    On-demand country detection for a single commentor.
+    Rate limited: 4 requests per 2 minutes per IP.
+    Body JSON: { "is_batch": false }
+    """
+    ip = request.remote_addr
+    allowed, wait_sec = _check_country_rate(ip)
+    if not allowed:
+        return jsonify({
+            'ok':      False,
+            'error':   'Rate limit — 4 detections per 2 minutes',
+            'wait':    wait_sec,
+            'pausing': True,
+        }), 429
+ 
+    data     = request.get_json() or {}
+    is_batch = bool(data.get('is_batch', False))
+ 
+    # Run in background thread so we don't block the request
+    # For simplicity we run sync here — detection is ~5-10s
+    result = queue.detect_country_single(commentor_id, is_batch)
+    return jsonify(result)
+ 
+ 
+@app.route('/api/country/rate-status')
+def api_country_rate_status():
+    """Return current rate limit status for the country detect button."""
+    ip  = request.remote_addr
+    now = time.time()
+    with _country_detect_lock:
+        timestamps = [t for t in _country_detect_tracker.get(ip, [])
+                      if now - t < COUNTRY_RATE_WINDOW]
+        remaining = COUNTRY_RATE_LIMIT - len(timestamps)
+        pausing   = remaining <= 0
+        wait      = 0
+        if pausing and timestamps:
+            wait = int(COUNTRY_RATE_WINDOW - (now - min(timestamps)))
+    return jsonify({
+        'remaining': remaining,
+        'pausing':   pausing,
+        'wait':      wait,
+    })
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STOP
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/stop', methods=['POST'])
+def api_stop():
+    """
+    Stop the currently running investigation.
+    The pipeline checks is_stopped() at each phase transition.
+    """
+    result = queue.stop_current()
+    return jsonify(result)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════════
+# REPORT GENERATION
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/report/generate', methods=['POST'])
+def api_generate_report():
+    """
+    Manually trigger report generation for a completed investigation.
+    Body JSON: { "key": "profile_1" | "batch_foo" }
+    """
+    data = request.get_json() or {}
+    key  = data.get('key', '').strip()
+ 
+    if not key:
+        return jsonify({'ok': False, 'error': 'key is required'}), 400
+ 
+    def _generate():
+        import threat_report
+        try:
+            if key.startswith('profile_'):
+                profile_id = int(key.replace('profile_', ''))
+                con = db_connect()
+                if con:
+                    cur = con.cursor()
+                    cur.execute("SELECT profile_url FROM profiles WHERE id=?", (profile_id,))
+                    row = cur.fetchone()
+                    con.close()
+                    if row:
+                        threat_report.generate_report(profile_url=row[0])
+                        write_status(key, {**(read_status(key) or {}),
+                                           'report_done': True, 'phase': 'complete'})
+            elif key.startswith('batch_'):
+                batch_id = key.replace('batch_', '', 1)
+                threat_report.generate_report(batch_id=batch_id)
+                write_status(key, {**(read_status(key) or {}),
+                                   'report_done': True, 'phase': 'complete'})
+        except Exception as e:
+            print(f'[Report] Generation error for {key}: {e}')
+ 
+    t = threading.Thread(target=_generate, daemon=True)
+    t.start()
+    return jsonify({'ok': True, 'message': 'Report generation started'})
+ 
+ 
+@app.route('/api/report/download/<path:key>')
+def api_report_download(key):
+    """Download the PDF report for an investigation."""
+    try:
+        if key.startswith('profile_'):
+            profile_id = int(key.replace('profile_', ''))
+            con = db_connect()
+            if con:
+                cur = con.cursor()
+                cur.execute("SELECT owner_name FROM profiles WHERE id=?", (profile_id,))
+                row = cur.fetchone()
+                con.close()
+                name = (row[0] or 'Target').replace(' ', '_')[:30] if row else 'Target'
+            pdf = get_report_file('report', name, '.pdf')
+        elif key.startswith('batch_'):
+            batch_id = key.replace('batch_', '', 1)
+            safe_bid = batch_id[:30]
+            pdf = get_report_file('report', safe_bid, '.pdf', exact_only=True)
+        else:
+            pdf = None
+ 
+        if pdf and os.path.exists(pdf):
+            return send_file(pdf, as_attachment=True,
+                             download_name=os.path.basename(pdf))
+        return jsonify({'error': 'Report not found'}), 404
+ 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+#=============TELEGRAM CONFIG========================
+
+@app.route('/api/telegram/configure', methods=['POST'])
+def api_telegram_configure():
+    """
+    Save Telegram bot token + chat_id.
+    Body JSON: { "token": "...", "chat_id": "..." }
+    """
+    from telegram_notify import telegram
+    data    = request.get_json() or {}
+    token   = data.get('token', '').strip()
+    chat_id = data.get('chat_id', '').strip()
+ 
+    if not token or not chat_id:
+        return jsonify({'ok': False, 'error': 'Both token and chat_id are required'}), 400
+ 
+    result = telegram.save_config(token, chat_id)
+    return jsonify(result)
+ 
+ 
+@app.route('/api/telegram/test', methods=['POST'])
+def api_telegram_test():
+    """Send a test message via Telegram to verify configuration."""
+    from telegram_notify import telegram
+    ok, message = telegram.test()
+    return jsonify({'ok': ok, 'message': message})
+ 
+ 
+@app.route('/api/telegram/status')
+def api_telegram_status():
+    """Return whether Telegram is configured."""
+    from telegram_notify import telegram
+    return jsonify(telegram.status())
+ 
+ 
+
 @app.route('/reports/pdf/<int:profile_id>')
 def serve_pdf_profile(profile_id):
     from flask import send_file
@@ -2112,7 +2597,7 @@ def serve_face_image(filepath):
     return 'Not found', 404
 
 # Serve post screenshots
-@app.route('/screenshot/<path:filepath>')
+@app.route('/analysis/post_screenshots/<path:filepath>')
 def serve_screenshot(filepath):
     from flask import send_file
     screenshots_dir = os.path.realpath(os.path.join(BASE_DIR, 'post_screenshots'))
@@ -2140,69 +2625,55 @@ def serve_icon(filename):
         return send_file(path)
     return 'Not found', 404
 
-#  COOKIE REFRESH
-
-cookie_refresh_status = {'running': False, 'done': False, 'error': None, 'seconds_left': 0}
-
-@app.route('/tools/refresh-cookies', methods=['GET', 'POST'])
-def refresh_cookies():
-    return render_template('tool_cookies.html',
-        status=cookie_refresh_status,
-        cookies_ok=app.config.get('COOKIES_OK', False))
-
-@app.route('/api/tools/refresh-cookies/start', methods=['POST'])
-def start_cookie_refresh():
-    global cookie_refresh_status
-    if cookie_refresh_status['running']:
-        return jsonify({'ok': False, 'msg': 'Already running'})
-    cookie_refresh_status = {'running': True, 'done': False, 'error': None, 'seconds_left': 60}
-
-    def _run():
-        global cookie_refresh_status
+# ═══════════════════════════════════════════════════════════════════════════════
+# COOKIE VERIFY + RE-IMPORT
+# ═══════════════════════════════════════════════════════════════════════════════
+ 
+@app.route('/api/cookie/verify', methods=['POST'])
+def api_cookie_verify():
+    """
+    Run the full SeleniumBase cookie check.
+    This is the heavy verify (takes ~15s), triggered by the 'Verify now' button.
+    """
+    def _check():
+        ok, reason = check_cookies_valid()
+        app.config['COOKIES_OK'] = ok
+        path = os.path.join(STATUS_DIR, 'cookie_check.json')
+        with open(path, 'w') as f:
+            json.dump({'ok': ok, 'reason': reason,
+                       'checked_at': datetime.now().isoformat()}, f)
+ 
+    # Run in background — return immediately so UI can poll
+    t = threading.Thread(target=_check, daemon=True)
+    t.start()
+    return jsonify({'ok': True, 'message': 'Cookie verification started — poll /api/cookie/status'})
+ 
+ 
+@app.route('/api/cookie/status')
+def api_cookie_status():
+    """Return the result of the last cookie check."""
+    path = os.path.join(STATUS_DIR, 'cookie_check.json')
+    if os.path.exists(path):
         try:
-            import pickle, subprocess, time as _time
-            from selenium import webdriver
-            from selenium.webdriver.chrome.options import Options
-            options = Options()
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            driver = webdriver.Chrome(options=options)
-            driver.get("https://www.facebook.com")
-            for i in range(60, 0, -1):
-                cookie_refresh_status['seconds_left'] = i
-                _time.sleep(1)
-            pickle.dump(driver.get_cookies(),
-                open(os.path.join(BASE_DIR, 'fb_cookies.pkl'), 'wb'))
-            driver.quit()
-            app.config['COOKIES_OK'] = True
-            cookie_refresh_status.update({'running': False, 'done': True, 'seconds_left': 0})
-        except Exception as e:
-            cookie_refresh_status.update({'running': False, 'done': False,
-                                          'error': str(e), 'seconds_left': 0})
-
-    threading.Thread(target=_run, daemon=True).start()
-    return jsonify({'ok': True})
-
-@app.route('/api/tools/refresh-cookies/status')
-def cookie_refresh_status_api():
-    return jsonify(cookie_refresh_status)
-
-
-@app.route('/tools/import-cookies', methods=['GET'])
-def import_cookies():
-    """Cookie-Editor import page."""
-    return render_template('tool_import_cookies.html',
-        cookies_ok=app.config.get('COOKIES_OK', False))
-
-@app.route('/api/tools/import-cookies', methods=['POST'])
-def api_import_cookies():
+            with open(path) as f:
+                return jsonify(json.load(f))
+        except Exception:
+            pass
+    # Fallback to startup check result
+    return jsonify({
+        'ok':     app.config.get('COOKIES_OK', False),
+        'reason': 'From startup check',
+    })
+ 
+ 
+@app.route('/api/cookie/import', methods=['POST'])
+def api_cookie_import():
     """
     Receive cookie JSON from Cookie-Editor extension,
     convert to pickle format and save as fb_cookies.pkl.
     """
     import json as _json
     import pickle
- 
     try:
         data = request.get_json()
         if not data:
@@ -2274,6 +2745,10 @@ def api_import_cookies():
         return jsonify({'ok': False, 'error': f'Invalid JSON: {str(e)}'})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)})
+ 
+ 
+
+#cookie_refresh_status 
 
 #  DB CLEANER
 
@@ -2330,21 +2805,8 @@ def _wipe_faces():
         return True
     return False
 
-@app.route('/tools/db-cleaner')
-def db_cleaner():
-    # Get DB sizes
-    def db_size(path):
-        if os.path.exists(path):
-            return round(os.path.getsize(path) / 1024 / 1024, 2)
-        return 0
-    info = {
-        'socmint_size':  db_size(DB_FILE),
-        'manual_size':   db_size(MANUAL_DB_FILE),
-        'profiles':      len(get_all_profiles()),
-        'batches':       len(get_all_batches()),
-        'faces_exist':   os.path.exists(os.path.join(BASE_DIR, 'face_data')),
-    }
-    return render_template('tool_dbcleaner.html', info=info)
+#@app.route('/tools/db-cleaner')
+
 
 @app.route('/api/tools/clean-db', methods=['POST'])
 def api_clean_db():
@@ -2354,16 +2816,31 @@ def api_clean_db():
         results['profile_rows'] = _wipe_db(DB_FILE, SOCMINT_TABLES)
         _wipe_faces()
         results['faces_wiped'] = True
-        # Delete status files for profiles
         for f in os.listdir(STATUS_DIR):
             if f.startswith('profile_'):
                 try: os.remove(os.path.join(STATUS_DIR, f))
                 except: pass
+        # Also wipe reports and queue cooldown
+        for f in os.listdir(REPORTS_DIR):
+            if f.startswith('report_') and f.endswith('.pdf'):
+                try: os.remove(os.path.join(REPORTS_DIR, f))
+                except: pass
+            if f.startswith('top7') and f.endswith('.html'):
+                try: os.remove(os.path.join(REPORTS_DIR, f))
+                except: pass
+        # Wipe queue cooldown so next run starts fresh
+        try: os.remove(os.path.join(STATUS_DIR, 'queue_cooldown.json'))
+        except: pass
+
     if target in ('both', 'manual'):
         results['manual_rows'] = _wipe_db(MANUAL_DB_FILE, MANUAL_TABLES)
         for f in os.listdir(STATUS_DIR):
             if f.startswith('batch_'):
                 try: os.remove(os.path.join(STATUS_DIR, f))
+                except: pass
+        for f in os.listdir(REPORTS_DIR):
+            if f.startswith('report_') and f.endswith('.pdf'):
+                try: os.remove(os.path.join(REPORTS_DIR, f))
                 except: pass
     return jsonify({'ok': True, 'results': results})
 
@@ -2452,7 +2929,242 @@ def delete_batch(batch_id):
 
     return jsonify({'ok': True})
 
+def _normalize_country(raw):
+    """'India/United Kingdom' → 'United Kingdom'  (always take the last part)."""
+    if not raw:
+        return 'Unknown'
+    s = str(raw).strip()
+    if '/' in s:
+        parts = [p.strip() for p in s.split('/') if p.strip()]
+        if parts:
+            return parts[-1]
+    return s
+ 
+ 
+def get_reel_posts_with_counts(profile_id):
+    """All scraped reels — shows 0 if no comments yet (LEFT JOIN)."""
+    con = db_connect()
+    if not con:
+        return []
+    cur = con.cursor()
+    rows = []
+    try:
+        try:
+            cur.execute("""
+                SELECT rp.id, rp.reel_url, rp.scraped_at as date_text,
+                       COUNT(DISTINCT rc.commentor_id) AS comment_count,
+                       rp.caption,
+                       rp.caption_context,
+                       rp.caption_entities,
+                       rp.caption_hashtags,
+                       rp.caption_topic,
+                       rp.caption_sentiment
+                FROM reel_posts rp
+                LEFT JOIN reel_comments rc ON rc.reel_post_id = rp.id
+                WHERE rp.profile_id = ?
+                GROUP BY rp.id
+                ORDER BY comment_count DESC
+            """, (profile_id,))
+        except Exception:
+            cur.execute("""
+                SELECT rp.id, rp.reel_url, rp.scraped_at as date_text,
+                       COUNT(DISTINCT rc.commentor_id) AS comment_count,
+                       NULL, NULL, NULL, NULL, NULL, NULL
+                FROM reel_posts rp
+                LEFT JOIN reel_comments rc ON rc.reel_post_id = rp.id
+                WHERE rp.profile_id = ?
+                GROUP BY rp.id
+                ORDER BY comment_count DESC
+            """, (profile_id,))
+        rows = [dict(r) for r in cur.fetchall()]
+    except Exception as e:
+        print(f"Reel posts error: {e}")
+    con.close()
+    return rows
+ 
+ 
+def get_stance_distribution(profile_id=None, batch_id=None):
+    """Count support / neutral / oppose from comment_analysis.stance column."""
+    con = db_connect(manual=bool(batch_id))
+    if not con:
+        return {'support': 0, 'neutral': 0, 'oppose': 0, 'total': 0}
+    cur = con.cursor()
+    data = {'support': 0, 'neutral': 0, 'oppose': 0, 'total': 0}
+    try:
+        if batch_id:
+            cur.execute("""
+                SELECT LOWER(TRIM(ca.stance)), COUNT(*)
+                FROM comment_analysis ca
+                JOIN comments c    ON c.id  = ca.comment_id
+                JOIN manual_posts mp ON mp.id = c.post_id
+                WHERE mp.batch_id = ? AND ca.db_source = 'manual'
+                  AND ca.stance IS NOT NULL
+                GROUP BY LOWER(TRIM(ca.stance))
+            """, (batch_id,))
+        else:
+            cur.execute("""
+                SELECT LOWER(TRIM(ca.stance)), COUNT(*)
+                FROM comment_analysis ca
+                WHERE ca.stance IS NOT NULL
+                  AND ca.comment_id IN (
+                      SELECT pc.id FROM photo_comments pc
+                      JOIN photo_posts pp ON pp.id = pc.photo_post_id
+                      WHERE pp.profile_id = ?
+                      UNION ALL
+                      SELECT rc.id FROM reel_comments rc
+                      JOIN reel_posts rp ON rp.id = rc.reel_post_id
+                      WHERE rp.profile_id = ?
+                      UNION ALL
+                      SELECT tc.id FROM text_comments tc
+                      JOIN text_posts tp ON tp.id = tc.text_post_id
+                      WHERE tp.profile_id = ?
+                  )
+                GROUP BY LOWER(TRIM(ca.stance))
+            """, (profile_id, profile_id, profile_id))
+        for row in cur.fetchall():
+            s, cnt = row
+            if not s:
+                continue
+            if 'support' in s:
+                data['support'] += cnt
+            elif 'neutral' in s:
+                data['neutral'] += cnt
+            elif 'oppose' in s:
+                data['oppose'] += cnt
+            data['total'] += cnt
+    except Exception as e:
+        print(f"Stance dist error: {e}")
+    con.close()
+    return data
+ 
+ 
+@app.route('/api/reel-posts/profile/<int:profile_id>')
+def api_reel_posts(profile_id):
+    """Reel URLs with unique interactor count — used by the reel table."""
+    return jsonify(get_reel_posts_with_counts(profile_id))
+ 
+@app.route('/api/update-post-date', methods=['POST'])
+def api_update_post_date():
+    data      = request.get_json() or {}
+    post_id   = data.get('post_id')
+    post_type = data.get('post_type')
+    new_date  = (data.get('date') or '').strip()
+    is_batch  = bool(data.get('is_batch', False))
+
+    if not post_id or not new_date:
+        return jsonify({'ok': False, 'error': 'post_id and date required'})
+
+    table_map = {
+        'photo':  ('photo_posts',  'date_text',  False),
+        'text':   ('text_posts',   'date_text',  False),
+        'reel':   ('reel_posts',   'scraped_at', False),
+        'manual': ('manual_posts', 'date_text',  True),
+    }
+    if post_type not in table_map:
+        return jsonify({'ok': False, 'error': 'Invalid post_type'})
+
+    tbl, col, use_manual = table_map[post_type]
+    con = db_connect(manual=use_manual)
+    if not con:
+        return jsonify({'ok': False, 'error': 'DB not found'})
+    try:
+        con.execute(f"UPDATE {tbl} SET {col} = ? WHERE id = ?", (new_date, post_id))
+        con.commit()
+        con.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)})
+ 
+@app.route('/api/country-interactors/profile/<int:profile_id>/<path:country>')
+def api_country_interactors_profile(profile_id, country):
+    """All interactors from a country — called when map dot is clicked."""
+    con = db_connect()
+    if not con:
+        return jsonify([])
+    cur  = con.cursor()
+    rows = []
+    try:
+        cur.execute("""
+            SELECT c.id AS commentor_id, c.name, c.profile_url,
+                   COALESCE(cs.total_score, 0)  AS total_score,
+                   COALESCE(cs.tier, 'Unknown') AS tier,
+                   COALESCE(cs.comment_count, 0) AS comment_count,
+                   cc.identified_country
+            FROM commentors c
+            JOIN commentor_country cc ON cc.commentor_id = c.id
+            JOIN (
+                SELECT DISTINCT commentor_id FROM photo_comments pc
+                JOIN photo_posts pp ON pp.id = pc.photo_post_id WHERE pp.profile_id = ?
+                UNION
+                SELECT DISTINCT commentor_id FROM reel_comments rc
+                JOIN reel_posts rp ON rp.id = rc.reel_post_id WHERE rp.profile_id = ?
+                UNION
+                SELECT DISTINCT commentor_id FROM text_comments tc
+                JOIN text_posts tp ON tp.id = tc.text_post_id WHERE tp.profile_id = ?
+            ) mine ON mine.commentor_id = c.id
+            LEFT JOIN commentor_scores cs
+                   ON cs.commentor_id = c.id AND cs.main_profile_id = ?
+            WHERE LOWER(TRIM(cc.identified_country)) = LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+            ORDER BY total_score DESC
+        """, (
+            profile_id, profile_id, profile_id, profile_id,
+            country,
+            f'%/{country}',
+            f'{country}/%',
+            f'%/{country}/%',
+        ))
+        rows = [dict(r) for r in cur.fetchall()]
+    except Exception as e:
+        print(f"Country interactors profile error: {e}")
+    con.close()
+    return jsonify(rows)
+ 
+ 
+@app.route('/api/country-interactors/batch/<batch_id>/<path:country>')
+def api_country_interactors_batch(batch_id, country):
+    """All interactors from a country — batch investigation version."""
+    con = db_connect(manual=True)
+    if not con:
+        return jsonify([])
+    cur  = con.cursor()
+    rows = []
+    try:
+        cur.execute("""
+            SELECT c.id AS commentor_id, c.name, c.profile_url,
+                   COALESCE(bcs.total_score, 0)  AS total_score,
+                   COALESCE(bcs.tier, 'Unknown') AS tier,
+                   COALESCE(bcs.comment_count, 0) AS comment_count,
+                   cc.identified_country
+            FROM commentors c
+            JOIN comments cm ON cm.commentor_id = c.id
+            JOIN manual_posts mp ON mp.id = cm.post_id AND mp.batch_id = ?
+            JOIN commentor_country cc ON cc.commentor_id = c.id
+            LEFT JOIN batch_commentor_scores bcs
+                   ON bcs.commentor_id = c.id AND bcs.batch_id = ?
+            WHERE LOWER(TRIM(cc.identified_country)) = LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+               OR LOWER(cc.identified_country) LIKE LOWER(?)
+            GROUP BY c.id
+            ORDER BY total_score DESC
+        """, (
+            batch_id, batch_id,
+            country,
+            f'%/{country}',
+            f'{country}/%',
+            f'%/{country}/%',
+        ))
+        rows = [dict(r) for r in cur.fetchall()]
+    except Exception as e:
+        print(f"Country interactors batch error: {e}")
+    con.close()
+    return jsonify(rows)
+ 
 
 if __name__ == '__main__':
     system_check()
+    queue.inject_app(app)
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

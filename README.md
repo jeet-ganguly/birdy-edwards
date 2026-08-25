@@ -1,10 +1,11 @@
+# BIRDY-EDWARDS 2.0
+
+Infiltrate & Expose
+> Automated AI powered Facebook intelligence tool for target profiling, network analysis and threat reporting. Runs entirely on-device via Ollama. AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency. For lite version check this repo [click here](https://github.com/jeet-ganguly/birdy-edwards-lite)
+
 <div align="center">
+<img src="app/icons/wraith.png" alt="BIRDY-EDWARDS Logo" width="500" height="500"/>
 
-<img src="app/icons/logo.jpeg" alt="BIRDY-EDWARDS Logo" width="300"/>
-
-# BIRDY-EDWARDS
-
-### *Infiltrate & Expose*
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-Web%20UI-black?style=flat-square&logo=flask)](https://flask.palletsprojects.com)
@@ -12,36 +13,12 @@
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)]()
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)]()
+[![Version](https://img.shields.io/badge/Version-2.0-purple?style=flat-square)]()
 
-**AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency. For lite version check this repo [click here](https://github.com/jeet-ganguly/birdy-edwards-lite)**
+[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer) · [Contributing](#contributing)
 
-[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer) . [Contributing](#contributing)
-
-<img src="app/icons/demo.png" alt="BIRDY-EDWARDS Web UI" width="100%"/>
 
 </div>
-
----
-
-## Architecture
-
-<div align="center">
-<img src="app/icons/workflow.png" alt="BIRDY-EDWARDS Pipeline" width="100%"/>
-</div>
-
----
-
-## Features
-
-- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, about data also comments, commentors profile link and name
-- 🧠 **Interaction intelligence** — AI sentiment, stance, emotion, and language analysis per interaction
-- 📊 **Actor scoring** — Weighted composite score with 5-tier classification system
-- 🌍 **Country detection** — LLM identifies country of origin from profile signals
-- 👤 **Face intelligence** — Face detection, 128D encoding, and identity clustering across all images. It uses HOG model.
-- 🕸️ **Network graphs** — Interactive HTML graphs including force-directed and co-interactors relationship matrix
-- 📄 **PDF reports** — Professional intelligence report with limited ammount of charts
-- 🤖 **Local AI** — Ollama powered, gemma3:4b/12b/27b and other models(mention in web panel), runs on GPU or CPU
-- 🐳 **Docker ready** — One command deployment on Linux and Windows
 
 ---
 
@@ -52,6 +29,45 @@ Full usage guides for both investigation modes are available on the project webs
 - [Click Here](https://jeet-ganguly.github.io/profile/edwards.html)
 
 [![Documentation](https://img.shields.io/badge/Docs-Available-blue?style=flat-square)](https://jeet-ganguly.github.io/profile/edwards.html)
+
+---
+
+## How it works
+
+<div align="center">
+<img src="app/icons/demo.png" alt="BIRDY-EDWARDS Pipeline" width="100%"/>
+</div>
+
+---
+
+## What's new in v2.0
+
+- 🗽 **Flexibility** - Now you can stop investigation in any phase and generate report pdf
+- 🎬 **Reel intelligence** — AI extracts context summary, topic, named entities, and hashtags from every reel caption
+- 🔗 **Co-commentor coordination matrix** — Heatmap of who comments alongside whom. Click any cell to see shared posts
+- 👤 **HOG + CNN hybrid face detection** — Auto model selection by image size with CNN→HOG fallback. Face detection now runs on text post screenshots too
+- 📬 **Telegram notifications** — PDF report automatically sent to your configured Telegram chat on completion
+- 📄 **Full PDF suite** — Added image intelligence, reel intelligence, face gallery, post timeline, co-commentor pairs sections. Bengali, Hindi, Arabic, Urdu render correctly
+- ⚙️ **Investigation queue** — Up to 5 investigations queued and auto-executed sequentially
+- 🔄 **Real-time progress page** — Live stat counters unlock as data arrives during the pipeline
+- 📅 **Date and Time Modification** - During scraping it may possible that we gather the date only not exact timestamp, so as an investigator if you want to modify this into exact timestamp it is possible now.
+---
+
+## Features
+
+- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, about data, comments, commentor profile links and names with 9-strategy date extraction
+- 🗂️ **Batch investigation** — Submit up to 10 mixed post URLs and run full AI pipeline across all of them
+- 🧠 **Interaction intelligence** — AI sentiment, stance, emotion, and language analysis per interaction in 140+ languages including Bengali, Hindi, Arabic, Urdu, Kuki
+- 📊 **Actor scoring** — Weighted composite score with 5-tier classification. Top 14 secondary profiles scraped in medium and deep scans
+- 🌍 **Country detection** — LLM identifies country of origin from profile signals with confidence % badge and on-demand per-commentor detection
+- 🔬 **Image intelligence** — Vision LLM per photo for scene, crowd, symbols, weapons, OCR, and location estimation
+- 🎬 **Reel + text post intelligence** — AI extracts entities, topics, narrative types, and threat indicators from captions and posts
+- 👤 **Face intelligence** — HOG + CNN hybrid detection, 128D encoding, identity clustering, D3 face tree visualization
+- 🕸️ **Network graphs** — Interactive D3 force graph, co-commentor heatmap matrix with shared posts on click, surname cluster edges
+- 📄 **PDF reports** — Full intelligence report with image intelligence, reel intelligence, face gallery, post timeline, co-commentor analysis and multilingual script rendering
+- 📬 **Telegram delivery** — PDF report sent automatically to configured chat on investigation completion
+- 🤖 **Local AI** — Ollama powered, gemma4:e2b / e4b / 12b and other models, runs on GPU or CPU
+- 🐳 **Docker ready** — One command deployment on Linux and Windows
 
 ---
 
@@ -124,7 +140,7 @@ Environment="OLLAMA_HOST=0.0.0.0:11434"
 sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
 
-- **Windows:** Ollama listens on all interfaces by default — no extra configuration needed. If no then,
+- **Windows:** Ollama listens on all interfaces by default — no extra configuration needed. If not then,
 ```ps
 $env:OLLAMA_HOST="0.0.0.0"
 ollama serve
@@ -146,7 +162,7 @@ cd birdy-edwards
 - **Linux:**
 ```bash
 mkdir -p app/reports app/face_data app/post_screenshots app/status
-touch app/fb_cookies.pkl app/socmint.db app/socmint_manual.db app/.ollama_model
+touch app/fb_cookies.pkl app/socmint.db app/socmint_manual.db app/.ollama_model app/queue.db
 ```
 
 - **Windows (PowerShell):**
@@ -177,7 +193,7 @@ docker compose logs -f
 http://localhost:5000
 ```
 
-**Step6 - Import session cookies**
+**Step 6 — Import session cookies**
 ```
 http://localhost:5000/tools/import-cookies
 ```
@@ -189,16 +205,19 @@ http://localhost:5000/tools/import-cookies
 Pull a model on your host machine:
 
 ```bash
-ollama pull gemma3:4b
+ollama pull gemma4:e2b
 ```
 
 Or use the **AI Model panel** in the web UI — select a model and click **Apply & Pull**.
 
-| RAM | Recommended Model |
-|---|---|
-| 8 GB | gemma3:4b |
-| 16 GB | gemma3:12b |
-| 32 GB | gemma3:27b |
+| RAM | Recommended Model | Notes |
+|---|---|---|
+| 8 GB | gemma4:e2b | Best vision, 140+ languages |
+| 16 GB | gemma4:e4b | Better reasoning, 140+ languages |
+| 32 GB | gemma4:12b | Higher accuracy across all modules |
+| 32 GB+ | gemma4:27b | Maximum accuracy |
+
+> If you are using a Virtual Machine, choose a model according to the VM's allocated RAM.
 
 ---
 
@@ -206,13 +225,27 @@ Or use the **AI Model panel** in the web UI — select a model and click **Apply
 
 BIRDY-EDWARDS requires a valid Facebook session. Use the **Cookie-Editor** browser extension — works on all platforms, no Selenium required.
 
-> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **burner account** for investigations rather than your personal Facebook account. This protects your identity and prevents your primary account from being flagged or restricted.
+> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **sock puppet account** for investigations rather than your personal Facebook account. This protects your identity and prevents your primary account from being flagged or restricted.
 
 1. Install Cookie-Editor → [Chrome](https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) · [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/)
 2. Log into your **dedicated investigation account** on Facebook
 3. Click Cookie-Editor while on facebook.com
 4. Click **Export → Export as JSON**
 5. Go to `http://localhost:5000/tools/import-cookies` and paste
+
+---
+
+### Configure Telegram Notifications
+
+Get your PDF report delivered automatically after every investigation.
+
+1. Create a Telegram bot via [@BotFather](https://t.me/botfather) and copy the bot token
+2. Get your chat ID — send a message to your bot then visit `https://api.telegram.org/bot<TOKEN>/getUpdates`
+3. Go to the **Telegram** panel in the web UI
+4. Paste your bot token and chat ID and click **Save**
+5. Click **Test** to verify the connection
+
+From this point every completed investigation automatically sends a notification with the PDF report attached.
 
 ---
 
@@ -239,7 +272,7 @@ docker exec -it birdy-edwards curl http://host.docker.internal:11434/api/tags
 If it fails, restart Ollama with `OLLAMA_HOST=0.0.0.0:11434 ollama serve`
 
 **DB error: no such table or other DB related error**  
-Start a new investigation — schema is created automatically on first use. If you stop process/program during analysis delete that investigation and then start new investigation. 
+Start a new investigation — schema is created automatically on first use. If you stop the process during analysis, delete that investigation and start a new one.
 
 **Cookies expired**  
 Go to `http://localhost:5000/tools/import-cookies` and re-import fresh cookies.
@@ -249,6 +282,12 @@ Change in `docker-compose.yml`: `"5001:5000"` then access at `http://localhost:5
 
 **Out of memory during build**  
 Increase Docker Desktop memory to 8 GB+ via Settings → Resources → Memory
+
+**Map not loading**  
+Leaflet + ArcGIS tiles require internet access on the host machine. If running fully air-gapped, the map container will appear blank — all other features work normally.
+
+**Telegram not sending**  
+Confirm your bot has been started by sending it a `/start` message. Verify the chat ID is correct using the getUpdates URL. Check that port 443 is not blocked on your network.
 
 ---
 
@@ -298,14 +337,17 @@ Contributions are welcome. Please follow these guidelines to keep the project cl
 - [SeleniumBase](https://github.com/seleniumbase/SeleniumBase) — Undetected Chrome automation
 - [Ollama](https://ollama.com) — Local LLM inference engine
 - [face_recognition](https://github.com/ageitgey/face_recognition) — Face detection and encoding library
+- [Leaflet](https://leafletjs.com) — Interactive map library
+- [ArcGIS](https://www.arcgis.com) — Map tiles with correct constitutional boundaries
 - [pyvis](https://github.com/WestHealth/pyvis) — Interactive network graph visualization
 - [reportlab](https://www.reportlab.com) — PDF generation
 - [pytesseract](https://github.com/madmaze/pytesseract) — OCR engine wrapper
+- [D3.js](https://d3js.org) — Data visualization and interactive graphs
 
 ---
 
 <div align="center">
 
-**BIRDY-EDWARDS** · Infiltrate & Expose ·
+**BIRDY-EDWARDS Wraith 2.0** · Infiltrate & Expose ·
 
 </div>

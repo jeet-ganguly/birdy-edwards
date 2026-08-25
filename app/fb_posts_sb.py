@@ -1,5 +1,7 @@
 from seleniumbase import SB
-import pickle, time, os, subprocess, json
+import pickle, os, subprocess, json
+import random
+import time
 
 if os.name != 'nt':
     try:
@@ -13,15 +15,17 @@ if os.name != 'nt':
 COOKIE_FILE   = "fb_cookies.pkl"
 OUTPUT_FILE   = "fb_posts.json"
 
-
+def human_delay(min_s=1.5, max_s=4.0):
+    time.sleep(random.uniform(min_s, max_s))
+    
 def login(sb):
     sb.open("https://www.facebook.com")
-    time.sleep(3)
+    human_delay(1.5, 3.5)
     for c in pickle.load(open(COOKIE_FILE, "rb")):
         try: sb.driver.add_cookie(c)
         except: pass
     sb.driver.refresh()
-    time.sleep(5)
+    human_delay(2.0, 5.0)
     print("Logged in")
 
 
@@ -247,6 +251,18 @@ for (var ag = 0; ag < agfAnchors.length; ag++) {
     if (isRelativeDate(tAg)) return tAg;
 }
 
+// Strategy 9 — First comment aria-label timestamp (Facebook Page posts)
+// "Comment by Name X hours/days ago" → extract the time part
+var commentDivs = document.querySelectorAll('[aria-label^="Comment by"]');
+if (commentDivs.length > 0) {
+    var firstComment = commentDivs[0].getAttribute('aria-label') || '';
+    // Extract "7 hours ago", "4 days ago", "2 minutes ago" etc.
+    var timeMatch = firstComment.match(/(\\d+\\s+(?:second|minute|min|hour|hr|day|week|month|year)s?\s+ago)$/i);
+    if (timeMatch) {
+        return timeMatch[1];
+    }
+}
+
 return null;
 """
 
@@ -337,7 +353,8 @@ return window.scrollY;
 
 SCRAPE_COMMENTS_JS = """
 var profiles = document.querySelectorAll('div.x1rg5ohu');
-var seen = {};
+var results = [];
+var seenKeys = new Set();
 profiles.forEach(function(div) {
     var parent = div.parentElement;
     var isReply = false;
@@ -361,9 +378,6 @@ profiles.forEach(function(div) {
         url.includes('share')          || url.includes('/posts/')    ||
         url.includes('/photos/')       || url.includes('/videos/')   ||
         url.includes('/hashtag/')) return;
-
-    var key = url;
-    if (seen[key]) return;
 
     var text = '';
     var spans = div.querySelectorAll('div[dir="auto"] span, span[dir="auto"]');
@@ -416,10 +430,12 @@ profiles.forEach(function(div) {
             if (text) break;
         }
     }
-
-    seen[key] = { name: name, profile_url: url, comment_text: text || '[Non-text comment]' };
+    var key = url + '||' + (text || '[Non-text comment]');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    results.push({ name: name, profile_url: url, comment_text: text || '[Non-text comment]' });
 });
-return Object.values(seen);
+return results;
 """
 
 
@@ -431,7 +447,7 @@ def phase1_collect_urls(sb, profile_url, max_posts):
     print("═"*65)
 
     sb.open(profile_url)
-    time.sleep(6)
+    human_delay(1.5, 3.5)
 
     post_links = []
     seen       = set()
@@ -467,9 +483,9 @@ def phase1_collect_urls(sb, profile_url, max_posts):
         step_y    = current_y + 200
         while step_y <= target_y:
             sb.execute_script(f"(function(){{ window.scrollTo(0, {step_y}); }})()")
-            time.sleep(0.8)
+            time.sleep(random.uniform(0.5, 1.2))
             step_y += 200
-        time.sleep(5)
+        time.sleep(random.uniform(3.5, 6.0))
 
         scroll_n += 1
 
@@ -483,15 +499,7 @@ def phase1_collect_urls(sb, profile_url, max_posts):
             break
 
     print(f"\n  Total posts found: {len(post_links)}")
-    final_links = []
-    for i in post_links:
-        if profile_url in i:
-            final_links.append(i)
-        else:
-            continue
-    print(f"\n Final validated urls found: {len(final_links)}")
-    print(final_links)
-    return final_links
+    return post_links
 
 
 #  PHASE 2 — Scrape each post: text + date + comments
@@ -514,13 +522,13 @@ def scroll_to_bottom(sb):
         clicked = sb.execute_script(f"(function(){{ {EXPAND_COMMENTS_JS} }})()") or 0
         if clicked:
             print(f"      [expand] clicked {clicked} buttons")
-            time.sleep(3)
+            human_delay(3.0, 5.0)
             no_change = 0
 
         r = sb.execute_script(f"(function(){{ {SCROLL_PANEL_POST_JS} }})()")
-        time.sleep(2)
+        human_delay(3.0, 5.0)
         sb.execute_script(f"(function(){{ {PANEL_BOTTOM_POST_JS} }})()")
-        time.sleep(1)
+        human_delay(1.0, 2.0)
 
         cur_count = sb.execute_script(
             "(function(){ return document.querySelectorAll('div.x1rg5ohu').length; })()"
@@ -556,7 +564,7 @@ def take_post_screenshot(sb, post_url, idx):
     try:
         # Scroll to top first
         sb.execute_script("(function(){ window.scrollTo(0, 0); })()")
-        time.sleep(1)
+        human_delay(1.0, 2.0)
         sb.save_screenshot(filepath)
         print(f"    Screenshot saved: {filepath}")
         return filepath
@@ -569,7 +577,7 @@ def phase2_scrape_post(sb, post_url, idx, total):
     print(f"\n  [{idx}/{total}] {post_url}")
 
     sb.open(post_url)
-    time.sleep(8)
+    human_delay(3.0, 5.0)
 
     # Date
     date = sb.execute_script(f"(function(){{ {DATE_JS} }})()")
@@ -577,7 +585,7 @@ def phase2_scrape_post(sb, post_url, idx, total):
 
     # Expand See more before screenshot
     sb.execute_script(f"(function(){{ {SEE_MORE_JS} }})()")
-    time.sleep(2)
+    human_delay(2.0, 4.0)
 
     # Take screenshot of post
     screenshot_path = take_post_screenshot(sb, post_url, idx)
@@ -585,9 +593,9 @@ def phase2_scrape_post(sb, post_url, idx, total):
     # Switch to All Comments
     print("    [comments] Switching to All comments...")
     sb.execute_script(f"(function(){{ {CLICK_SORT_JS} }})()")
-    time.sleep(3)
+    human_delay(2.5, 5.5)
     sb.execute_script(f"(function(){{ {CLICK_ALL_COMMENTS_JS} }})()")
-    time.sleep(3)
+    human_delay(2.5, 5.5)
 
     # Scroll + expand
     print("    [comments] Scrolling...")
@@ -617,6 +625,11 @@ def main(profile_url, max_posts=10):
 
         login(sb)
 
+        print("  Warming up session...")
+        sb.open('https://www.facebook.com')
+        human_delay(3.0, 6.0)
+        sb.execute_script("(function(){ window.scrollBy(0, 400); })()")
+        human_delay(2.0, 4.0)
         # Phase 1 — collect post URLs
         post_links = phase1_collect_urls(sb, profile_url, max_posts)
 
@@ -637,7 +650,7 @@ def main(profile_url, max_posts=10):
                     'comments':        [],
                     'error':           str(e)
                 })
-            time.sleep(3)
+            human_delay(4.0, 8.0)
 
     # Save
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

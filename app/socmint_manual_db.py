@@ -177,6 +177,13 @@ def init_db(db_file=DB_FILE):
     con = sqlite3.connect(db_file)
     cur = con.cursor()
     cur.executescript(SCHEMA)
+    # Migrate manual_posts — add caption intelligence columns
+    for col in ['caption_context', 'caption_entities', 'caption_hashtags', 'caption_topic', 'caption_sentiment']:
+        try:
+            cur.execute(f"ALTER TABLE manual_posts ADD COLUMN {col} TEXT")
+            print(f"  Migrated manual_posts: added {col}")
+        except Exception:
+            pass
     con.commit()
     con.close()
 

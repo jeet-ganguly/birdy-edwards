@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>BIRDY-EDWARDS — Investigation Running</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet">
+    <style>
+        
+        :root {
+            /* Dark mode — charcoal + white + orange */
+            --bg: #0e0e0e;
+            --bg-card: #171717;
+            --bg-elev: #1f1f1f;
+            --bg-deep: #0a0a0a;
+            --border: rgba(255, 255, 255, .08);
+            --border-s: rgba(255, 255, 255, .18);
+            --text: #f2f2f2;
+            --text-dim: #9a9a9a;
+            --text-muted: #505050;
+            --cy: #d4d4d4;
+            --cy-light: #ffffff;
+            --cy-soft: rgba(255, 255, 255, .06);
+            --cy-glow: rgba(255, 255, 255, .10);
+            --am: #f97316;
+            --am-light: #fb923c;
+            --am-soft: rgba(249, 115, 22, .13);
+            --ok: #22c55e;
+            --ok-soft: rgba(34, 197, 94, .12);
+            --err: #f43f5e;
+            --err-soft: rgba(244, 63, 94, .13);
+            --err-glow: rgba(244, 63, 94, .42);
+            --warn: #f97316;
+            --warn-soft: rgba(249, 115, 22, .13);
+            --shadow: 0 12px 40px rgba(0, 0, 0, .75);
+            --shadow-cy: 0 0 20px rgba(255, 255, 255, .03);
+        }
+
+        [data-theme="light"] {
+            /* Light mode — clean white + black + orange */
+            --bg: #f5f5f5;
+            --bg-card: #ffffff;
+            --bg-elev: #ededed;
+            --bg-deep: #e3e3e3;
+            --border: rgba(0, 0, 0, .09);
+            --border-s: rgba(0, 0, 0, .20);
+            --text: #0d0d0d;
+            --text-dim: #3a3a3a;
+            --text-muted: #888888;
+            --cy: #1a1a1a;
+            --cy-light: #000000;
+            --cy-soft: rgba(0, 0, 0, .05);
+            --cy-glow: rgba(0, 0, 0, .06);
+            --am: #ea6a00;
+            --am-light: #f97316;
+            --am-soft: rgba(234, 106, 0, .10);
+            --ok: #16a34a;
+            --ok-soft: rgba(22, 163, 74, .10);
+            --err: #e11d48;
+            --err-soft: rgba(225, 29, 72, .10);
+            --err-glow: rgba(225, 29, 72, .25);
+            --warn: #ea6a00;
+            --warn-soft: rgba(234, 106, 0, .10);
+            --shadow: 0 6px 24px rgba(0, 0, 0, .08);
+            --shadow-cy: none;
+        }
+
+        /* ── Reset ─────────────────────────────────────────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Google Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background .3s, color .3s;
+        }
+
+        /* ── Topbar ────────────────────────────────────────────── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+            flex-shrink: 0;
+            z-index: 20;
+            box-shadow: var(--shadow-cy);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-chip {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--cy-soft);
+            border: 1px solid var(--cy);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+            color: var(--cy-light);
+        }
+
+        .logo-text {
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 3.5px;
+            color: var(--text);
+            text-transform: uppercase;
+        }
+
+        .topbar-mid {
+            text-align: center;
+        }
+
+        .tb-eye {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .tb-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text);
+            margin-top: 2px;
+        }
+
+        .tb-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-tog {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            border: 1px solid var(--border-s);
+            background: var(--bg-elev);
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            transition: all .2s;
+        }
+
+        .theme-tog:hover {
+            border-color: var(--cy);
+            color: var(--cy-light);
+        }
+
+        .status-pill {
+            padding: 7px 18px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border: 1px solid;
+            transition: all .4s;
+        }
+
+        .sp-run {
+            background: var(--cy-soft);
+            border-color: var(--cy);
+            color: var(--cy-light);
+        }
+
+        .sp-done {
+            background: var(--ok-soft);
+            border-color: var(--ok);
+            color: var(--ok);
+        }
+
+        .sp-err {
+            background: var(--err-soft);
+            border-color: var(--err);
+            color: var(--err);
+        }
+
+        .sp-stop {
+            background: var(--warn-soft);
+            border-color: var(--warn);
+            color: var(--warn);
+        }
+
+        /* ── Layout ────────────────────────────────────────────── */
+        .layout {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 270px 1fr 290px;
+            overflow: hidden;
+        }
+
+        /* ── Steps panel ───────────────────────────────────────── */
+        .steps-panel {
+            border-right: 1px solid var(--border);
+            padding: 26px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            background: var(--bg-card);
+            overflow-y: auto;
+        }
+
+        .panel-lbl {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 12px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all .35s;
+        }
+
+        .step.done {
+            background: var(--ok-soft);
+            border-color: rgba(16, 185, 129, .25);
+        }
+
+        .step.active {
+            background: var(--cy-soft);
+            border-color: var(--border-s);
+        }
+
+        .step.pending {
+            opacity: .38;
+        }
+
+        .step.s-err {
+            background: var(--err-soft);
+            border-color: rgba(244, 63, 94, .25);
+        }
+
+        .step.s-stop {
+            background: var(--warn-soft);
+            border-color: rgba(245, 158, 11, .25);
+        }
+
+        .s-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            border: 2px solid;
+            transition: all .4s;
+        }
+
+        .step.done .s-dot {
+            background: var(--ok-soft);
+            border-color: var(--ok);
+            color: var(--ok);
+        }
+
+        .step.active .s-dot {
+            background: var(--cy-soft);
+            border-color: var(--cy-light);
+            color: var(--cy-light);
+            animation: dot-pulse 1.8s ease-in-out infinite;
+        }
+
+        .step.pending .s-dot {
+            background: var(--bg-elev);
+            border-color: var(--border-s);
+            color: var(--text-muted);
+        }
+
+        .step.s-err .s-dot {
+            background: var(--err-soft);
+            border-color: var(--err);
+            color: var(--err);
+        }
+
+        .step.s-stop .s-dot {
+            background: var(--warn-soft);
+            border-color: var(--warn);
+            color: var(--warn);
+        }
+
+        @keyframes dot-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, .2);
+            }
+
+            55% {
+                box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+            }
+        }
+
+        .s-body {
+            min-width: 0;
+        }
+
+        .s-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .s-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 3px;
+            line-height: 1.5;
+        }
+
+        .step.active .s-name {
+            color: var(--cy-light);
+        }
+
+        .step.done .s-name {
+            color: var(--ok);
+        }
+
+        /* ── Center ────────────────────────────────────────────── */
+        .center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated BG */
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: .03;
+            background-image:
+                linear-gradient(var(--cy-light) 1px, transparent 1px),
+                linear-gradient(90deg, var(--cy-light) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        .bg-glow {
+            position: absolute;
+            pointer-events: none;
+            width: 700px;
+            height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(249, 115, 22, .04) 0%, transparent 65%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Radar */
+        .radar {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            flex-shrink: 0;
+        }
+
+        .r-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .r-ring:nth-child(1) {
+            inset: 0;
+        }
+
+        .r-ring:nth-child(2) {
+            inset: 28px;
+        }
+
+        .r-ring:nth-child(3) {
+            inset: 56px;
+        }
+
+        .r-ring:nth-child(4) {
+            inset: 84px;
+        }
+
+        .r-cross::before,
+        .r-cross::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, .06);
+        }
+
+        .r-cross {
+            position: absolute;
+            inset: 0;
+        }
+
+        .r-cross::before {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+        }
+
+        .r-cross::after {
+            height: 1px;
+            width: 100%;
+            top: 50%;
+        }
+
+        .r-sweep {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .r-sweep::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cy-light));
+            transform-origin: left center;
+            animation: sweep 3s linear infinite;
+            box-shadow: 0 0 14px var(--cy), 0 0 28px var(--cy-glow);
+        }
+
+        @keyframes sweep {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .r-core {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .r-icon {
+            font-size: 32px;
+            color: var(--cy-light);
+        }
+
+        .r-pct {
+            font-size: 30px;
+            font-weight: 900;
+            color: var(--cy-light);
+            text-shadow: 0 0 20px var(--cy-glow);
+        }
+
+        .r-sub {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+        }
+
+        /* Phase text */
+        .phase-box {
+            text-align: center;
+        }
+
+        .ph-eye {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .ph-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: .5px;
+            margin-top: 6px;
+            transition: color .4s;
+            line-height: 1.15;
+        }
+
+        .c-cy {
+            color: var(--cy-light);
+        }
+
+        .c-am {
+            color: var(--am-light);
+        }
+
+        .c-ok {
+            color: var(--ok);
+        }
+
+        .c-err {
+            color: var(--err);
+        }
+
+        .c-warn {
+            color: var(--warn);
+        }
+
+        /* Progress bar */
+        .prog {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .prog-track {
+            height: 6px;
+            background: var(--bg-elev);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .7s ease;
+            background: linear-gradient(90deg, var(--am), var(--am-light), var(--cy-light));
+            box-shadow: none;
+        }
+
+        .prog-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-muted);
+            letter-spacing: .5px;
+        }
+
+        /* ════════════════════════════════════
+   STOP BUTTON — dramatic & unmissable
+════════════════════════════════════ */
+        .stop-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stop-btn {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 36px;
+            border-radius: 14px;
+            border: 2px solid var(--err);
+            background: linear-gradient(135deg, rgba(244, 63, 94, .18), rgba(244, 63, 94, .08));
+            color: var(--err);
+            font-family: 'Google Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all .25s;
+            box-shadow: 0 0 20px var(--err-glow), inset 0 1px 0 rgba(255, 255, 255, .06);
+            animation: stop-breathe 2.5s ease-in-out infinite;
+        }
+
+        .stop-btn i {
+            font-size: 20px;
+        }
+
+        .stop-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(244, 63, 94, .0), rgba(244, 63, 94, .25));
+            opacity: 0;
+            transition: opacity .25s;
+        }
+
+        .stop-btn:hover {
+            background: var(--err);
+            color: #fff;
+            box-shadow: 0 0 40px var(--err-glow), 0 8px 24px rgba(244, 63, 94, .4);
+            transform: translateY(-2px);
+            animation: none;
+        }
+
+        .stop-btn:hover::before {
+            opacity: 1;
+        }
+
+        .stop-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 0 20px var(--err-glow);
+        }
+
+        .stop-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            animation: none;
+            transform: none;
+            box-shadow: none;
+        }
+
+        @keyframes stop-breathe {
+
+            0%,
+            100% {
+                box-shadow: 0 0 18px var(--err-glow), inset 0 1px 0 rgba(255, 255, 255, .06);
+            }
+
+            50% {
+                box-shadow: 0 0 36px rgba(244, 63, 94, .5), 0 0 60px rgba(244, 63, 94, .2),
+                    inset 0 1px 0 rgba(255, 255, 255, .06);
+            }
+        }
+
+        .stop-hint {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: .5px;
+        }
+
+        /* Stopped / Error notice */
+        .notice {
+            border-radius: 16px;
+            padding: 26px 28px;
+            max-width: 460px;
+            text-align: center;
+            display: none;
+            border: 2px solid;
+        }
+
+        .notice.warn-n {
+            background: var(--warn-soft);
+            border-color: var(--warn);
+        }
+
+        .notice.err-n {
+            background: var(--err-soft);
+            border-color: var(--err);
+        }
+
+        .notice-icon {
+            font-size: 44px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .notice-icon.warn-n {
+            color: var(--warn);
+        }
+
+        .notice-icon.err-n {
+            color: var(--err);
+        }
+
+        .notice-title {
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .notice-body {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-top: 10px;
+            line-height: 1.75;
+        }
+
+        .notice-body strong {
+            color: var(--text);
+            font-weight: 800;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 18px;
+            padding: 13px 28px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, var(--am), var(--am-light));
+            color: #fff;
+            font-family: 'Google Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 18px var(--am-soft);
+            transition: all .2s;
+        }
+
+        .home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--am-soft);
+        }
+
+        /* Quote */
+        .quote {
+            text-align: center;
+            max-width: 420px;
+        }
+
+        .q-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-dim);
+            font-style: italic;
+            line-height: 1.75;
+            transition: opacity .5s;
+        }
+
+        .q-attr {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ── Stats panel ───────────────────────────────────────── */
+        .stats-panel {
+            border-left: 1px solid var(--border);
+            padding: 22px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-card);
+            overflow-y: auto;
+        }
+
+        .sc-label {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .stat-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: border-color .3s;
+        }
+
+        .stat-card.lit {
+            border-color: var(--border-s);
+            box-shadow: 0 0 14px rgba(6, 182, 212, .06);
+        }
+
+        .num-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .num-cell {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .num-val {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--cy-light);
+        }
+
+        .num-lbl {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .ctry-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .ctry-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .ctry-cnt {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--cy-light);
+        }
+
+        .t7-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .t7-rank {
+            font-size: 11px;
+            font-weight: 900;
+            color: var(--text-muted);
+            width: 20px;
+        }
+
+        .t7-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .t7-tier {
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+
+        .t-sup {
+            background: var(--cy-soft);
+            color: var(--cy-light);
+        }
+
+        .t-crit {
+            background: var(--err-soft);
+            color: var(--err);
+        }
+
+        .t-neu {
+            background: var(--bg-elev);
+            color: var(--text-muted);
+        }
+
+        /* ── Complete overlay ──────────────────────────────────── */
+        .ov {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(8, 12, 18, .93);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .5s;
+        }
+
+        [data-theme="light"] .ov {
+            background: rgba(245, 245, 245, .95);
+        }
+
+        [data-theme="light"] .r-sweep::after {
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, .75));
+            box-shadow: none;
+        }
+
+        .ov.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .ov-icon {
+            font-size: 80px;
+            color: var(--ok);
+            animation: pop .55s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        .ov-title {
+            font-size: 38px;
+            font-weight: 900;
+            color: var(--ok);
+            margin-top: 14px;
+        }
+
+        .ov-sub {
+            font-size: 16px;
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .ov-bar {
+            width: 280px;
+            height: 4px;
+            background: var(--bg-elev);
+            border-radius: 2px;
+            margin-top: 28px;
+            overflow: hidden;
+        }
+
+        .ov-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--am), var(--ok));
+            width: 0;
+            transition: width 3.2s linear;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(0)
+            }
+
+            70% {
+                transform: scale(1.2)
+            }
+
+            100% {
+                transform: scale(1)
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .spin {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        [data-theme="light"] .r-ring {
+            border-color: rgba(0, 0, 0, .08);
+        }
+
+        [data-theme="light"] .r-cross::before,
+        [data-theme="light"] .r-cross::after {
+            background: rgba(0, 0, 0, .06);
+        }
+
+        [data-theme="light"] .bg-grid {
+            opacity: .025;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Topbar ── -->
+    <div class="topbar">
+        <a href="/" class="logo">
+            <img src="/logo" alt="BIRDY-EDWARDS" style="width:38px;height:38px;border-radius:10px;object-fit:cover;">
+            <div class="logo-text">Birdy-Edwards</div>
+        </a>
+        <div class="topbar-mid">
+            <div class="tb-eye">Investigation in Progress</div>
+            <div class="tb-name" id="invName">Loading...</div>
+        </div>
+        <div class="tb-right">
+            <button class="theme-tog" onclick="toggleTheme()" title="Toggle dark/light">
+                <i class="ti ti-sun" id="themeIco"></i>
+            </button>
+            <div class="status-pill sp-run" id="pill">INITIALISING</div>
+        </div>
+    </div>
+
+    <!-- ── Main layout ── -->
+    <div class="layout">
+
+        <!-- Steps -->
+        <div class="steps-panel">
+            <div class="panel-lbl">Pipeline Phases</div>
+
+            <div class="step pending" id="s0">
+                <div class="s-dot"><i class="ti ti-shield-check"></i></div>
+                <div class="s-body">
+                    <div class="s-name">Cookie Check</div>
+                    <div class="s-desc">Validating Facebook session before starting</div>
+                </div>
+            </div>
+            <div class="step pending" id="s1">
+                <div class="s-dot"><i class="ti ti-world-download"></i></div>
+                <div class="s-body">
+                    <div class="s-name">Data Gathering</div>
+                    <div class="s-desc">Scraping posts, reels & about data</div>
+                </div>
+            </div>
+            <div class="step pending" id="s2">
+                <div class="s-dot"><i class="ti ti-database-import"></i></div>
+                <div class="s-body">
+                    <div class="s-name">Database Import</div>
+                    <div class="s-desc">Storing all collected data locally</div>
+                </div>
+            </div>
+            <div class="step pending" id="s3">
+                <div class="s-dot"><i class="ti ti-brain"></i></div>
+                <div class="s-body">
+                    <div class="s-name">AI Analysis</div>
+                    <div class="s-desc">Sentiment, stance & face detection</div>
+                </div>
+            </div>
+            <div class="step pending" id="s4">
+                <div class="s-dot"><i class="ti ti-network"></i></div>
+                <div class="s-body">
+                    <div class="s-name">Intelligence Building</div>
+                    <div class="s-desc">Scoring, countries & network graph</div>
+                </div>
+            </div>
+            <div class="step pending" id="s5">
+                <div class="s-dot"><i class="ti ti-file-report"></i></div>
+                <div class="s-body">
+                    <div class="s-name">Report Generation</div>
+                    <div class="s-desc">Creating the PDF threat report</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center -->
+        <div class="center">
+            <div class="bg-grid"></div>
+            <div class="bg-glow"></div>
+
+            <!-- Radar -->
+            <div class="radar">
+                <div class="r-ring"></div>
+                <div class="r-ring"></div>
+                <div class="r-ring"></div>
+                <div class="r-ring"></div>
+                <div class="r-cross"></div>
+                <div class="r-sweep"></div>
+                <div class="r-core">
+                    <i class="ti ti-radar-2 r-icon"></i>
+                    <div class="r-pct" id="rPct">0%</div>
+                    <div class="r-sub">COMPLETE</div>
+                </div>
+            </div>
+
+            <!-- Phase text -->
+            <div class="phase-box">
+                <div class="ph-eye" id="phEye">PHASE 1 OF 5</div>
+                <div class="ph-title c-cy" id="phTitle">INITIALISING...</div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="prog">
+                <div class="prog-track">
+                    <div class="prog-fill" id="progFill" style="width:0%"></div>
+                </div>
+                <div class="prog-labels">
+                    <span>Check</span><span>Gather</span><span>Import</span>
+                    <span>AI</span><span>Intel</span><span>Report</span>
+                </div>
+            </div>
+
+            <!-- ═══ STOP BUTTON ═══ -->
+            <div class="stop-zone" id="stopZone">
+                <button class="stop-btn" id="stopBtn" onclick="stopNow()">
+                    <i class="ti ti-player-stop-filled"></i>
+                    Terminate Investigation
+                </button>
+                <div class="stop-hint">All data collected so far will be preserved</div>
+            </div>
+
+            <!-- Stopped notice -->
+            <div class="notice warn-n" id="stoppedNotice">
+                <i class="ti ti-hand-stop notice-icon warn-n"></i>
+                <div class="notice-title" style="color:var(--warn);">Investigation Terminated</div>
+                <div class="notice-body">
+                    The pipeline has been halted.<br>
+                    <strong>All data collected so far is saved.</strong><br><br>
+                    Head to the <strong>Home page</strong> → open this investigation →
+                    click <strong>"Generate Report"</strong> to produce a report
+                    from whatever data was already gathered.
+                </div>
+                <a href="/" class="home-btn">
+                    <i class="ti ti-home"></i> Back to Investigations
+                </a>
+            </div>
+
+            <!-- Error notice -->
+            <div class="notice err-n" id="errorNotice">
+                <i class="ti ti-alert-hexagon notice-icon err-n"></i>
+                <div class="notice-title" style="color:var(--err);">Investigation Failed</div>
+                <div class="notice-body" id="errMsg">An unexpected error occurred.</div>
+                <a href="/" class="home-btn" style="margin-top:16px;">
+                    <i class="ti ti-home"></i> Back to Investigations
+                </a>
+            </div>
+
+            <!-- Quote -->
+            <div class="quote" id="quoteWrap">
+                <div class="q-text" id="qText">"Every digital footprint tells a story."</div>
+                <div class="q-attr" id="qAttr">— SOCMINT PRINCIPLE</div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-panel">
+            <div class="panel-lbl">Live Intelligence</div>
+
+            <div class="stat-card" id="cardData">
+                <div class="sc-label">Collected Data</div>
+                <div class="num-grid">
+                    <div class="num-cell">
+                        <div class="num-val" id="lP">—</div>
+                        <div class="num-lbl">Posts</div>
+                    </div>
+                    <div class="num-cell">
+                        <div class="num-val" id="lC">—</div>
+                        <div class="num-lbl">Comments</div>
+                    </div>
+                    <div class="num-cell">
+                        <div class="num-val" id="lI">—</div>
+                        <div class="num-lbl">Interactors</div>
+                    </div>
+                    <div class="num-cell">
+                        <div class="num-val" id="lF">—</div>
+                        <div class="num-lbl">Faces</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card" id="cardCty" style="display:none;">
+                <div class="sc-label">Top Countries</div>
+                <div id="ctyBody" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
+            </div>
+
+            <div class="stat-card" id="cardTop7" style="display:none;">
+                <div class="sc-label">Top Interactors</div>
+                <div id="top7Body" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complete overlay -->
+    <div class="ov" id="ov">
+        <i class="ti ti-circle-check ov-icon"></i>
+        <div class="ov-title">Analysis Ready</div>
+        <div class="ov-sub">Redirecting to investigation dashboard…</div>
+        <div class="ov-bar">
+            <div class="ov-fill" id="ovFill"></div>
+        </div>
+    </div>
+
+    <script>
+        const KEY = location.pathname.split('/progress/')[1] || '';
+        const IS_P = KEY.startsWith('profile_');
+        const PID = IS_P ? KEY.replace('profile_', '') : null;
+        const S_URL = IS_P ? `/api/status/profile/${PID}` : `/api/status/batch/${KEY.replace('batch_', '')}`;
+        const A_URL = `/analysis/${KEY}`;
+
+        const QUOTES = [
+            { t: '"Every digital footprint tells a story."', a: 'SOCMINT PRINCIPLE' },
+            { t: '"Intelligence is knowing the right questions."', a: 'ANALYTICAL DOCTRINE' },
+            { t: '"The network reveals the actor."', a: 'LINK ANALYSIS' },
+            { t: '"Social media never forgets."', a: 'OPEN SOURCE INTEL' },
+            { t: '"Patterns emerge from the noise."', a: 'PATTERN OF LIFE ANALYSIS' },
+            { t: '"Every comment is a breadcrumb."', a: 'BEHAVIORAL PROFILING' },
+            { t: '"Truth lives in the metadata."', a: 'DIGITAL FORENSICS' },
+            { t: '"Connections define intent."', a: 'NETWORK ANALYSIS' },
+            { t: '"Anonymity is an illusion."', a: 'SIGINT DOCTRINE' },
+            { t: '"Data is the new intelligence."', a: 'STRATEGIC ANALYSIS' },
+        ];
+
+        const PM = {
+            checking: ['PHASE 0', 'VERIFYING SESSION', 5, 0, 'c-cy'],
+            gathering: ['PHASE 1 OF 5', 'GATHERING DATA', 20, 1, 'c-cy'],
+            importing: ['PHASE 2 OF 5', 'IMPORTING TO DATABASE', 40, 2, 'c-cy'],
+            analyzing: ['PHASE 3 OF 5', 'AI ANALYSIS', 60, 3, 'c-am'],
+            building: ['PHASE 4 OF 5', 'BUILDING INTELLIGENCE', 80, 4, 'c-am'],
+            report: ['PHASE 5 OF 5', 'GENERATING REPORT', 95, 5, 'c-am'],
+            complete: ['COMPLETE', 'ANALYSIS READY', 100, 6, 'c-ok'],
+            error: ['ERROR', 'INVESTIGATION FAILED', 0, -1, 'c-err'],
+            stopped: ['STOPPED', 'INVESTIGATION TERMINATED', 0, -1, 'c-warn'],
+        };
+
+        let _qi = 0, _done = false, _stopped = false, _timer = null;
+        const $ = id => document.getElementById(id);
+
+        // ── Theme ──────────────────────────────────────────────
+        function toggleTheme() {
+            const d = document.documentElement;
+            const dark = d.dataset.theme === 'dark';
+            d.dataset.theme = dark ? 'light' : 'dark';
+            $('themeIco').className = dark ? 'ti ti-moon' : 'ti ti-sun';
+            localStorage.setItem('be-theme', dark ? 'light' : 'dark');
+        }
+        (() => {
+            const t = localStorage.getItem('be-theme') || 'dark';
+            document.documentElement.dataset.theme = t;
+            const ic = $('themeIco'); if (ic) ic.className = t === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+        })();
+
+        // ── Helpers ────────────────────────────────────────────
+        const fmt = n => n == null ? '—' : Number(n).toLocaleString();
+        function tierCls(t) {
+            if (!t) return 't-neu';
+            const l = t.toLowerCase();
+            if (l.includes('support')) return 't-sup';
+            if (l.includes('critical') || l.includes('voice') || l.includes('oppos')) return 't-crit';
+            return 't-neu';
+        }
+
+        // ── Detect phase from status ───────────────────────────
+        function getPhase(s) {
+            if (!s) return 'checking';
+            const p = s.phase || '';
+            if (p === 'error') return 'error';
+            if (p === 'stopped') return 'stopped';
+            if (p === 'complete' || s.report_done) return 'complete';
+            if (p === 'report') return 'report';
+            if (p === 'building') return 'building';
+            if (p === 'analyzing') return 'analyzing';
+            if (p === 'checking') return 'checking';
+            if (s.gathering_done && !s.numbers_ready) return 'importing';
+            if (s.numbers_ready && !s.analysis_done) return 'analyzing';
+            if (s.analysis_done && !s.network_done) return 'building';
+            if (s.network_done && !s.report_done) return 'report';
+            return p || 'gathering';
+        }
+
+        // ── Update steps sidebar ───────────────────────────────
+        function setSteps(cur, isErr, isStop) {
+            for (let i = 0; i <= 5; i++) {
+                const el = $('s' + i); if (!el) continue;
+                const dot = el.querySelector('.s-dot');
+                if (i < cur) {
+                    el.className = 'step done';
+                    dot.innerHTML = '<i class="ti ti-check"></i>';
+                } else if (i === cur && !isErr && !isStop) {
+                    el.className = 'step active';
+                } else if (i === cur && (isErr || isStop)) {
+                    el.className = 'step ' + (isErr ? 's-err' : 's-stop');
+                } else {
+                    el.className = 'step pending';
+                }
+            }
+        }
+
+        // ── Render ─────────────────────────────────────────────
+        function render(s) {
+            const phase = getPhase(s);
+            const cfg = PM[phase] || PM['gathering'];
+            const [eye, title, pct, step, clr] = cfg;
+            const isErr = phase === 'error', isStop = phase === 'stopped', isDone = phase === 'complete';
+
+            // Pill
+            const pill = $('pill');
+            pill.textContent = isDone ? '✓ COMPLETE' : isStop ? '■ STOPPED' : isErr ? '✕ ERROR' : '⟳ RUNNING';
+            pill.className = 'status-pill ' + (isDone ? 'sp-done' : isStop ? 'sp-stop' : isErr ? 'sp-err' : 'sp-run');
+
+            // Center
+            $('phEye').textContent = eye;
+            const ph = $('phTitle');
+            ph.textContent = title + (!isDone && !isErr && !isStop ? '...' : '');
+            ph.className = 'ph-title ' + clr;
+            $('rPct').textContent = pct + '%';
+            $('progFill').style.width = pct + '%';
+
+            // Steps
+            setSteps(step, isErr, isStop);
+
+            // Stats
+            if (s.posts_count != null) {
+                $('lP').textContent = fmt(s.posts_count);
+                $('lC').textContent = fmt(s.comments_count);
+                $('lI').textContent = fmt(s.commentors_count);
+                $('lF').textContent = fmt(s.faces_count || 0);
+                $('cardData').classList.add('lit');
+            }
+
+            // Show/hide stop button & notices
+            if (isDone || isErr || isStop) $('stopZone').style.display = 'none';
+
+            if (isStop) {
+                $('stoppedNotice').style.display = 'block';
+                $('errorNotice').style.display = 'none';
+                $('quoteWrap').style.display = 'none';
+            } else if (isErr) {
+                $('errorNotice').style.display = 'block';
+                $('errMsg').textContent = s.error || 'An unexpected error occurred.';
+                $('stoppedNotice').style.display = 'none';
+                $('quoteWrap').style.display = 'none';
+            }
+
+            if (isDone && !_done) { _done = true; loadPreview(); showDone(); }
+        }
+
+        // ── Stop ───────────────────────────────────────────────
+        async function stopNow() {
+            if (_stopped || _done) return;
+            _stopped = true;
+            const btn = $('stopBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ti ti-loader-2 spin"></i> Terminating...';
+            try {
+                await fetch('/api/stop', { method: 'POST' });
+                clearInterval(_timer);
+                $('stopZone').style.display = 'none';
+                $('stoppedNotice').style.display = 'block';
+                $('quoteWrap').style.display = 'none';
+                $('pill').textContent = '■ STOPPED';
+                $('pill').className = 'status-pill sp-stop';
+                $('phTitle').textContent = 'INVESTIGATION TERMINATED';
+                $('phTitle').className = 'ph-title c-warn';
+                $('phEye').textContent = 'STOPPED';
+                $('rPct').textContent = '—';
+                setSteps(-1, false, true);
+            } catch (e) {
+                _stopped = false;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-player-stop-filled"></i> Terminate Investigation';
+            }
+        }
+
+        // ── Load preview on complete ───────────────────────────
+        async function loadPreview() {
+            try {
+                const d = await fetch(`/api/analysis/${KEY}`).then(r => r.json());
+                const ct = (d.countries || []).slice(0, 5);
+                if (ct.length) {
+                    $('ctyBody').innerHTML = ct.map(c => `
+        <div class="ctry-row">
+          <span class="ctry-name">${c.identified_country || 'Unknown'}</span>
+          <span class="ctry-cnt">${c.count}</span>
+        </div>`).join('');
+                    $('cardCty').style.display = 'block';
+                }
+                const t7 = (d.top7 || []).slice(0, 7);
+                if (t7.length) {
+                    $('top7Body').innerHTML = t7.map((p, i) => `
+        <div class="t7-row">
+          <span class="t7-rank">#${i + 1}</span>
+          <span class="t7-name">${p.name || 'Unknown'}</span>
+          <span class="t7-tier ${tierCls(p.tier)}">${(p.tier || '—').split(' ')[0]}</span>
+        </div>`).join('');
+                    $('cardTop7').style.display = 'block';
+                }
+            } catch (e) { }
+        }
+
+        // ── Complete ───────────────────────────────────────────
+        function showDone() {
+            clearInterval(_timer);
+            const ov = $('ov'); ov.classList.add('show');
+            setTimeout(() => $('ovFill').style.width = '100%', 100);
+            setTimeout(() => location.href = A_URL, 3600);
+        }
+
+        // ── Quotes ─────────────────────────────────────────────
+        function nextQ() {
+            const el = $('qText'); el.style.opacity = '0';
+            setTimeout(() => {
+                const q = QUOTES[_qi % QUOTES.length];
+                $('qText').textContent = q.t; $('qAttr').textContent = '— ' + q.a;
+                el.style.opacity = '1'; _qi++;
+            }, 500);
+        }
+
+        // ── Poll ───────────────────────────────────────────────
+        async function poll() {
+            if (_done || _stopped) return;
+            try {
+                const s = await fetch(S_URL + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json());
+                render(s);
+            } catch (e) { }
+        }
+
+        // ── Load name ──────────────────────────────────────────
+        async function loadName() {
+            try {
+                const items = await fetch('/api/investigations').then(r => r.json());
+                const inv = items.find(i => i.key === KEY);
+                if (inv) $('invName').textContent = inv.label;
+            } catch (e) { }
+        }
+
+        // ── Boot ───────────────────────────────────────────────
+        loadName(); poll();
+        _timer = setInterval(poll, 3000);
+        nextQ(); setInterval(nextQ, 8000);
+    </script>
+</body>
+
+</html>

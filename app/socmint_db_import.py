@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS reel_posts (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     profile_id   INTEGER NOT NULL,
     reel_url     TEXT UNIQUE NOT NULL,
+    caption      TEXT,
     scraped_at   TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );
@@ -70,7 +71,7 @@ CREATE TABLE IF NOT EXISTS photo_comments (
     comment_text    TEXT,
     FOREIGN KEY (photo_post_id) REFERENCES photo_posts(id),
     FOREIGN KEY (commentor_id)  REFERENCES commentors(id),
-    UNIQUE(photo_post_id, commentor_id)
+    UNIQUE(photo_post_id, commentor_id, comment_text)
 );
 
 -- Comments on reel posts
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS reel_comments (
     comment_text    TEXT,
     FOREIGN KEY (reel_post_id) REFERENCES reel_posts(id),
     FOREIGN KEY (commentor_id) REFERENCES commentors(id),
-    UNIQUE(reel_post_id, commentor_id)
+    UNIQUE(reel_post_id, commentor_id, comment_text)
 );
 
 -- Text posts (from /posts/ URLs — screenshot based)
@@ -103,7 +104,7 @@ CREATE TABLE IF NOT EXISTS text_comments (
     comment_text    TEXT,
     FOREIGN KEY (text_post_id) REFERENCES text_posts(id),
     FOREIGN KEY (commentor_id) REFERENCES commentors(id),
-    UNIQUE(text_post_id, commentor_id)
+    UNIQUE(text_post_id, commentor_id, comment_text)
 );
 
 -- Commentor scores
@@ -321,9 +322,9 @@ def import_reels(cur, json_path, profile_id):
 
         try:
             cur.execute("""
-                INSERT OR IGNORE INTO reel_posts (profile_id, reel_url)
-                VALUES (?, ?)
-            """, (profile_id, reel_url))
+                INSERT OR IGNORE INTO reel_posts (profile_id, reel_url, caption)
+                VALUES (?, ?, ?)
+                """, (profile_id, reel_url, reel.get('caption') or None))
         except Exception as e:
             print(f"      reel insert error: {e}")
             continue
@@ -395,6 +396,40 @@ def import_posts(cur, json_path, profile_id):
 
     print(f"   Imported {post_count} text posts, {comment_count} comments")
 
+def _migrate_comment_unique(con):
+    """Change UNIQUE(post, commentor) → UNIQUE(post, commentor, text)"""
+    cur = con.cursor()
+    migrations = [
+        ('photo_comments', 'photo_post_id'),
+        ('reel_comments',  'reel_post_id'),
+        ('text_comments',  'text_post_id'),
+    ]
+    for tbl, post_col in migrations:
+        cur.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (tbl,)
+        )
+        row = cur.fetchone()
+        if not row or 'comment_text' in (row[0] or ''):
+            continue  # already migrated or table doesn't exist
+        try:
+            cur.execute(f"""
+                CREATE TABLE {tbl}_new (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    {post_col}   INTEGER NOT NULL,
+                    commentor_id INTEGER NOT NULL,
+                    comment_text TEXT,
+                    UNIQUE({post_col}, commentor_id, comment_text)
+                )
+            """)
+            cur.execute(f"INSERT OR IGNORE INTO {tbl}_new SELECT * FROM {tbl}")
+            cur.execute(f"DROP TABLE {tbl}")
+            cur.execute(f"ALTER TABLE {tbl}_new RENAME TO {tbl}")
+            con.commit()
+            print(f"  Migrated {tbl}: now allows multiple comments per person")
+        except Exception as e:
+            con.rollback()
+            print(f"  Migration skipped {tbl}: {e}")
+
 def init_db(db_file=DB_FILE):
     """
     Initialize the database schema without importing any data.
@@ -403,6 +438,12 @@ def init_db(db_file=DB_FILE):
     con = sqlite3.connect(db_file)
     cur = con.cursor()
     cur.executescript(SCHEMA)
+    try:
+        cur.execute("ALTER TABLE reel_posts ADD COLUMN caption TEXT")
+        print("  Migrated reel_posts: added caption column")
+    except Exception:
+        pass  # column already exists
+    _migrate_comment_unique(con)
     con.commit()
     con.close()
 

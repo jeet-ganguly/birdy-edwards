@@ -33,7 +33,7 @@ services:
 
       # Model preference
       - ./app/.ollama_model:/app/.ollama_model
-
+      - ./app/fonts:/app/fonts
     environment:
       # Points to Ollama on the host machine
       - OLLAMA_HOST=http://host.docker.internal:11434

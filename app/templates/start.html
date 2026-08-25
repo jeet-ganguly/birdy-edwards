@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birdy-Edwards · Infiltrate & Expose</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans:400,500,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg: #07090d;
+      --bg-elev: #0c1118;
+      --bg-card: #111827;
+      --surface: rgba(255, 255, 255, 0.03);
+      --surface-2: rgba(255, 255, 255, 0.055);
+      --surface-3: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #ffffff;
+      --text-2: #e2e8f0;
+      --text-muted: #ae94b8;
+      --text-dim: #8b6486;
+      --primary: #f480ff;
+      --primary-light: #f2c6ff;
+      --primary-deep: #f994fe;
+      --primary-soft: rgba(247, 175, 248, 0.14);
+      --primary-glow: rgba(223, 69, 250, 0.35);
+      --success: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.14);
+      --critical: #ef4444;
+      --critical-soft: rgba(239, 68, 68, 0.14);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.14);
+    }
+
+    [data-theme="light"] {
+      --bg: #f1f5f9;
+      --bg-elev: #ffffff;
+      --bg-card: #ffffff;
+      --surface: rgba(0, 0, 0, 0.025);
+      --surface-2: rgba(0, 0, 0, 0.05);
+      --surface-3: rgba(0, 0, 0, 0.08);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.18);
+      --text: #0f172a;
+      --text-2: #1e293b;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.55;
+      font-weight: 400;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(ellipse 1000px 600px at 80% -10%, var(--primary-glow), transparent 60%),
+        radial-gradient(ellipse 800px 500px at 0% 100%, rgba(59, 130, 246, 0.08), transparent 60%);
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* NAV */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      background: rgba(7, 9, 13, 0.8);
+      border-bottom: 1px solid var(--border);
+    }
+
+    [data-theme="light"] .nav {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 20px var(--primary-glow), 0 0 40px rgba(37, 99, 235, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+    }
+
+    .brand-mark::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 14px;
+      border: 1px solid var(--primary-light);
+      opacity: 0.4;
+      animation: pulse 2.5s ease-out infinite;
+    }
+
+    .brand-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 11px;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.35);
+        opacity: 0;
+      }
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .brand-tag {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    .icon-btn i {
+      font-size: 17px;
+    }
+
+    /* HERO */
+    .hero {
+      padding: 72px 0 48px;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .hero-badge .dot {
+      width: 7px;
+      height: 7px;
+      background: var(--primary-light);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--primary-light);
+    }
+
+    .hero h1 {
+      font-size: 68px;
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -2.5px;
+      margin-bottom: 22px;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--primary-light), #eb60fa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-lead {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 36px;
+      line-height: 1.65;
+    }
+
+    .hero-cta {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 28px;
+      background: var(--primary);
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 15px;
+      border: none;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 6px 24px var(--primary-glow);
+    }
+
+    .btn-hero:hover {
+      background: var(--primary-deep);
+      transform: translateY(-1px);
+    }
+
+    .btn-hero i {
+      font-size: 17px;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 14px 24px;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      border: 1px solid var(--border-strong);
+      border-radius: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface);
+    }
+
+    /* STAT STRIP */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+      margin: 56px auto 0;
+      max-width: 860px;
+    }
+
+    .stat-cell {
+      padding: 24px 16px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-cell:last-child {
+      border-right: none;
+    }
+
+    .stat-num {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary-light);
+      letter-spacing: -1px;
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* SECTION */
+    .section {
+      padding: 56px 0;
+    }
+
+    .section+.section {
+      padding-top: 0;
+    }
+
+    .sec-eyebrow {
+      font-size: 11px;
+      color: var(--primary-light);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .sec-title {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+
+    .sec-sub {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .card+.card {
+      margin-top: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 6px;
+    }
+
+    .card-title i {
+      font-size: 18px;
+      color: var(--primary-light);
+    }
+
+    .card-sub {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    /* MODEL SELECTION */
+    .model-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .active-model-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      background: var(--primary-soft);
+      border: 1px solid var(--primary);
+      border-radius: 11px;
+      white-space: nowrap;
+    }
+
+    .active-model-pill .dot {
+      width: 7px;
+      height: 7px;
+      background: var(--primary-light);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--primary-light);
+    }
+
+    .active-model-pill .lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .active-model-pill .name {
+      font-size: 14px;
+      color: var(--primary-light);
+      font-weight: 700;
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+    }
+
+    .model-opt {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: all 0.18s;
+      position: relative;
+    }
+
+    .model-opt:hover {
+      border-color: var(--border-strong);
+      background: var(--surface-2);
+    }
+
+    .model-opt.selected {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .model-opt-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .model-name {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .model-tier {
+      padding: 3px 9px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .tier-8 {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .tier-16 {
+      background: var(--primary-soft);
+      color: var(--primary-light);
+    }
+
+    .tier-32 {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .model-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .model-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .model-check {
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .model-opt.selected .model-check {
+      display: flex;
+    }
+
+    .model-check i {
+      font-size: 12px;
+      color: #fff;
+    }
+
+    /* PULL STATE */
+    .model-opt.not-installed {
+      opacity: 0.75;
+    }
+
+    .model-opt.not-installed:hover {
+      opacity: 1;
+    }
+
+    .model-opt.pulling {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      opacity: 1;
+      cursor: default;
+    }
+
+    .model-btn-row {
+      display: flex;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .btn-apply {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-apply:hover {
+      background: var(--primary-deep);
+    }
+
+    .btn-pull {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--surface-3);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-pull:hover {
+      background: var(--primary-soft);
+      color: var(--primary-light);
+      border-color: var(--primary);
+    }
+
+    .btn-pull i {
+      font-size: 13px;
+    }
+
+    .pull-area {
+      margin-top: 10px;
+      display: none;
+    }
+
+    .pull-area.show {
+      display: block;
+    }
+
+    .pull-bar-track {
+      height: 5px;
+      background: var(--surface-3);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .pull-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 100px;
+      transition: width 0.4s ease;
+    }
+
+    .pull-msg {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .pull-msg.done {
+      color: var(--success);
+    }
+
+    .pull-msg.err {
+      color: var(--critical);
+    }
+
+    /* COOKIE CARD */
+    .cookie-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .cookie-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .cookie-icon.ok {
+      background: var(--success-soft);
+    }
+
+    .cookie-icon.bad {
+      background: var(--critical-soft);
+    }
+
+    .cookie-icon.checking {
+      background: var(--primary-soft);
+    }
+
+    .cookie-icon i {
+      font-size: 24px;
+    }
+
+    .cookie-icon.ok i {
+      color: var(--success);
+    }
+
+    .cookie-icon.bad i {
+      color: var(--critical);
+    }
+
+    .cookie-icon.checking i {
+      color: var(--primary-light);
+    }
+
+    .cookie-info {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .cookie-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 4px;
+    }
+
+    .cookie-status {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .cookie-status.ok {
+      color: var(--success);
+    }
+
+    .cookie-status.bad {
+      color: var(--critical);
+    }
+
+    .cookie-status.checking {
+      color: var(--primary-light);
+    }
+
+    .cookie-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-weight: 500;
+    }
+
+    .cookie-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-verify {
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+      background: var(--primary-soft);
+      color: var(--primary-light);
+      border: 1px solid var(--primary);
+    }
+
+    .btn-verify:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-reimport {
+      padding: 11px 18px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+
+    .btn-reimport:hover {
+      background: var(--surface-3);
+    }
+
+    /* REIMPORT MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-elev);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      padding: 28px;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .modal-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      line-height: 1.6;
+    }
+
+    .modal-textarea {
+      width: 100%;
+      height: 140px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      font-weight: 500;
+    }
+
+    .modal-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      justify-content: flex-end;
+    }
+
+    .btn-sm {
+      padding: 9px 18px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-sm-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-sm-primary:hover {
+      background: var(--primary-deep);
+    }
+
+    .btn-sm-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-strong);
+    }
+
+    .btn-sm-ghost:hover {
+      background: var(--surface);
+    }
+
+    /* LAUNCHER */
+    .launcher {
+      background: var(--bg-elev);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .tab-bar {
+      display: flex;
+      padding: 7px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px 18px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn i {
+      font-size: 16px;
+    }
+
+    .tab-btn.active {
+      background: var(--bg-elev);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .tab-body {
+      padding: 32px 36px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .form-row {
+      margin-bottom: 22px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      display: block;
+      margin-bottom: 9px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.55;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 10px 20px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .pill:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+
+    .pill.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary-light);
+    }
+
+    .pill i {
+      font-size: 13px;
+    }
+
+    .check-box-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      cursor: pointer;
+      padding: 6px 0;
+    }
+
+    .check-row+.check-row {
+      border-top: 1px solid var(--border);
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      border: 1.5px solid var(--border-strong);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      margin-top: 2px;
+    }
+
+    .checkbox.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .checkbox.checked::after {
+      content: '✓';
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .check-text {
+      flex: 1;
+    }
+
+    .check-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .check-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      flex: 1;
+      min-width: 160px;
+      padding: 14px;
+      background: var(--primary);
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-deep);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+
+    .btn-primary i {
+      font-size: 16px;
+    }
+
+    .btn-secondary {
+      padding: 14px 20px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-2);
+    }
+
+    .btn-secondary i {
+      font-size: 16px;
+    }
+
+    /* QUEUE */
+    .queue-section {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .queue-slots {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .q-slot {
+      aspect-ratio: 1;
+      border-radius: 11px;
+      border: 1px dashed var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: var(--text-dim);
+      cursor: default;
+    }
+
+    .q-slot.filled {
+      border-style: solid;
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    .q-slot.filled .qi {
+      color: var(--primary-light);
+    }
+
+    .q-slot.filled .ql {
+      color: var(--primary-light);
+    }
+
+    .q-slot.filled .qm {
+      color: var(--text-muted);
+    }
+
+    .qi i {
+      font-size: 18px;
+    }
+
+    .ql {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .qm {
+      font-size: 9px;
+      font-weight: 500;
+    }
+
+    .q-slot.filled.can-remove {
+      cursor: pointer;
+    }
+
+    .q-slot.filled.can-remove:hover {
+      border-color: var(--critical);
+      background: var(--critical-soft);
+    }
+
+    .q-slot.filled.can-remove:hover .qi,
+    .q-slot.filled.can-remove:hover .ql {
+      color: var(--critical);
+    }
+
+    .queue-note {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px;
+      background: var(--surface-2);
+      border-radius: 9px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .queue-note i {
+      color: var(--primary-light);
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .queue-error {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 12px;
+      background: var(--critical-soft);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 9px;
+      font-size: 12px;
+      color: var(--critical);
+      margin-top: 10px;
+    }
+
+    .queue-error.show {
+      display: flex;
+    }
+
+    /* TELEGRAM CARD */
+    .tg-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tg-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--primary-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .tg-icon i {
+      font-size: 24px;
+      color: var(--primary-light);
+    }
+
+    .tg-info {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .tg-status {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .tg-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .tg-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-tg {
+      padding: 9px 16px;
+      border-radius: 9px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s;
+      background: var(--primary-soft);
+      color: var(--primary-light);
+      border: 1px solid var(--primary);
+    }
+
+    .btn-tg:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .tg-modal-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .tg-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .tg-field input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .tg-field input:focus {
+      border-color: var(--primary);
+    }
+
+    /* INVESTIGATIONS LIST */
+    .inv-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .inv-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .inv-item:last-child {
+      border-bottom: none;
+    }
+
+    .inv-item:hover {
+      background: var(--surface-2);
+    }
+
+    .inv-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-light);
+      flex-shrink: 0;
+    }
+
+    .inv-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .inv-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .inv-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-tag {
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .s-done {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .s-running {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .s-queue {
+      background: var(--primary-soft);
+      color: var(--primary-light);
+    }
+
+    .s-error {
+      background: var(--critical-soft);
+      color: var(--critical);
+    }
+
+    .inv-arrow {
+      color: var(--text-dim);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-dim);
+    }
+
+    .empty-state i {
+      font-size: 40px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 300;
+      padding: 14px 20px;
+      background: var(--bg-elev);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      max-width: 360px;
+    }
+
+    .toast.show {
+      display: flex;
+    }
+
+    .toast.ok {
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--success);
+    }
+
+    .toast.err {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--critical);
+    }
+
+    .toast.info {
+      border-color: var(--primary);
+      color: var(--primary-light);
+    }
+
+    /* COOLDOWN BANNER */
+    .cooldown-banner {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--warning-soft);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--warning);
+    }
+
+    .cooldown-banner.show {
+      display: flex;
+    }
+
+    .cooldown-banner i {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* FEATURES GRID */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .feat-card {
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary-light), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feat-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+
+    .feat-card:hover::before {
+      opacity: 1;
+    }
+
+    .feat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
+      background: var(--primary-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .feat-icon i {
+      font-size: 22px;
+      color: var(--primary-light);
+    }
+
+    .feat-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .feat-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .feat-num {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    /* SPINNER */
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    footer {
+      padding: 40px 0;
+      margin-top: 48px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 1.2px;
+      font-weight: 600;
+    }
+
+    @media(max-width:900px) {
+      .hero h1 {
+        font-size: 42px;
+        letter-spacing: -1.5px;
+      }
+
+      .sec-title {
+        font-size: 28px;
+      }
+
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .queue-section {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stat-cell:nth-child(2) {
+        border-right: none;
+      }
+
+      .model-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .inv-del-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted, #94a3b8);
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .15s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .inv-del-btn:hover {
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, .3);
+      background: rgba(239, 68, 68, .08);
+    }
+
+
+    .btn-danger-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(239, 68, 68, .4);
+      background: transparent;
+      color: #ef4444;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-danger-outline:hover {
+      background: rgba(239, 68, 68, .1);
+      border-color: #ef4444;
+    }
+
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid #ef4444;
+      background: #ef4444;
+      color: #fff;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="brand-mark">
+          <img class="brand-logo" src="/logo" alt="Birdy-Edwards"
+            onerror="this.parentElement.innerHTML='<i class=\'ti ti-radar-2\' style=\'font-size:20px;color:#fff;display:flex;align-items:center;justify-content:center;height:100%;\'></i>'">
+        </div>
+        <div>
+          <div class="brand-name">Birdy-Edwards</div>
+          <div class="brand-tag">Infiltrate · Expose</div>
+        </div>
+      </div>
+      <div class="nav-right">
+        <button class="icon-btn" id="themeToggle" title="Toggle theme"><i class="ti ti-sun"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        <span>Local AI · Zero cloud · 100% on-device</span>
+      </div>
+      <h1>Facebook intelligence,<br><span class="accent">decoded locally.</span></h1>
+      <p class="hero-lead">A fully offline FACEBOOK SOCMINT platform that turns public Facebook activity into actionable threat
+        intelligence — interactor networks, behavioral scoring, sentiment analysis, face clustering, and geopolitical
+        insights, powered by Ollama on your hardware.</p>
+      <div class="hero-cta">
+        <button class="btn-hero" onclick="document.getElementById('launcher').scrollIntoView({behavior:'smooth'})">
+          <i class="ti ti-player-play"></i> Start investigation
+        </button>
+        <button class="btn-ghost" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
+          <i class="ti ti-book-2"></i> What it does
+        </button>
+      </div>
+      <div class="stat-strip">
+        <div class="stat-cell">
+          <div class="stat-num">100%</div>
+          <div class="stat-lbl">On-device</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">9</div>
+          <div class="stat-lbl">Intelligence Modules</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">5</div>
+          <div class="stat-lbl">Queue System</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">0</div>
+          <div class="stat-lbl">Cloud calls</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-eyebrow">// Setup</div>
+      <h2 class="sec-title">Pre-flight check.</h2>
+      <p class="sec-sub">Select your local AI model and verify your Facebook session before launching.</p>
+
+      <!-- MODEL -->
+      <div class="card">
+        <div class="model-head">
+          <div>
+            <div class="card-title"><i class="ti ti-cpu"></i> AI model selection</div>
+            <div class="card-sub">Choose the Ollama model that matches your hardware. Everything runs 100% locally.
+            </div>
+          </div>
+          <div class="active-model-pill">
+            <span class="dot"></span>
+            <div>
+              <div class="lbl">Active model</div>
+              <div class="name" id="activeModelName">Loading...</div>
+            </div>
+          </div>
+        </div>
+        <div class="model-grid" id="modelGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- COOKIE -->
+      <div class="card">
+        <div class="card-title"><i class="ti ti-cookie"></i> Facebook session</div>
+        <div class="card-sub">Verify your cookies are valid before starting an investigation.</div>
+        <div class="cookie-row">
+          <div class="cookie-icon ok" id="cookieIcon"><i class="ti ti-cookie" id="cookieIconI"></i></div>
+          <div class="cookie-info">
+            <div class="cookie-lbl">Session status</div>
+            <div class="cookie-status ok" id="cookieStatus">Checking...</div>
+            <div class="cookie-meta" id="cookieMeta">Verifying cookie file...</div>
+          </div>
+          <div class="cookie-actions">
+            <button class="btn-verify" id="btnVerify" onclick="verifyCookies()">
+              <i class="ti ti-shield-check"></i> Verify now
+            </button>
+            <button class="btn-reimport" onclick="openReimport()">
+              <i class="ti ti-refresh"></i> Re-import cookies
+            </button>
+          </div>
+        </div>
+        <!-- Session proof screenshot — shown after successful verification -->
+        <div id="sessionProof" style="display:none;margin-top:16px;">
+          <div
+            style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">
+            <i class="ti ti-camera" style="margin-right:4px;"></i> Live Session Proof
+          </div>
+          <div
+            style="position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border-strong);background:var(--bg-elev);min-height:60px;">
+            <!-- Loading placeholder -->
+            <div id="sessionProofLoading"
+              style="display:flex;align-items:center;justify-content:center;gap:10px;padding:18px;color:var(--text-muted);font-size:12px;font-weight:600;">
+              <i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:16px;"></i>
+              Capturing session screenshot…
+            </div>
+            <img id="sessionProofImg" src="" alt="Facebook session screenshot"
+              style="width:100%;display:none;border-radius:10px;opacity:0;transition:opacity .4s;"
+              onload="this.style.display='block';this.style.opacity=1;document.getElementById('sessionProofLoading').style.display='none';document.getElementById('sessionProofBanner').style.display='block';" />
+            <div
+              style="position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:linear-gradient(transparent,rgba(0,0,0,0.7));font-size:10px;font-weight:700;color:#10b981;letter-spacing:1px;display:none;"
+              id="sessionProofBanner">
+              ✓ ACTIVE FACEBOOK SESSION CONFIRMED
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="sec-eyebrow">// What it does</div>
+      <h2 class="sec-title">Nine intelligence modules.</h2>
+      <p class="sec-sub">Every aspect of a Facebook profile or post — extracted, scored, and visualized.</p>
+      <div class="features">
+        <div class="feat-card"><span class="feat-num">01</span>
+          <div class="feat-icon"><i class="ti ti-user-search"></i></div>
+          <h3>Profile collection</h3>
+          <p>Posts, photos, reels, about data, comments, and full commentor metadata.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">02</span>
+          <div class="feat-icon"><i class="ti ti-brain"></i></div>
+          <h3>Comment intelligence</h3>
+          <p>Per-comment sentiment, emotion, stance, and language in 5+ languages.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">03</span>
+          <div class="feat-icon"><i class="ti ti-target"></i></div>
+          <h3>Actor scoring</h3>
+          <p>Weighted composite score. 5-tier classification from Strong Supporter to Critical Voice.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">04</span>
+          <div class="feat-icon"><i class="ti ti-world-search"></i></div>
+          <h3>Country detection</h3>
+          <p>LLM-based country identification from city, hometown, employer, education, and language.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">05</span>
+          <div class="feat-icon"><i class="ti ti-scan-eye"></i></div>
+          <h3>Face intelligence</h3>
+          <p>HOG-model face detection with 128D encoding and identity clustering.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">06</span>
+          <div class="feat-icon"><i class="ti ti-chart-dots-3"></i></div>
+          <h3>Network graphs</h3>
+          <p>Force-directed graphs, co-interactor matrices, and stance-based hierarchies.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">07</span>
+          <div class="feat-icon"><i class="ti ti-photo-scan"></i></div>
+          <h3>Image analysis</h3>
+          <p>OCR plus AI vision — scene, objects, political symbols, location clues.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">08</span>
+          <div class="feat-icon"><i class="ti ti-file-analytics"></i></div>
+          <h3>Threat reports</h3>
+          <p>Professional PDF reports with charts, network visualizations, and summaries.</p>
+        </div>
+        <div class="feat-card"><span class="feat-num">09</span>
+          <div class="feat-icon"><i class="ti ti-lock-square"></i></div>
+          <h3>Fully Local</h3>
+          <p>Everything runs locally via Ollama. Your investigation data never leaves your machine.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAUNCHER -->
+  <section class="section" id="launcher">
+    <div class="wrap">
+      <div class="sec-eyebrow">// New investigation</div>
+      <h2 class="sec-title">Launch a scan.</h2>
+      <p class="sec-sub">Profile investigation for deep target analysis, or manual batch for multi-post comparison.</p>
+
+      <div id="cooldownBanner" class="cooldown-banner">
+        <i class="ti ti-clock"></i>
+        <span id="cooldownText">Queue cooldown active — next run starts soon</span>
+      </div>
+
+      <div class="launcher">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('profile',this)"><i class="ti ti-user-search"></i> Profile
+            investigation</button>
+          <button class="tab-btn" onclick="switchTab('batch',this)"><i class="ti ti-stack-2"></i> Manual batch (up to 10
+            posts)</button>
+        </div>
+
+        <!-- PROFILE TAB -->
+        <div class="tab-body">
+          <div class="tab-panel active" id="panel-profile">
+            <div class="form-row">
+              <label class="form-label">Facebook profile URL</label>
+              <input class="form-input" id="profileUrl" type="url" placeholder="https://www.facebook.com/username">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Scan depth</label>
+              <div class="pill-row" id="profileDepth">
+                <button class="pill" onclick="selectPill(this,'profileDepth')"><i class="ti ti-bolt"></i> Light · 5
+                  photos/5 reels/5 Posts min</button>
+                <button class="pill active" onclick="selectPill(this,'profileDepth')"><i class="ti ti-flame"></i> Medium
+                  · 10 photos/10 reels/10 Posts (Recommended)</button>
+                <button class="pill" onclick="selectPill(this,'profileDepth')"><i class="ti ti-rocket"></i> Deep · 20
+                  photos/20 reels/20 Posts</button>
+              </div>
+            </div>
+            <div class="check-box-list">
+              <div class="check-row" onclick="toggleCheck(this)">
+                <div class="checkbox checked"></div>
+                <div class="check-text">
+                  <div class="check-label">Auto-detect country for top 7 interactors</div>
+                  <div class="check-hint">Recommended — minimal time impact, high intel value</div>
+                </div>
+              </div>
+              <div class="check-row" onclick="toggleCheck(this)">
+                <div class="checkbox"></div>
+                <div class="check-text">
+                  <div class="check-label">Detect country for all commentors</div>
+                  <div class="check-hint">Adds ~10–25 minutes depending on commentor count</div>
+                </div>
+              </div>
+              <div class="check-row" onclick="toggleCheck(this)">
+                <div class="checkbox checked"></div>
+                <div class="check-text">
+                  <div class="check-label">Enable face detection &amp; clustering</div>
+                  <div class="check-hint">Detects and clusters unique faces across all photos</div>
+                </div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn-primary" onclick="startProfileNow()"><i class="ti ti-player-play"></i> Start
+                now</button>
+              <button class="btn-secondary" onclick="addProfileToQueue()"><i class="ti ti-playlist-add"></i> Add to
+                queue</button>
+            </div>
+          </div>
+
+          <!-- BATCH TAB -->
+          <div class="tab-panel" id="panel-batch">
+            <div class="form-row">
+              <label class="form-label">Batch label</label>
+              <input class="form-input" id="batchLabel" type="text" placeholder="e.g. Iran_AI_Memes_May2026">
+            </div>
+            <div class="form-row">
+              <label class="form-label">Post URLs (one per line, max 10)</label>
+              <textarea class="form-input" id="batchUrls"
+                placeholder="https://www.facebook.com/post/123456&#10;https://www.facebook.com/post/789012"></textarea>
+            </div>
+            <!--<div class="form-row">
+              <label class="form-label">Scan depth</label>
+              <div class="pill-row" id="batchDepth">
+                <button class="pill active" onclick="selectPill(this,'batchDepth')"><i class="ti ti-bolt"></i> Light ·
+                  ~5 min</button>
+                <button class="pill" onclick="selectPill(this,'batchDepth')"><i class="ti ti-flame"></i> Medium · ~15
+                  min</button>
+                <button class="pill" onclick="selectPill(this,'batchDepth')"><i class="ti ti-rocket"></i> Deep · ~35
+                  min</button>
+              </div>
+            </div>-->
+            <div class="check-box-list">
+              <div class="check-row" onclick="toggleCheck(this)">
+                <div class="checkbox"></div>
+                <div class="check-text">
+                  <div class="check-label">Detect country for all commentors</div>
+                  <div class="check-hint">Adds significant time depending on commentor count</div>
+                </div>
+              </div>
+            </div>
+            <div class="action-row">
+              <button class="btn-primary" onclick="startBatchNow()"><i class="ti ti-player-play"></i> Start now</button>
+              <button class="btn-secondary" onclick="addBatchToQueue()"><i class="ti ti-playlist-add"></i> Add to
+                queue</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUEUE + TELEGRAM -->
+      <div class="queue-section">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <div class="card-title" style="margin-bottom:0"><i class="ti ti-list-numbers"></i> Investigation queue <span
+                id="queueCount" style="color:var(--text-dim);font-weight:400;font-size:14px;">(0 / 5)</span></div>
+            <button class="btn-sm btn-sm-ghost" onclick="clearQueue()">Clear</button>
+          </div>
+          <div class="queue-slots" id="queueSlots">
+            <!-- Populated by JS -->
+          </div>
+          <div class="queue-note"><i class="ti ti-info-circle"></i> 10-minute cooldown between runs · cookie validation
+            before each run · stops on expiry</div>
+          <div class="queue-error" id="queueError"><i class="ti ti-alert-circle"></i> <span id="queueErrorMsg"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><i class="ti ti-brand-telegram"></i> Telegram notifications</div>
+          <div class="card-sub">Get a ping with the PDF report attached after each investigation.</div>
+          <div class="tg-row">
+            <div class="tg-icon"><i class="ti ti-brand-telegram"></i></div>
+            <div class="tg-info">
+              <div class="tg-status" id="tgStatus">Not configured</div>
+              <div class="tg-meta" id="tgMeta">Set up to receive reports on Telegram</div>
+            </div>
+            <div class="tg-actions">
+              <button class="btn-tg" onclick="openTgModal()"><i class="ti ti-settings"></i> Configure</button>
+              <button class="btn-tg" id="btnTgTest" onclick="testTelegram()" style="display:none;"><i
+                  class="ti ti-send"></i> Test</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREVIOUS INVESTIGATIONS -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-eyebrow">// History</div>
+      <h2 class="sec-title">Previous investigations.</h2>
+      <p class="sec-sub">Resume or download reports from past sessions.</p>
+      <div class="inv-list" id="invList">
+        <div class="empty-state"><i class="ti ti-radar-2"></i>
+          <p>Loading investigations...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Database Cleaner -->
+  <section style="padding:40px 0;border-top:1px solid var(--border);">
+    <div class="wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <i class="ti ti-database-x" style="font-size:20px;color:var(--critical);"></i>
+        <h3 style="font-size:16px;font-weight:800;margin:0;">Database Cleaner</h3>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        Permanently wipe investigation data. Use individual delete buttons on each card for targeted cleanup.
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button onclick="cleanDB('profile')"
+          style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:1px solid rgba(239,68,68,.4);background:transparent;color:var(--critical);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.background='rgba(239,68,68,.1)'" onmouseout="this.style.background='transparent'">
+          <i class="ti ti-user-x"></i> Wipe Profile Investigations
+        </button>
+        <button onclick="cleanDB('manual')"
+          style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:1px solid rgba(239,68,68,.4);background:transparent;color:var(--critical);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.background='rgba(239,68,68,.1)'" onmouseout="this.style.background='transparent'">
+          <i class="ti ti-files-off"></i> Wipe Batch Investigations
+        </button>
+        <button onclick="cleanDB('both')"
+          style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:1px solid var(--critical);background:var(--critical);color:#fff;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <i class="ti ti-trash-x"></i> Wipe EVERYTHING
+        </button>
+      </div>
+      <div id="cleanStatus" style="display:none;margin-top:10px;font-size:12px;font-weight:700;"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>BIRDY-EDWARDS · MIT LICENSE · github.com/jeet-ganguly/birdy-edwards</p>
+    </div>
+  </footer>
+
+  <!-- RE-IMPORT MODAL -->
+  <div class="modal-overlay" id="reimportModal">
+    <div class="modal">
+      <div class="modal-title">Re-import cookies</div>
+      <div class="modal-sub">Export your Facebook cookies using the Cookie-Editor extension, then paste the JSON array
+        below.</div>
+      <textarea class="modal-textarea" id="cookieJson" placeholder='[{"name":"c_user","value":"..."},...]'></textarea>
+      <div class="modal-actions">
+        <button class="btn-sm btn-sm-ghost" onclick="closeModal('reimportModal')">Cancel</button>
+        <button class="btn-sm btn-sm-primary" onclick="importCookies()">Import cookies</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELEGRAM MODAL -->
+  <div class="modal-overlay" id="tgModal">
+    <div class="modal">
+      <div class="modal-title">Configure Telegram</div>
+      <div class="modal-sub">Create a bot via @BotFather, get your token, and enter your chat ID. The bot will send you
+        a message with the PDF report after each investigation.</div>
+      <div class="tg-modal-fields">
+        <div class="tg-field">
+          <label>Bot token</label>
+          <input type="text" id="tgToken" placeholder="1234567890:ABCdef...">
+        </div>
+        <div class="tg-field">
+          <label>Chat ID</label>
+          <input type="text" id="tgChatId" placeholder="123456789">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-sm btn-sm-ghost" onclick="closeModal('tgModal')">Cancel</button>
+        <button class="btn-sm btn-sm-primary" onclick="saveTelegram()">Save & connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"><i class="ti ti-check" id="toastIcon"></i><span id="toastMsg"></span></div>
+
+  <script>
+    // ═══ STATE ═══════════════════════════════════════════════════════════════
+    let systemData = {};
+    let queueData = [];
+    let selectedModel = '';
+    let cookieVerifying = false;
+    let cooldownTimer = null;
+
+    // ═══ INIT ════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAll();
+      setInterval(loadQueue, 8000);
+      setInterval(checkCooldown, 10000);
+      setInterval(loadInvestigations, 30000);
+    });
+
+    async function loadAll() {
+      await Promise.all([loadSystem(), loadQueue(), loadInvestigations(), loadTelegram()]);
+      checkCooldown();
+    }
+
+    // ═══ SYSTEM ══════════════════════════════════════════════════════════════
+    async function loadSystem() {
+      try {
+        const r = await fetch('/api/system');
+        systemData = await r.json();
+        selectedModel = systemData.model || '';
+        document.getElementById('activeModelName').textContent = selectedModel || 'Not selected';
+
+        // Also fetch installed models from Ollama
+        let installedModels = systemData.installed_models || [];
+        if (!installedModels.length) {
+          try {
+            const ro = await fetch('/api/ollama/models');
+            const do_ = await ro.json();
+            installedModels = do_.models || [];
+          } catch (e) { }
+        }
+
+        renderModels(systemData.available_models || {}, installedModels);
+        updateCookieUI(systemData.cookies_ok, systemData.cookies_ok ? 'Cookie file found' : 'Cookie file missing', '');
+      } catch (e) { console.error('System load error:', e); }
+    }
+
+    function isModelInstalled(modelId, installedModels) {
+      return installedModels.some(m => m === modelId);
+    }
+
+    function renderModels(models, installedModels = []) {
+      const tierMap = {
+        '8GB RAM (4B–7B Models)': '8',
+        '16GB RAM (8B–13B Models)': '16',
+        '32GB RAM (27B+ Models)': '32'
+      };
+      const tierLabel = { '8': '8GB', '16': '16GB', '32': '32GB+' };
+      const tierMeta = { '8': 'Fastest · light hardware', '16': 'Balanced · recommended', '32': 'Deep · GPU recommended' };
+
+      let html = '';
+      for (const [group, mlist] of Object.entries(models)) {
+        const tier = tierMap[group] || '16';
+        for (const [modelId, desc] of mlist) {
+          const isSelected = modelId === selectedModel;
+          const isInstalled = isModelInstalled(modelId, installedModels);
+          const shortDesc = desc.split('—')[1]?.trim() || desc;
+          const safeId = modelId.replace(/[^a-zA-Z0-9]/g, '_');
+
+          const btnRow = isInstalled
+            ? `<div class="model-btn-row">
+            ${!isSelected ? `<button class="btn-apply" onclick="selectModel('${modelId}',this.closest('.model-opt'))">Apply</button>` : ''}
+            <span style="font-size:11px;color:var(--success);display:flex;align-items:center;gap:4px;">
+              <i class="ti ti-circle-check" style="font-size:13px"></i> Installed
+            </span>
+           </div>`
+            : `<div class="model-btn-row">
+            <button class="btn-pull" onclick="pullModel('${modelId}','${safeId}')">
+              <i class="ti ti-download"></i> Pull &amp; install
+            </button>
+           </div>
+           <div class="pull-area" id="pull_${safeId}">
+             <div class="pull-bar-track"><div class="pull-bar-fill" id="bar_${safeId}"></div></div>
+             <div class="pull-msg" id="msg_${safeId}">Waiting...</div>
+           </div>`;
+
+          html += `
+        <div class="model-opt${isSelected ? ' selected' : ''}${!isInstalled ? ' not-installed' : ''}" id="opt_${safeId}">
+          <div class="model-check"><i class="ti ti-check"></i></div>
+          <div class="model-opt-top">
+            <span class="model-name">${modelId}</span>
+            <span class="model-tier tier-${tier}">${tierLabel[tier]}</span>
+          </div>
+          <div class="model-meta"><i class="ti ti-cpu" style="font-size:12px;margin-right:4px"></i>${tierMeta[tier]}</div>
+          <div class="model-desc">${shortDesc}</div>
+          ${btnRow}
+        </div>`;
+        }
+      }
+      document.getElementById('modelGrid').innerHTML = html;
+    }
+
+    async function selectModel(modelId, el) {
+      document.querySelectorAll('.model-opt').forEach(m => m.classList.remove('selected'));
+      el.classList.add('selected');
+      document.getElementById('activeModelName').textContent = modelId;
+      try {
+        const r = await fetch('/api/change-model', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelId })
+        });
+        const d = await r.json();
+        if (d.ok) { selectedModel = modelId; showToast('Model changed to ' + modelId, 'ok'); }
+        else { showToast(d.error || 'Failed to change model', 'err'); }
+      } catch (e) { showToast('Network error', 'err'); }
+    }
+
+    function pullModel(modelId, safeId) {
+      const opt = document.getElementById('opt_' + safeId);
+      const area = document.getElementById('pull_' + safeId);
+      const bar = document.getElementById('bar_' + safeId);
+      const msgEl = document.getElementById('msg_' + safeId);
+      const pullBtn = opt.querySelector('.btn-pull');
+
+      if (!opt || !area) return;
+
+      // Disable button, show progress area
+      if (pullBtn) pullBtn.disabled = true;
+      opt.classList.add('pulling');
+      area.classList.add('show');
+      msgEl.textContent = 'Connecting to Ollama...';
+      msgEl.className = 'pull-msg';
+      bar.style.width = '2%';
+
+      const es = new EventSource(`/api/pull-model?model=${encodeURIComponent(modelId)}`);
+
+      es.onmessage = (e) => {
+        try {
+          const d = JSON.parse(e.data);
+
+          if (d.status === 'progress') {
+            bar.style.width = (d.pct || 2) + '%';
+            msgEl.textContent = d.msg || 'Downloading...';
+
+          } else if (d.status === 'done') {
+            bar.style.width = '100%';
+            msgEl.textContent = d.msg || 'Done!';
+            msgEl.className = 'pull-msg done';
+            es.close();
+            opt.classList.remove('pulling', 'not-installed');
+
+            // Auto-apply after pull
+            showToast(modelId + ' installed! Applying...', 'ok');
+            setTimeout(() => selectModel(modelId, opt), 800);
+
+            // Reload to refresh installed state
+            setTimeout(() => loadSystem(), 1500);
+
+          } else if (d.status === 'error') {
+            bar.style.width = '0%';
+            msgEl.textContent = d.msg || 'Pull failed';
+            msgEl.className = 'pull-msg err';
+            es.close();
+            opt.classList.remove('pulling');
+            if (pullBtn) pullBtn.disabled = false;
+            showToast('Pull failed: ' + (d.msg || 'Unknown error'), 'err');
+          }
+        } catch (err) { }
+      };
+
+      es.onerror = () => {
+        es.close();
+        opt.classList.remove('pulling');
+        if (pullBtn) pullBtn.disabled = false;
+        msgEl.textContent = 'Connection error — is Ollama running?';
+        msgEl.className = 'pull-msg err';
+        showToast('Pull failed — check Ollama is running', 'err');
+      };
+    }
+
+    // ═══ COOKIES ═════════════════════════════════════════════════════════════
+    function updateCookieUI(ok, status, meta) {
+      const icon = document.getElementById('cookieIcon');
+      const iconI = document.getElementById('cookieIconI');
+      const st = document.getElementById('cookieStatus');
+      const mt = document.getElementById('cookieMeta');
+
+      if (ok === 'checking') {
+        icon.className = 'cookie-icon checking';
+        iconI.className = 'ti ti-loader-2 spin';
+        st.className = 'cookie-status checking';
+        st.textContent = 'Verifying...';
+        mt.textContent = 'Running SeleniumBase check — takes ~15 seconds';
+      } else if (ok) {
+        icon.className = 'cookie-icon ok';
+        iconI.className = 'ti ti-cookie';
+        st.className = 'cookie-status ok';
+        st.textContent = status || 'Cookies valid · session active';
+        mt.textContent = meta || '';
+      } else {
+        icon.className = 'cookie-icon bad';
+        iconI.className = 'ti ti-cookie-off';
+        st.className = 'cookie-status bad';
+        st.textContent = status || 'Session expired or missing';
+        mt.textContent = meta || 'Re-import cookies or run refresh_cookies.py';
+      }
+    }
+
+    async function verifyCookies() {
+      if (cookieVerifying) return;
+      cookieVerifying = true;
+      window._verifyStartTime = Date.now(); // stamp when this verification began
+      updateCookieUI('checking', '', '');
+      document.getElementById('btnVerify').disabled = true;
+
+      try {
+        await fetch('/api/cookie/verify', { method: 'POST' });
+        // Poll for result
+        let attempts = 0;
+        const poll = setInterval(async () => {
+          attempts++;
+          try {
+            const r = await fetch('/api/cookie/status');
+            const d = await r.json();
+            if (d.checked_at || attempts > 20) {
+              clearInterval(poll);
+              cookieVerifying = false;
+              document.getElementById('btnVerify').disabled = false;
+              const checkedAt = d.checked_at ? new Date(d.checked_at).toLocaleTimeString() : '';
+              updateCookieUI(d.ok, d.ok ? 'Session active' : d.reason, checkedAt ? 'Verified at ' + checkedAt : d.reason);
+              showToast(d.ok ? 'Session verified successfully' : 'Session check failed: ' + d.reason, d.ok ? 'ok' : 'err');
+              if (d.ok) loadSessionProof();
+            }
+          } catch (e) { clearInterval(poll); cookieVerifying = false; document.getElementById('btnVerify').disabled = false; }
+        }, 2000);
+      } catch (e) {
+        cookieVerifying = false;
+        document.getElementById('btnVerify').disabled = false;
+        showToast('Verify request failed', 'err');
+      }
+    }
+
+    function openReimport() { document.getElementById('reimportModal').classList.add('open'); }
+
+    async function importCookies() {
+      const raw = document.getElementById('cookieJson').value.trim();
+      if (!raw) { showToast('Paste your cookie JSON first', 'err'); return; }
+      let cookies;
+      try { cookies = JSON.parse(raw); } catch (e) { showToast('Invalid JSON format', 'err'); return; }
+      try {
+        const r = await fetch('/api/cookie/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cookies }) });
+        const d = await r.json();
+        if (d.ok) {
+          closeModal('reimportModal');
+          document.getElementById('cookieJson').value = '';
+          updateCookieUI(true, `${d.count} cookies imported successfully`, '');
+          showToast(d.message, 'ok');
+        } else { showToast(d.error || 'Import failed', 'err'); }
+      } catch (e) { showToast('Network error', 'err'); }
+    }
+
+    // ═══ TABS ════════════════════════════════════════════════════════════════
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+    }
+
+    function selectPill(el, groupId) {
+      document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function toggleCheck(row) {
+      const cb = row.querySelector('.checkbox');
+      cb.classList.toggle('checked');
+    }
+
+    function getPillValue(groupId) {
+      const active = document.querySelector('#' + groupId + ' .pill.active');
+      if (!active) return 'medium';
+      const t = active.textContent.trim().toLowerCase();
+      if (t.includes('light')) return 'light';
+      if (t.includes('deep')) return 'deep';
+      return 'medium';
+    }
+
+    function getCheckValues(panelId) {
+      const rows = document.querySelectorAll('#' + panelId + ' .check-row');
+      const vals = {};
+      rows.forEach((row, i) => {
+        const checked = row.querySelector('.checkbox').classList.contains('checked');
+        const label = row.querySelector('.check-label').textContent.toLowerCase();
+        if (label.includes('top 7')) vals.detect_top7 = checked;
+        else if (label.includes('all commentors')) vals.detect_all = checked;
+        else if (label.includes('face')) vals.faces = checked;
+      });
+      return vals;
+    }
+
+    // ═══ PROFILE ACTIONS ═════════════════════════════════════════════════════
+    function getProfilePayload(start_now = false) {
+      const url = document.getElementById('profileUrl').value.trim();
+      if (!url) { showToast('Enter a Facebook profile URL', 'err'); return null; }
+      if (!url.includes('facebook.com')) { showToast('Must be a Facebook URL', 'err'); return null; }
+      const checks = getCheckValues('panel-profile');
+      return {
+        profile_url: url,
+        scan_level: getPillValue('profileDepth'),
+        detect_top7_countries: checks.detect_top7 !== false,
+        detect_all_countries: !!checks.detect_all,
+        start_now
+      };
+    }
+
+    async function startProfileNow() {
+      const payload = getProfilePayload(true);
+      if (!payload) return;
+      await submitInvestigation('/api/queue/add/profile', payload, 'Profile investigation started!', event.target.closest('button'));
+    }
+
+    async function addProfileToQueue() {
+      const payload = getProfilePayload(false);
+      if (!payload) return;
+      await submitInvestigation('/api/queue/add/profile', payload, 'Added to queue!');
+    }
+
+    // ═══ BATCH ACTIONS ═══════════════════════════════════════════════════════
+    function getBatchPayload() {
+      const label = document.getElementById('batchLabel').value.trim();
+      const urlsRaw = document.getElementById('batchUrls').value.trim();
+      const urls = urlsRaw.split('\n').map(u => u.trim()).filter(u => u);
+      if (!urls.length) { showToast('Enter at least one URL', 'err'); return null; }
+      if (urls.length > 10) { showToast('Maximum 10 URLs per batch', 'err'); return null; }
+      const checks = getCheckValues('panel-batch');
+      return { label, urls, scan_level: getPillValue('batchDepth'), detect_all_countries: !!checks.detect_all };
+    }
+
+    async function startBatchNow() {
+      const payload = getBatchPayload();
+      if (!payload) return;
+      payload.start_now = true;
+      await submitInvestigation('/api/queue/add/batch', payload, 'Batch investigation started!', event.target.closest('button'));
+    }
+
+    async function addBatchToQueue() {
+      const payload = getBatchPayload();
+      if (!payload) return;
+      await submitInvestigation('/api/queue/add/batch', payload, 'Batch added to queue!');
+    }
+
+    async function submitInvestigation(endpoint, payload, successMsg, btn) {
+      // Animate the button
+      if (btn) {
+        btn.disabled = true; btn.dataset.orig = btn.innerHTML;
+        btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;"></i> Starting...';
+      }
+      try {
+        const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const d = await r.json();
+        if (d.ok) {
+          if (btn) {
+            btn.innerHTML = '<i class="ti ti-check"></i> Investigation queued!';
+            btn.style.background = 'var(--success)'; btn.style.borderColor = 'var(--success)';
+          }
+          // Navigate to PROGRESS page if started now
+          if (payload.start_now) {
+            const progressKey = d.profile_id
+              ? 'profile_' + d.profile_id
+              : (d.batch_id ? 'batch_' + d.batch_id : null);
+          if (!progressKey) { showToast('Could not determine progress URL', 'err'); return; }
+            setTimeout(() => { window.location.href = '/progress/' + progressKey; }, 800);
+          } else {
+            showToast(successMsg, 'ok');
+            await loadQueue();
+            await loadInvestigations();
+            if (btn) { setTimeout(() => { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; btn.style.background = ''; btn.style.borderColor = ''; }, 2000); }
+          }
+        } else {
+          showToast(d.error || 'Failed to start investigation', 'err');
+          if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
+        }
+      } catch (e) {
+        showToast('Network error: ' + e.message, 'err');
+        if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
+      }
+    }
+
+    // ═══ QUEUE ═══════════════════════════════════════════════════════════════
+    async function loadQueue() {
+      try {
+        const r = await fetch('/api/queue');
+        const d = await r.json();
+        queueData = d.queue || [];
+        renderQueue(queueData, d.max_size || 5);
+      } catch (e) { }
+    }
+
+    function renderQueue(items, maxSize) {
+      const active = items.filter(i => ['queued', 'running'].includes(i.state));
+      document.getElementById('queueCount').textContent = `(${active.length} / ${maxSize})`;
+
+      let html = '';
+      for (let i = 0; i < maxSize; i++) {
+        const item = active[i];
+        if (item) {
+          const isRunning = item.state === 'running';
+          const icon = item.type === 'profile' ? 'ti-user' : 'ti-stack-2';
+          const label = item.type === 'profile' ? 'Profile' : 'Batch';
+          html += `
+        <div class="q-slot filled${!isRunning ? ' can-remove' : ''}" title="${item.label}${isRunning ? ' (running)' : ''}"
+             ${!isRunning ? `onclick="removeQueueItem(${item.id})"` : ''}>
+          <div class="qi"><i class="ti ${icon}${isRunning ? ' spin' : ''}"></i></div>
+          <div class="ql">${isRunning ? 'Running' : label}</div>
+          <div class="qm">${item.scan_level || 'medium'}</div>
+        </div>`;
+        } else {
+          html += `<div class="q-slot"><div class="qi"><i class="ti ti-plus"></i></div></div>`;
+        }
+      }
+      document.getElementById('queueSlots').innerHTML = html;
+
+      // Show error if any failed with cookie issue
+      const failed = items.find(i => i.state === 'failed' && i.error_msg?.includes('Cookie'));
+      const errEl = document.getElementById('queueError');
+      if (failed) {
+        document.getElementById('queueErrorMsg').textContent = failed.error_msg;
+        errEl.classList.add('show');
+      } else { errEl.classList.remove('show'); }
+    }
+
+    async function removeQueueItem(id) {
+      try {
+        const r = await fetch(`/api/queue/remove/${id}`, { method: 'DELETE' });
+        const d = await r.json();
+        if (d.ok) { showToast('Removed from queue', 'info'); await loadQueue(); }
+        else showToast(d.error || 'Cannot remove', 'err');
+      } catch (e) { }
+    }
+
+    async function clearQueue() {
+      try {
+        await fetch('/api/queue/clear', { method: 'POST' });
+        showToast('Queue cleared', 'info');
+        await loadQueue();
+      } catch (e) { }
+    }
+
+    // ═══ COOLDOWN ════════════════════════════════════════════════════════════
+    async function checkCooldown() {
+      try {
+        const r = await fetch('/api/queue/cooldown');
+        const d = await r.json();
+        const banner = document.getElementById('cooldownBanner');
+        if (d.in_cooldown && d.remaining > 0) {
+          const mins = Math.floor(d.remaining / 60);
+          const secs = d.remaining % 60;
+          const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+          document.getElementById('cooldownText').textContent = `Queue cooldown — next investigation starts in ${timeStr} (at ${d.until || ''})`;
+          banner.classList.add('show');
+        } else { banner.classList.remove('show'); }
+      } catch (e) { }
+    }
+
+    // ═══ TELEGRAM ════════════════════════════════════════════════════════════
+    async function loadTelegram() {
+      try {
+        const r = await fetch('/api/telegram/status');
+        const d = await r.json();
+        document.getElementById('tgStatus').textContent = d.configured ? `Connected · @${d.chat_id || 'bot'}` : 'Not configured';
+        document.getElementById('tgMeta').textContent = d.configured ? 'Reports will be sent after each investigation' : 'Set up to receive reports on Telegram';
+        document.getElementById('btnTgTest').style.display = d.configured ? 'flex' : 'none';
+      } catch (e) { }
+    }
+
+    function openTgModal() { document.getElementById('tgModal').classList.add('open'); }
+
+    async function saveTelegram() {
+      const token = document.getElementById('tgToken').value.trim();
+      const chat_id = document.getElementById('tgChatId').value.trim();
+      if (!token || !chat_id) { showToast('Both token and chat_id are required', 'err'); return; }
+      try {
+        const r = await fetch('/api/telegram/configure', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, chat_id }) });
+        const d = await r.json();
+        if (d.ok) {
+          closeModal('tgModal');
+          showToast('Telegram configured successfully', 'ok');
+          await loadTelegram();
+        } else showToast(d.error || 'Failed', 'err');
+      } catch (e) { showToast('Network error', 'err'); }
+    }
+
+    async function testTelegram() {
+      showToast('Sending test message...', 'info');
+      try {
+        const r = await fetch('/api/telegram/test', { method: 'POST' });
+        const d = await r.json();
+        showToast(d.ok ? 'Test message sent!' : (d.message || 'Test failed'), d.ok ? 'ok' : 'err');
+      } catch (e) { showToast('Network error', 'err'); }
+    }
+
+    // ═══ INVESTIGATIONS ═══════════════════════════════════════════════════════
+    async function loadInvestigations() {
+      try {
+        const r = await fetch('/api/investigations');
+        const items = await r.json();
+        renderInvestigations(items);
+      } catch (e) { }
+    }
+
+    function renderInvestigations(items) {
+      const el = document.getElementById('invList');
+      if (!items.length) {
+        el.innerHTML = '<div class="empty-state"><i class="ti ti-radar-2"></i><p>No investigations yet — start one above.</p></div>';
+        return;
+      }
+
+      const phaseMap = {
+        'complete': ['s-done', 'Completed'],
+        'report': ['s-running', 'Generating report'],
+        'building': ['s-running', 'Building intelligence'],
+        'analyzing': ['s-running', 'Analyzing'],
+        'gathering': ['s-running', 'Gathering data'],
+        'queued': ['s-queue', 'Queued'],
+        'stopped': ['s-error', 'Stopped'],
+        'error': ['s-error', 'Error'],
+      };
+
+      let html = '';
+      for (const inv of items) {
+        const initials = (inv.label || '??').slice(0, 2).toUpperCase();
+        const [tagClass, tagLabel] = phaseMap[inv.phase] || ['s-done', 'Completed'];
+        const typeLabel = inv.type === 'profile' ? 'Profile' : 'Batch';
+        const date = inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        html += `
+      <div class="inv-item" onclick="openInvestigation('${inv.key}')">
+        <div class="inv-avatar">${initials}</div>
+        <div class="inv-info">
+          <div class="inv-name">${escapeHtml(inv.label)}</div>
+          <div class="inv-meta">${typeLabel} · ${date}</div>
+        </div>
+        <span class="status-tag ${tagClass}">${tagLabel}</span>
+        <button class="inv-del-btn" title="Delete investigation" onclick="event.stopPropagation();deleteInvestigation('${inv.key}','${inv.type}',${inv.id || 0},'${escapeHtml(inv.label)}')">
+          <i class="ti ti-trash"></i>
+        </button>
+        <i class="ti ti-chevron-right inv-arrow"></i>
+      </div>`;
+      }
+      el.innerHTML = html;
+    }
+
+    function openInvestigation(key) {
+      window.location.href = '/analysis/' + key;
+    }
+
+    // ═══ HELPERS ════════════════════════════════════════════════════════════
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    let toastTimer;
+    function showToast(msg, type = 'info') {
+      const t = document.getElementById('toast');
+      const i = document.getElementById('toastIcon');
+      t.className = 'toast show ' + type;
+      i.className = type === 'ok' ? 'ti ti-check' : type === 'err' ? 'ti ti-x' : 'ti ti-info-circle';
+      document.getElementById('toastMsg').textContent = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = next;
+      document.querySelector('#themeToggle i').className = next === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+      localStorage.setItem('be-theme', next);
+    });
+
+    // Restore theme
+    const savedTheme = localStorage.getItem('be-theme');
+    if (savedTheme) {
+      document.documentElement.dataset.theme = savedTheme;
+      document.querySelector('#themeToggle i').className = savedTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+    }
+
+    // Close modals on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+      o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+    });
+
+    async function deleteInvestigation(key, type, id, label) {
+      if (!confirm(`Delete "${label}"?\nThis removes all data for this investigation.`)) return;
+      const endpoint = type === 'batch'
+        ? `/api/delete/batch/${key.replace('batch_', '')}`
+        : `/api/delete/profile/${id}`;
+      try {
+        const r = await fetch(endpoint, { method: 'POST' });
+        const d = await r.json();
+        if (d.ok) {
+          showToast('Investigation deleted', 'ok');
+          loadInvestigations();
+        } else {
+          showToast(d.error || 'Delete failed', 'err');
+        }
+      } catch (e) {
+        showToast('Network error', 'err');
+      }
+    }
+
+
+    async function cleanDB(target) {
+      const labels = { profile: 'all profile investigations', manual: 'all batch investigations', both: 'EVERYTHING' };
+      if (!confirm(`⚠️ This will permanently delete ${labels[target]}.\n\nAre you sure? This cannot be undone.`)) return;
+      const status = document.getElementById('cleanStatus');
+      status.style.display = 'block';
+      status.textContent = 'Cleaning database...';
+      try {
+        const r = await fetch('/api/tools/clean-db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          const res = d.results || {};
+          const rows = (res.profile_rows || 0) + (res.manual_rows || 0);
+          status.textContent = `✓ Done — ${rows} rows deleted.`;
+          status.style.color = '#10b981';
+          loadInvestigations();
+        } else {
+          status.textContent = 'Error: ' + (d.error || 'Unknown error');
+          status.style.color = '#ef4444';
+        }
+      } catch (e) {
+        status.textContent = 'Network error';
+        status.style.color = '#ef4444';
+      }
+    }
+
+
+    async function loadSessionProof() {
+      const img = document.getElementById('sessionProofImg');
+      const box = document.getElementById('sessionProof');
+      box.style.display = 'block'; // show spinner immediately
+      const startTime = window._verifyStartTime || Date.now();
+      // Retry every 2s for up to 30s — only accept screenshot taken AFTER verification started
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const r = await fetch('/api/session-screenshot?t=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) continue;
+          // Check if this screenshot is fresh (taken after verification started)
+          const lastMod = r.headers.get('Last-Modified');
+          const fileTime = lastMod ? new Date(lastMod).getTime() : 0;
+          if (fileTime < startTime) continue; // still the old screenshot — keep waiting
+          const blob = await r.blob();
+          img.src = URL.createObjectURL(blob);
+          return; // onload fades it in
+        } catch (e) { }
+      }
+    }
+
+  </script>

@@ -7,7 +7,7 @@ import base64
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 
 
-OLLAMA_MODEL    = "gemma3:4b"   # text analysis after OCR extraction
+OLLAMA_MODEL    = ""   # text analysis after OCR extraction
 
 # Tesseract language codes — all in one call
 

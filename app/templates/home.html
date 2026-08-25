@@ -1,1617 +1,943 @@
-{% extends 'base.html' %}
-{% block title %}BIRDY-EDWARDS — Facebook SOCMINT Platform{% endblock %}
-
-{% block head %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
-  rel="stylesheet">
-<style>
-  * {
-    font-family: "Google Sans", sans-serif;
-  }
-
-  .home-wrap {
-    max-width: 1500px;
-    margin: 0 auto;
-    padding: 40px 28px 80px;
-    background: transparent;
-  }
-
-  /* ══ HERO ══ */
-  .top-section {
-    display: flex;
-    gap: 0;
-    align-items: stretch;
-    background: linear-gradient(135deg, #04010a 0%, #070112 40%, #000000 70%, #01103a 100%);
-    border-radius: 18px;
-    padding: 52px 0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .top-section::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(ellipse at 20% 50%, rgba(6, 1, 27, 0.18) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 30%, rgba(4, 4, 49, 0.226) 0%, transparent 50%);
-  }
-
-  .logo-block {
-    flex-shrink: 0;
-    order: 2;
-    display: flex;
-    align-items: center;
-    padding-right: 64px;
-    padding-left: 0;
-    margin-left: auto;
-  }
-
-  .logo-img {
-    width: 300px;
-    height: 300px;
-    border-radius: 0px;
-    object-fit: cover;
-    display: block;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 60px rgba(238, 23, 127, 0.5), 0 0 120px rgba(139, 92, 246, 0.2), 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .text-block {
-    flex: 1;
-    order: 1;
-    padding: 0 0 0 64px;
-    max-width: 55%;
-    position: relative;
-    z-index: 1;
-  }
-
-  .tool-name {
-    font-size: 58px;
-    font-weight: 900;
-    letter-spacing: -2px;
-    line-height: 1.05;
-    margin-bottom: 18px;
-    color: #fff;
-  }
-
-  .tool-name span {
-    display: block;
-    background: linear-gradient(90deg, #67e8f9, #a78bfa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .tool-desc {
-    font-size: 16px;
-    font-weight: 400;
-    color: rgba(214, 255, 250, 0.85);
-    line-height: 1.65;
-    margin-bottom: 28px;
-    max-width: 460px;
-  }
-
-  .caps-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 28px;
-  }
-
-  .cap {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 5px 12px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .cap-v {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ddd6fe;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
-  .cap-r {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fda4af;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .cap-g {
-    background: rgba(255, 255, 255, 0.08);
-    color: #86efac;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .cap-a {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fde68a;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .cap-c {
-    background: rgba(255, 255, 255, 0.08);
-    color: #a5f3fc;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .tool-quote {
-    font-size: 13px;
-    font-style: italic;
-    color: gold;
-    line-height: 1.7;
-    padding-left: 14px;
-    border-left: 2px solid rgba(255, 255, 255, 0.2);
-    max-width: 460px;
-  }
-
-  /* ══ SYSTEM STATUS ══ */
-  .sys-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-
-  .sys-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  .sys-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .sys-ok {
-    background: #ecfdf5;
-    color: #059669;
-    border: 1px solid #a7f3d0;
-  }
-
-  .sys-ok .sys-dot {
-    background: #10b981;
-    box-shadow: 0 0 5px #10b981;
-    animation: blink 2s infinite;
-  }
-
-  .sys-err {
-    background: #fff1f2;
-    color: #e11d48;
-    border: 1px solid #fecdd3;
-  }
-
-  .sys-err .sys-dot {
-    background: #f43f5e;
-  }
-
-  .sys-warn {
-    background: #fffbeb;
-    color: #d97706;
-    border: 1px solid #fde68a;
-  }
-
-  .sys-warn .sys-dot {
-    background: #f59e0b;
-  }
-
-  .sys-info {
-    background: #f5f3ff;
-    color: #7c3aed;
-    border: 1px solid #ddd6fe;
-  }
-
-  .sys-info .sys-dot {
-    background: #8b5cf6;
-  }
-
-  @keyframes blink {
-
-    0%,
-    100% {
-      opacity: 1
-    }
-
-    50% {
-      opacity: 0.3
-    }
-  }
-
-  .sys-alert {
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 10px;
-  }
-
-  .sys-alert code {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-
-  .sys-alert-err {
-    background: rgba(225, 29, 72, 0.08);
-    color: #fb7185;
-    border: 1px solid rgba(225, 29, 72, 0.18);
-  }
-
-  .sys-alert-warn {
-    background: rgba(245, 158, 11, 0.08);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.18);
-  }
-
-  /* ══ BOTTOM SECTION ══ */
-  .bottom-section {
-    background: linear-gradient(135deg, #04010a 0%, #070112 40%, #000000 70%, #000000 100%);
-    border-radius: 18px;
-    padding: 36px 40px 40px;
-    margin-top: 16px;
-  }
-
-  .h-divider {
-    border: none;
-    border-top: 1px solid rgba(99, 60, 180, 0.1);
-    margin: 28px 0;
-  }
-
-  .sec-label {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #ff5f5f;
-    margin-bottom: 16px;
-  }
-
-  /* ══ MODE CARDS ══ */
-  .mode-cards {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 44px;
-  }
-
-  .mode-card {
-    flex: 1;
-    background: linear-gradient(135deg, #000000 0%, #000000 40%, #000000 70%, #060017 100%);
-    border-radius: 16px;
-    padding: 32px 28px;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-    min-height: 280px;
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-  }
-
-  .mode-card::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-  }
-
-  .mode-auto {
-    border: 0px solid #e9d5ff;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
-  }
-
-  .mode-auto::after {
-    background: linear-gradient(90deg, #3aabed, #8bedfa);
-  }
-
-  .mode-batch {
-    border: 0px solid #fde68a;
-    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1);
-  }
-
-  .mode-batch::after {
-    background: linear-gradient(90deg, #d97706, #fbbf24);
-  }
-
-  .mode-auto:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(139, 92, 246, 0.2);
-    border-color: #c4b5fd;
-  }
-
-  .mode-batch:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(245, 158, 11, 0.18);
-    border-color: #fcd34d;
-  }
-
-  .mode-icon-wrap {
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 22px;
-    flex-shrink: 0;
-  }
-
-  .mode-auto .mode-icon-wrap {
-    background: rgba(92, 233, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-  }
-
-  .mode-batch .mode-icon-wrap {
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-  }
-
-  .mode-title {
-    font-size: 22px;
-    font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 10px;
-  }
-
-  .mode-desc {
-    font-size: 13.5px;
-    color: #fdf2e1;
-    line-height: 1.7;
-    flex: 1;
-    margin-bottom: 20px;
-  }
-
-  .mode-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 20px;
-  }
-
-  .mtag {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 4px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .mtag-v {
-    background: rgba(92, 226, 246, 0.1);
-    color: #a78bfa;
-    border: 1px solid rgba(139, 92, 246, 0.2);
-  }
-
-  .mtag-r {
-    background: rgba(63, 244, 211, 0.1);
-    color: #fb7185;
-    border: 1px solid rgba(244, 63, 94, 0.2);
-  }
-
-  .mtag-g {
-    background: rgba(16, 185, 129, 0.1);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-
-  .mtag-a {
-    background: rgba(245, 158, 11, 0.1);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.2);
-  }
-
-  .mode-cta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    margin-top: auto;
-  }
-
-  .mode-auto .mode-cta {
-    color: #7c3aed;
-  }
-
-  .mode-batch .mode-cta {
-    color: #d97706;
-  }
-
-  .mode-cta-arrow {
-    font-size: 18px;
-    transition: transform 0.2s;
-  }
-
-  .mode-card:hover .mode-cta-arrow {
-    transform: translateX(5px);
-  }
-
-  /* ══ RECENT INVESTIGATIONS ══ */
-  .recent-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
-  }
-
-  .recent-card {
-    background: #ffffff;
-    border-radius: 14px;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    position: relative;
-    border: 1px solid #f1eeff;
-    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.06);
-  }
-
-  .recent-batch {
-    border-color: #fef3c7;
-    box-shadow: 0 2px 12px rgba(245, 158, 11, 0.06);
-  }
-
-  .recent-card:hover {
-    transform: translateY(-4px);
-  }
-
-  .recent-auto:hover {
-    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.16);
-    border-color: #ddd6fe;
-  }
-
-  .recent-batch:hover {
-    box-shadow: 0 12px 32px rgba(245, 158, 11, 0.16);
-    border-color: #fde68a;
-  }
-
-  .rc-bar {
-    height: 4px;
-    border-radius: 14px 14px 0 0;
-  }
-
-  .recent-auto .rc-bar {
-    background: linear-gradient(90deg, #3abded, #8bfae2);
-  }
-
-  .recent-batch .rc-bar {
-    background: linear-gradient(90deg, #d97706, #fbbf24);
-  }
-
-  .rc-inner {
-    padding: 16px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex: 1;
-  }
-
-  .rc-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-
-  .recent-auto .rc-icon {
-    background: #f5f3ff;
-  }
-
-  .recent-batch .rc-icon {
-    background: #fffbeb;
-  }
-
-  .rc-body {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .rc-type {
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-
-  .recent-auto .rc-type {
-    color: #8b5cf6;
-  }
-
-  .recent-batch .rc-type {
-    color: #d97706;
-  }
-
-  .rc-name {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1e1b4b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-  }
-
-  .recent-batch .rc-name {
-    color: #78350f;
-  }
-
-  .rc-meta {
-    font-size: 10px;
-    color: #a1a1aa;
-  }
-
-  .rc-arr {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    flex-shrink: 0;
-    transition: all 0.2s;
-  }
-
-  .recent-auto .rc-arr {
-    background: #f5f3ff;
-    color: #8b5cf6;
-  }
-
-  .recent-batch .rc-arr {
-    background: #fffbeb;
-    color: #d97706;
-  }
-
-  .recent-card:hover .rc-arr {
-    transform: translateX(3px);
-  }
-
-  .recent-auto:hover .rc-arr {
-    background: #7c3aed;
-    color: #fff;
-  }
-
-  .recent-batch:hover .rc-arr {
-    background: #d97706;
-    color: #fff;
-  }
-
-  /* ══ DELETE BUTTON ON CARDS ══ */
-  .rc-del {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: none;
-    background: #fee2e2;
-    color: #ef4444;
-    font-size: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: all 0.15s;
-    z-index: 5;
-  }
-
-  .recent-card:hover .rc-del {
-    opacity: 1;
-  }
-
-  .rc-del:hover {
-    background: #ef4444;
-    color: #fff;
-    transform: scale(1.15);
-  }
-
-  /* ══ TOOLS ROW ══ */
-  .tools-row {
-    display: flex;
-    gap: 12px;
-  }
-
-  .tool-card {
-    flex: 1;
-    background: #ffffff;
-    border-radius: 14px;
-    padding: 18px 20px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    border: 1px solid #f1eeff;
-    box-shadow: 0 2px 10px rgba(99, 60, 180, 0.06);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-  }
-
-  .tool-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(99, 60, 180, 0.15);
-  }
-
-  .tool-card-danger {
-    border-color: #fee2e2;
-    box-shadow: 0 2px 10px rgba(244, 63, 94, 0.06);
-  }
-
-  .tool-card-danger:hover {
-    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.18);
-    border-color: #fecaca;
-  }
-
-  .tool-icon {
-    font-size: 26px;
-    flex-shrink: 0;
-  }
-
-  .tool-body {
-    flex: 1;
-  }
-
-  .tool-title2 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1e1b4b;
-    margin-bottom: 2px;
-  }
-
-  .tool-card-danger .tool-title2 {
-    color: #7f1d1d;
-  }
-
-  .tool-desc2 {
-    font-size: 11px;
-    color: #9ca3af;
-    line-height: 1.5;
-  }
-
-  .tool-arr {
-    font-size: 14px;
-    color: #d1d5db;
-    transition: all 0.18s;
-    flex-shrink: 0;
-  }
-
-  .tool-card:hover .tool-arr {
-    color: #8b5cf6;
-    transform: translateX(3px);
-  }
-
-  .tool-card-danger:hover .tool-arr {
-    color: #ef4444;
-  }
-
-  /* ══ AI MODEL SELECTOR PANEL ══ */
-  .model-panel {
-    background: linear-gradient(135deg, #000000 0%, #000000 50%, #011c2d 100%);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    border-radius: 18px;
-    padding: 28px 32px;
-    margin-bottom: 28px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .model-panel::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(10, 7, 19, 0.9) 30%, rgba(244, 63, 94, 0.7) 70%, transparent 100%);
-  }
-
-  .model-panel::after {
-    content: '';
-    position: absolute;
-    bottom: -60px;
-    right: -60px;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(1, 2, 2, 0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  /* Panel header */
-  .mp-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 22px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .mp-title-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .mp-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.25), rgba(244, 63, 94, 0.18));
-    border: 1px solid rgba(92, 246, 238, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 0 16px rgba(139, 92, 246, 0.2);
-  }
-
-  .mp-title {
-    font-size: 15px;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: 0.02em;
-  }
-
-  .mp-sub {
-    font-size: 10px;
-    color: rgba(253, 253, 253, 0.75);
-    font-weight: 600;
-    margin-top: 2px;
-    letter-spacing: 0.04em;
-  }
-
-  .mp-active-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.28);
-    border-radius: 20px;
-    padding: 6px 16px;
-  }
-
-  .mp-active-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
-    animation: blink 2s infinite;
-  }
-
-  .mp-active-model {
-    font-size: 12px;
-    font-weight: 800;
-    color: #34d399;
-    font-family: monospace;
-  }
-
-  /* RAM tier tabs */
-  .mp-tiers {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-
-  .mp-tier {
-    flex: 1;
-    padding: 10px 14px;
-    border-radius: 10px;
-    cursor: pointer;
-    text-align: center;
-    border: 1px solid rgba(99, 60, 180, 0.18);
-    background: rgba(10, 6, 28, 0.6);
-    transition: all 0.2s;
-  }
-
-  .mp-tier:hover {
-    border-color: rgba(139, 92, 246, 0.4);
-    background: rgba(139, 92, 246, 0.06);
-  }
-
-  .mp-tier.mt-active {
-    border-color: rgba(139, 92, 246, 0.55);
-    background: rgba(139, 92, 246, 0.12);
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.12);
-  }
-
-  .mp-tier-ram {
-    display: block;
-    font-size: 16px;
-    font-weight: 900;
-    color: #fff;
-    margin-bottom: 3px;
-  }
-
-  .mp-tier-desc {
-    display: block;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.35);
-  }
-
-  .mp-tier.mt-active .mp-tier-ram {
-    color: #ffffff;
-  }
-
-  .mp-tier.mt-active .mp-tier-desc {
-    color: rgba(254, 254, 254, 0.7);
-  }
-
-  /* Model grid cards */
-  .mp-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .mp-model {
-    border: 1px solid rgba(99, 60, 180, 0.18);
-    border-radius: 10px;
-    padding: 13px 15px;
-    cursor: pointer;
-    transition: all 0.18s;
-    background: rgba(6, 28, 27, 0.55);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .mp-model::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, #000000, #f43f5e);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .mp-model:hover {
-    border-color: rgba(139, 92, 246, 0.45);
-    background: rgba(92, 246, 220, 0.07);
-    transform: translateY(-2px);
-  }
-
-  .mp-model:hover::before {
-    opacity: 0.6;
-  }
-
-  .mp-model.mp-selected {
-    border-color: rgba(139, 92, 246, 0.7);
-    background: rgba(92, 231, 246, 0.13);
-    box-shadow: 0 0 18px rgba(139, 92, 246, 0.18);
-  }
-
-  .mp-model.mp-selected::before {
-    opacity: 1;
-  }
-
-  .mp-model.mp-current {
-    border-color: rgba(16, 185, 129, 0.45);
-    background: rgba(16, 185, 129, 0.06);
-  }
-
-  .mp-model.mp-current::before {
-    background: linear-gradient(90deg, #059669, #10b981);
-    opacity: 1;
-  }
-
-  .mp-current-tag {
-    position: absolute;
-    top: 7px;
-    right: 8px;
-    font-size: 7px;
-    font-weight: 800;
-    color: #10b981;
-    letter-spacing: 0.1em;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    padding: 1px 5px;
-    border-radius: 3px;
-  }
-
-  .mp-model-name {
-    font-size: 12px;
-    font-weight: 800;
-    color: #fff;
-    margin-bottom: 3px;
-  }
-
-  .mp-model-id {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.7);
-    font-weight: 600;
-    font-family: monospace;
-    margin-bottom: 5px;
-  }
-
-  .mp-model-tag {
-    display: inline-block;
-    font-size: 8px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 4px;
-    letter-spacing: 0.04em;
-  }
-
-  .mpt-rec {
-    background: rgba(16, 185, 129, 0.1);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.22);
-  }
-
-  .mpt-vis {
-    background: rgba(6, 182, 212, 0.1);
-    color: #67e8f9;
-    border: 1px solid rgba(6, 182, 212, 0.22);
-  }
-
-  .mpt-fast {
-    background: rgba(245, 158, 11, 0.1);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.22);
-  }
-
-  .mpt-heavy {
-    background: rgba(244, 63, 94, 0.1);
-    color: #fb7185;
-    border: 1px solid rgba(244, 63, 94, 0.22);
-  }
-
-  /* Action row */
-  .mp-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .mp-apply-btn {
-    padding: 11px 26px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #28d9c1, #be123c);
-    border: none;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 800;
-    cursor: pointer;
-    letter-spacing: 0.04em;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
-    box-shadow: 0 4px 20px rgba(109, 40, 217, 0.35);
-    white-space: nowrap;
-  }
-
-  .mp-apply-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(109, 40, 217, 0.5);
-    filter: brightness(1.1);
-  }
-
-  .mp-apply-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .mp-status {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 700;
-    min-width: 200px;
-  }
-
-  .mps-idle {
-    background: rgba(60, 180, 170, 0.07);
-    color: rgba(255, 255, 255, 0.35);
-    border: 1px solid rgba(99, 60, 180, 0.12);
-  }
-
-  .mps-ready {
-    background: rgba(92, 246, 197, 0.1);
-    color: #c4b5fd;
-    border: 1px solid rgba(139, 92, 246, 0.25);
-  }
-
-  .mps-pulling {
-    background: rgba(245, 158, 11, 0.1);
-    color: #fbbf24;
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    animation: pulse 1.5s infinite;
-  }
-
-  .mps-ok {
-    background: rgba(16, 185, 129, 0.1);
-    color: #34d399;
-    border: 1px solid rgba(16, 185, 129, 0.25);
-  }
-
-  .mps-err {
-    background: rgba(244, 63, 94, 0.1);
-    color: #fb7185;
-    border: 1px solid rgba(244, 63, 94, 0.25);
-  }
-
-  @keyframes pulse {
-
-    0%,
-    100% {
-      opacity: 1
-    }
-
-    50% {
-      opacity: 0.55
-    }
-  }
-
-  /* Progress bar */
-  .mp-progress {
-    margin-top: 16px;
-    display: none;
-  }
-
-  .mpp-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 7px;
-  }
-
-  .mpp-msg {
-    font-size: 12px;
-    font-weight: 700;
-    color: #c4b5fd;
-  }
-
-  .mpp-pct {
-    font-size: 12px;
-    font-weight: 900;
-    color: #a78bfa;
-  }
-
-  .mpp-track {
-    height: 6px;
-    background: rgba(99, 60, 180, 0.15);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .mpp-fill {
-    height: 100%;
-    width: 0%;
-    border-radius: 4px;
-    transition: width 0.4s ease;
-    background: linear-gradient(90deg, #7c3aed, #f43f5e);
-  }
-
-  /* ══ FOOTER ══ */
-  .home-foot {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid rgba(99, 60, 180, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 15px;
-    color: #5fa088;
-  }
-
-  .home-foot strong {
-    color: #faac8b;
-  }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="home-wrap">
-
-  <!-- ══ HERO ══ -->
-  <div class="top-section">
-    <div class="text-block">
-      <div class="tool-name">BIRDY-EDWARDS<span>Infiltrate &amp; Expose (Beta Version)</span></div>
-      <div class="tool-desc"><b>Facebook intelligence platform for target profiling, network mapping, sentiment analysis
-          and professional PDF reports — all running locally.</b></div>
-      <div class="caps-row">
-        <div class="cap cap-v">Target Profiling</div>
-        <div class="cap cap-r">AI Comment Intelligence</div>
-        <div class="cap cap-g">Network Mapping</div>
-        <div class="cap cap-a">Country Detection</div>
-        <div class="cap cap-c">Face Clustering</div>
-        <div class="cap cap-v">Tier Scoring</div>
-        <div class="cap cap-r">PDF Reports</div>
-        <div class="cap cap-g">100% Local</div>
-      </div>
-      <div class="tool-quote"><b>"The truth is never buried deep enough to escape the right set of eyes."</b></div>
-    </div>
-    <div class="logo-block">
-      <img src="{{ url_for('serve_logo') }}" alt="BIRDY-EDWARDS" class="logo-img" onerror="this.style.display='none'">
-    </div>
-  </div>
-
-  <!-- ══ BOTTOM SECTION ══ -->
-  <div class="bottom-section">
-
-    <!-- SYSTEM STATUS -->
-    <div class="sys-bar">
-      <div class="sys-item {{ 'sys-ok' if system.ollama_ok else 'sys-err' }}">
-        <span class="sys-dot"></span>
-        <span>AI Engine {{ 'Online' if system.ollama_ok else 'Offline' }}</span>
-      </div>
-      <div class="sys-item {{ 'sys-ok' if system.model_pulled else 'sys-warn' }}">
-        <span class="sys-dot"></span>
-        <span>{{ system.model }} {{ '✓' if system.model_pulled else '— Not Pulled' }} · {{ system.ram }}GB RAM</span>
-      </div>
-      <div class="sys-item {{ 'sys-ok' if system.cookies_ok else 'sys-err' }}">
-        <span class="sys-dot"></span>
-        <span>Session {{ 'Active' if system.cookies_ok else 'Missing' }}</span>
-      </div>
-      <div class="sys-item sys-info">
-        <span class="sys-dot"></span>
-        <span>{{ system.ram }} GB RAM</span>
-      </div>
-    </div>
-
-    {% if not system.ollama_ok %}
-    <div class="sys-alert sys-alert-err">AI Engine offline — run <code>ollama serve</code> before starting an
-      investigation.</div>
-    {% endif %}
-    {% if not system.cookies_ok %}
-    <div class="sys-alert sys-alert-warn">Session missing — <a href="{{ url_for('refresh_cookies') }}"
-        style="color:#fbbf24;font-weight:700;">Refresh Cookies →</a></div>
-    {% endif %}
-
-    <hr class="h-divider">
-
-    <!-- START NEW INVESTIGATION -->
-    <div class="sec-label">Start New Investigation</div>
-    <div class="mode-cards">
-      <a href="{{ url_for('scan_new') }}" class="mode-card mode-auto">
-        <div class="mode-icon-wrap">
-          <svg viewBox="0 0 48 48" fill="none" width="28" height="28">
-            <circle cx="24" cy="16" r="8" stroke="#a78bfa" stroke-width="2" />
-            <path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="#a78bfa" stroke-width="2"
-              stroke-linecap="round" />
-            <circle cx="36" cy="12" r="5" fill="#f43f5e" opacity="0.85" />
-            <path d="M34 12l1.5 1.5L38 10" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </div>
-        <div class="mode-title">Automated Profile</div>
-        <div class="mode-desc">Full investigation on a single Facebook profile. Collect posts, photos and reels, analyze
-          all interactions with AI, map network connections and generate a complete intelligence report with face
-          detection.</div>
-        <div class="mode-tags">
-          <span class="mtag mtag-v">Light / Medium / Deep</span>
-          <span class="mtag mtag-r">Full PDF Report</span>
-          <span class="mtag mtag-g">Face Intelligence</span>
-        </div>
-        <div class="mode-cta">Start Investigation <span class="mode-cta-arrow">→</span></div>
-      </a>
-      <a href="{{ url_for('batch_new') }}" class="mode-card mode-batch">
-        <div class="mode-icon-wrap">
-          <svg viewBox="0 0 48 48" fill="none" width="28" height="28">
-            <rect x="8" y="10" width="32" height="8" rx="3" stroke="#f59e0b" stroke-width="2" />
-            <rect x="8" y="22" width="32" height="8" rx="3" stroke="#f59e0b" stroke-width="2" opacity="0.7" />
-            <rect x="8" y="34" width="20" height="6" rx="3" stroke="#f59e0b" stroke-width="2" opacity="0.5" />
-            <circle cx="40" cy="37" r="5" fill="#f59e0b" opacity="0.9" />
-            <path d="M38 37l1.5 1.5L42 35" stroke="#fff" stroke-width="1.2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </div>
-        <div class="mode-title">Manual Batch URLs</div>
-        <div class="mode-desc">Investigate a specific set of Facebook posts, photos or reels. Paste up to 15 URLs and
-          analyze their commentor networks, sentiment patterns, geographic distribution and generate a PDF report.</div>
-        <div class="mode-tags">
-          <span class="mtag mtag-a">Up to 15 URLs</span>
-          <span class="mtag mtag-r">Photo / Reel / Post</span>
-          <span class="mtag mtag-g">PDF Report</span>
-        </div>
-        <div class="mode-cta">Start Batch Analysis <span class="mode-cta-arrow">→</span></div>
-      </a>
-    </div>
-
-    <!-- PAST INVESTIGATIONS -->
-    {% if profiles or batches %}
-    <div class="sec-label">Past Investigations</div>
-    <div class="recent-grid">
-      {% for p in profiles %}
-      <div class="recent-card recent-auto">
-        <button class="rc-del" onclick="deleteProfile({{ p.id }}, this)" title="Delete">✕</button>
-        <a href="{{ url_for('dashboard_profile', profile_id=p.id) }}"
-          style="text-decoration:none;display:flex;flex-direction:column;flex:1;">
-          <div class="rc-bar"></div>
-          <div class="rc-inner">
-            <div class="rc-icon">👤</div>
-            <div class="rc-body">
-              <div class="rc-type">Profile Investigation</div>
-              <div class="rc-name">{{ p.owner_name or p.profile_url }}</div>
-              <div class="rc-meta">{{ p.scraped_at[:10] if p.scraped_at else '—' }}</div>
-            </div>
-            <div class="rc-arr">→</div>
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-      {% for b in batches %}
-      <div class="recent-card recent-batch">
-        <button class="rc-del" onclick="deleteBatch('{{ b.batch_id }}', this)" title="Delete">✕</button>
-        <a href="{{ url_for('dashboard_batch', batch_id=b.batch_id) }}"
-          style="text-decoration:none;display:flex;flex-direction:column;flex:1;">
-          <div class="rc-bar"></div>
-          <div class="rc-inner">
-            <div class="rc-icon">🔗</div>
-            <div class="rc-body">
-              <div class="rc-type">Batch Analysis</div>
-              <div class="rc-name">{{ b.label or b.batch_id }}</div>
-              <div class="rc-meta">{{ b.created_at[:10] if b.created_at else '—' }}</div>
-            </div>
-            <div class="rc-arr">→</div>
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    <hr class="h-divider">
-
-    <!-- ══ AI MODEL SELECTOR ══ -->
-    <div class="sec-label">AI Model</div>
-    <div class="model-panel">
-
-      <!-- Header -->
-      <div class="mp-header">
-        <div class="mp-title-group">
-          <div class="mp-icon">🤖</div>
-          <div>
-            <div class="mp-title">Intelligence Engine</div>
-            <div class="mp-sub">SELECT MODEL BASED ON AVAILABLE RAM</div>
-          </div>
-        </div>
-        <div class="mp-active-badge">
-          <span class="mp-active-dot"></span>
-          <span class="mp-active-model" id="mp-active-name">{{ system.model }}</span>
-        </div>
-      </div>
-
-      <!-- RAM Tier Tabs -->
-      <div class="mp-tiers">
-        {% set tier_keys = available_models.keys()|list %}
-        {% for group_name in tier_keys %}
-        <div class="mp-tier {% if loop.index0 == 0 %}mt-active{% endif %}"
-          onclick="mpSwitchTier({{ loop.index0 }}, this)">
-          {% if '8GB' in group_name %}
-          <span class="mp-tier-ram">8 GB</span>
-          <span class="mp-tier-desc">3B – 4B MODELS (SLM)</span>
-          {% elif '16GB' in group_name %}
-          <span class="mp-tier-ram">16 GB</span>
-          <span class="mp-tier-desc">7B – 13B MODELS (LLM)</span>
-          {% else %}
-          <span class="mp-tier-ram">32 GB</span>
-          <span class="mp-tier-desc">30B+ MODELS (LLM)</span>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- Model Grids -->
-      {% for group_name, models in available_models.items() %}
-      <div class="mp-grid" id="mp-grid-{{ loop.index0 }}" style="{{ '' if loop.index0 == 0 else 'display:none' }}">
-        {% for model_id, model_label in models %}
-        {% set parts = model_label.split('—') %}
-        {% set mname = parts[0].strip() %}
-        {% set mdesc = parts[1].strip() if parts|length > 1 else '' %}
-        {% set is_current = model_id == system.model %}
-        {% set is_pulled = model_id == system.model and system.model_pulled %}
-        {% set is_rec = 'recommended' in model_label.lower() %}
-        {% set is_vis = 'vision' in model_label.lower() or 'vl' in model_id.lower() %}
-        {% set is_fast = 'fast' in model_label.lower() or '1b' in model_id or '2b' in model_id %}
-        {% set is_heavy = 'heavy' in model_label.lower() or '72b' in model_id %}
-        <div class="mp-model {{ 'mp-current' if is_pulled else '' }}" data-model="{{ model_id }}"
-          onclick="mpSelect(this, '{{ model_id }}')">
-          {% if is_pulled %}<span class="mp-current-tag">ACTIVE</span>{% endif %}
-          {% if is_current and not is_pulled %}<span class="mp-current-tag"
-            style="color:#f59e0b;background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.25);">NOT
-            PULLED</span>{% endif %}
-          <div class="mp-model-name">{{ mname }}</div>
-          <div class="mp-model-id">{{ model_id }}</div>
-          {% if is_rec %}
-          <span class="mp-model-tag mpt-rec">★ Recommended</span>
-          {% elif is_heavy %}
-          <span class="mp-model-tag mpt-heavy">⚠ Heavy</span>
-          {% elif is_vis %}
-          <span class="mp-model-tag mpt-vis">👁 Vision</span>
-          {% elif is_fast %}
-          <span class="mp-model-tag mpt-fast">⚡ Fast</span>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-      {% endfor %}
-
-      <!-- Actions -->
-      <div class="mp-actions">
-        <button class="mp-apply-btn" id="mp-apply-btn" onclick="mpApply()" disabled>
-          ⚡ Apply &amp; Pull
-        </button>
-        <div class="mp-status mps-idle" id="mp-status">
-          Select a model to switch
-        </div>
-      </div>
-
-      <!-- Progress -->
-      <div class="mp-progress" id="mp-progress">
-        <div class="mpp-top">
-          <span class="mpp-msg" id="mpp-msg">Starting...</span>
-          <span class="mpp-pct" id="mpp-pct">0%</span>
-        </div>
-        <div class="mpp-track">
-          <div class="mpp-fill" id="mpp-fill"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SYSTEM TOOLS -->
-    <div class="sec-label">System Tools</div>
-    <div class="tools-row" style="margin-bottom:28px;flex-wrap:wrap;">
-
-      <!-- Import Cookies — RECOMMENDED -->
-      <a href="{{ url_for('import_cookies') }}" class="tool-card"
-        style="border-color:#1a1040;position:relative;overflow:hidden;">
-        <div
-          style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#10b981,#38bdf8);">
-        </div>
-        <div class="tool-icon">🍪</div>
-        <div class="tool-body">
-          <div class="tool-title2" style="display:flex;align-items:center;gap:8px;">
-            Import Session Cookies
-            <span style="font-size:8px;font-weight:800;padding:2px 7px;border-radius:10px;
-                         background:rgba(16,185,129,0.1);color:#10b981;
-                         border:1px solid rgba(16,185,129,0.25);letter-spacing:0.08em;">
-              ★ RECOMMENDED
-            </span>
-          </div>
-          <div class="tool-desc2">
-            Use Cookie-Editor browser extension to import cookies.
-            Works on <strong>Windows, Mac and Linux</strong> — no Selenium required.
-          </div>
-        </div>
-        <div class="tool-arr">→</div>
-      </a>
-
-      <!-- Refresh Cookies — Classic method -->
-      <a href="{{ url_for('refresh_cookies') }}" class="tool-card">
-        <div class="tool-icon">🔄</div>
-        <div class="tool-body">
-          <div class="tool-title2">Refresh Session Cookies</div>
-          <div class="tool-desc2">
-            Classic Selenium-based refresh — opens a browser window for manual login.
-            Linux only.
-          </div>
-        </div>
-        <div class="tool-arr">→</div>
-      </a>
-
-      <!-- DB Cleaner -->
-      <a href="{{ url_for('db_cleaner') }}" class="tool-card tool-card-danger">
-        <div class="tool-icon">🗑️</div>
-        <div class="tool-body">
-          <div class="tool-title2">Database Cleaner</div>
-          <div class="tool-desc2">Permanently delete investigation data, face images and reset databases.</div>
-        </div>
-        <div class="tool-arr">→</div>
-      </a>
-
-    </div>
-
-
-    <!-- FOOTER -->
-    <div class="home-foot">
-      <span>BIRDY-EDWARDS &nbsp;·&nbsp; Infiltrate &amp; Expose &nbsp;·&nbsp; Developed for <strong>Investigators</strong></span>
-      <span>{{ system.model }} &nbsp;·&nbsp; {{ system.ram }} GB RAM</span>
-    </div>
-
-  </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  const MP_CURRENT = '{{ system.model }}';
-  let mpSelected = null;
-
-  // Auto-switch to correct tier tab on load
-  (function () {
-    const allModels = [
-      {% for group_name, models in available_models.items() %}
-  [{% for model_id, _ in models %}'{{ model_id }}'{% if not loop.last %}, {% endif %} {% endfor %}],
-  {% endfor %}
-  ];
-  allModels.forEach((tier, i) => {
-    if (tier.includes(MP_CURRENT)) {
-      document.querySelectorAll('.mp-tier').forEach(t => t.classList.remove('mt-active'));
-      document.querySelectorAll('.mp-tier')[i].classList.add('mt-active');
-      document.querySelectorAll('.mp-grid').forEach((g, j) => {
-        g.style.display = j === i ? 'grid' : 'none';
-      });
-    }
-  });
-}) ();
-
-  function mpSwitchTier(idx, el) {
-    document.querySelectorAll('.mp-tier').forEach(t => t.classList.remove('mt-active'));
-    el.classList.add('mt-active');
-    document.querySelectorAll('.mp-grid').forEach((g, i) => {
-      g.style.display = i === idx ? 'grid' : 'none';
-    });
-  }
-
-  function mpSelect(el, modelId) {
-    document.querySelectorAll('.mp-model').forEach(m => m.classList.remove('mp-selected'));
-    el.classList.add('mp-selected');
-    mpSelected = modelId;
-
-    const btn = document.getElementById('mp-apply-btn');
-    const status = document.getElementById('mp-status');
-    const isPulled = el.classList.contains('mp-current');
-
-    if (modelId === MP_CURRENT && isPulled) {
-      status.className = 'mp-status mps-ok';
-      status.textContent = '✓ Already active and ready';
-      btn.disabled = true;
-    } else if (modelId === MP_CURRENT && !isPulled) {
-      status.className = 'mp-status mps-ready';
-      status.textContent = '→ Active but not pulled — click to pull';
-      btn.disabled = false;
-    } else {
-      status.className = 'mp-status mps-ready';
-      status.textContent = '→ Ready to apply: ' + modelId;
-      btn.disabled = false;
-    }
-  }
-
-  function mpApply() {
-  if (!mpSelected) return;
-  // Allow pull if model is current but not yet pulled
-  const isPulled = document.querySelector('.mp-model.mp-current') !== null;
-  if (mpSelected === MP_CURRENT && isPulled) return;
-
-    const btn = document.getElementById('mp-apply-btn');
-    const status = document.getElementById('mp-status');
-    const progress = document.getElementById('mp-progress');
-    const fill = document.getElementById('mpp-fill');
-    const msg = document.getElementById('mpp-msg');
-    const pct = document.getElementById('mpp-pct');
-    const active = document.getElementById('mp-active-name');
-
-    btn.disabled = true;
-    status.className = 'mp-status mps-pulling';
-    status.textContent = '⏳ Applying ' + mpSelected + '...';
-
-    fetch('/api/change-model', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: mpSelected })
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (!d.ok) {
-          status.className = 'mp-status mps-err';
-          status.textContent = '❌ ' + (d.error || 'Failed');
-          btn.disabled = false;
-          return;
+<!DOCTYPE html>
+<html class="dark scroll-smooth" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Birdy-Edwards-Wraith | Facebook SOCMINT Intelligence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Noto+Sans+Arabic:wght@100..900&family=Noto+Sans+Bengali:wght@100..900&family=Noto+Sans+Devanagari:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#263143",
+                        "surface-container": "#1f1f24",
+                        "surface": "#131318",
+                        "on-secondary-fixed-variant": "#004396",
+                        "primary-container": "#4d8eff",
+                        "inverse-on-surface": "#303035",
+                        "surface-dim": "#131318",
+                        "surface-container-high": "#2a292f",
+                        "secondary": "#DEC2FF",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#001a42",
+                        "tertiary-fixed": "#d8e3fb",
+                        "on-tertiary-container": "#1f2a3c",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#424754",
+                        "primary": "#DEC2FF",
+                        "on-primary-container": "#00285d",
+                        "tertiary-fixed-dim": "#bcc7de",
+                        "outline": "#8c909f",
+                        "secondary-fixed-dim": "#DEC2FF",
+                        "surface-tint": "#DEC2FF",
+                        "surface-container-low": "#1b1b20",
+                        "secondary-container": "#4f8eff",
+                        "on-secondary": "#002e6a",
+                        "on-tertiary-fixed-variant": "#3c475a",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-background": "#e4e1e8",
+                        "error-container": "#93000a",
+                        "primary-fixed": "#d8e2ff",
+                        "inverse-surface": "#e4e1e8",
+                        "on-tertiary-fixed": "#111c2d",
+                        "surface-container-highest": "#35343a",
+                        "on-primary-fixed-variant": "#004395",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-secondary-container": "#00275e",
+                        "surface-container-lowest": "#0e0e13",
+                        "surface-bright": "#39393e",
+                        "tertiary": "#bcc7de",
+                        "surface-variant": "#35343a",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e4e1e8",
+                        "inverse-primary": "#005ac2",
+                        "on-primary-fixed": "#001a42",
+                        "tertiary-container": "#8691a7",
+                        "background": "#131318",
+                        "on-primary": "#002e6a",
+                        "primary-fixed-dim": "#DEC2FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "container-max": "1440px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "sans": ["Google Sans", "ui-sans-serif", "system-ui"],
+                        "body-md": ["Google Sans", "sans-serif"],
+                        "label-md": ["Google Sans", "sans-serif"],
+                        "headline-md": ["Google Sans", "sans-serif"],
+                        "display-lg": ["Google Sans", "sans-serif"],
+                        "body-lg": ["Google Sans", "sans-serif"],
+                        "headline-lg-mobile": ["Google Sans", "sans-serif"],
+                        "headline-lg": ["Google Sans", "sans-serif"],
+                        "code-sm": ["monospace"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "800" }],
+                        "headline-lg": ["40px", { "lineHeight": "48px", "fontWeight": "800" }],
+                        "code-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            font-family: 'Google Sans', sans-serif;
+            transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 300ms;
         }
 
-        progress.style.display = 'block';
-        fill.style.width = '2%';
-        msg.textContent = '📥 Starting download...';
-        pct.textContent = '2%';
+        /* keep icon font separate */
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined' !important;
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            display: inline-block;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: nowrap;
+        }
 
-        const es = new EventSource('/api/pull-model?model=' + encodeURIComponent(mpSelected));
+        body {
+            background-color: #131318;
+            background-image:
+                linear-gradient(rgba(214, 186, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(214, 186, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #e4e1e9;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
 
-        es.onmessage = function (e) {
-          try {
-            const data = JSON.parse(e.data);
-            if (data.pct !== undefined) { fill.style.width = data.pct + '%'; pct.textContent = data.pct + '%'; }
-            if (data.msg) msg.textContent = data.msg;
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background: #131318;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-            if (data.status === 'done') {
-              es.close();
-              status.className = 'mp-status mps-ok';
-              status.textContent = '✓ ' + mpSelected + ' is now active';
-              active.textContent = mpSelected;
-              fill.style.width = '100%';
-              document.querySelectorAll('.mp-model').forEach(m => {
-                m.classList.remove('mp-current');
-                const tag = m.querySelector('.mp-current-tag');
-                if (tag) tag.remove();
-                if (m.dataset.model === mpSelected) {
-                  m.classList.add('mp-current');
-                  const t = document.createElement('span');
-                  t.className = 'mp-current-tag'; t.textContent = 'ACTIVE';
-                  m.appendChild(t);
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: rgba(214, 186, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute;
+            height: 100%;
+            background: #d6baff;
+            width: 0;
+            transition: width 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        #bg-effect {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        #data-stream-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            background: rgba(31, 31, 36, 0.6);
+            border: 1px solid rgba(213, 197, 168, 0.15);
+        }
+
+        .capability-card {
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .capability-card:hover {
+            box-shadow: 0 0 40px rgba(157, 92, 255, 0.2);
+            border-color: rgba(214, 186, 255, 0.4);
+        }
+
+        .intel-card-bracket::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 16px;
+            height: 16px;
+            border-top: 2px solid #e9c349;
+            border-right: 2px solid #e9c349;
+            opacity: 0.6;
+        }
+
+        .animate-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .animate-reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scan-line-reveal {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-line-reveal::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(214, 186, 255, 0.2), transparent);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .scan-line-reveal.active::before {
+            animation: scan-pass 1.5s ease-in-out forwards;
+        }
+
+        @keyframes scan-pass {
+            0% {
+                top: -100%;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        .glitch-text {
+            animation: text-glitch 4s infinite;
+        }
+
+        @keyframes text-glitch {
+
+            0%,
+            90%,
+            100% {
+                transform: translate(0);
+                text-shadow: none;
+            }
+
+            92% {
+                transform: translate(-1px, 1px);
+                text-shadow: 2px 0 #7832d9, -2px 0 #e9c349;
+            }
+
+            94% {
+                transform: translate(1px, -1px);
+                text-shadow: -2px 0 #7832d9, 2px 0 #e9c349;
+            }
+
+            96% {
+                transform: translate(-1px, -1px);
+                text-shadow: 2px 0 #7832d9, -2px 0 #e9c349;
+            }
+        }
+
+        .magnetic-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+
+            .animate-reveal {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-body-md text-body-md">
+    <!-- Preloader -->
+    <div id="preloader" style="opacity: 0; display: none;">
+        <div class="flex flex-col items-center gap-6">
+            <div class="font-code-sm text-primary uppercase tracking-[0.3em] font-bold glitch-text">Initializing Wraith
+                Protocol</div>
+            <div class="loader-bar">
+                <div class="loader-progress" id="loader-progress" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <canvas id="bg-effect" width="1280" height="6917"></canvas>
+    <header class="bg-background/90 backdrop-blur-2xl sticky top-0 z-50 border-b border-outline-variant/20">
+        <div class="flex items-center justify-between px-margin-desktop py-5 max-w-container-max mx-auto">
+            <div class="flex items-center gap-4 group cursor-pointer">
+                <img alt="SOCMINT Main Logo"
+                    class="h-10 w-auto transition-transform duration-500 group-hover:rotate-180"
+                    src="../icons/logo.jpeg">
+                <span class="font-headline-md text-headline-md font-bold tracking-tighter text-on-surface">Birdy-Edwards
+                    Wraith</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-10">
+                <a class="text-secondary font-bold border-b-2 border-secondary pb-1 font-label-md text-label-md transition-all hover:tracking-widest"
+                    href="#capabilities">Capabilities</a>
+                <a class="text-on-surface-variant hover:text-primary transition-all font-label-md text-label-md font-medium hover:-translate-y-0.5"
+                    href="#audience">Audience</a>
+                <a class="text-on-surface-variant hover:text-primary transition-all font-label-md text-label-md font-medium hover:-translate-y-0.5"
+                    href="#use-cases">Use Cases</a>
+                <a class="text-on-surface-variant hover:text-primary transition-all font-label-md text-label-md font-medium hover:-translate-y-0.5"
+                    href="#about">About</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <button
+                    class="px-8 py-2.5 bg-primary text-on-primary font-bold text-label-md rounded-lg hover:shadow-[0_0_20px_rgba(157,92,255,0.4)] hover:scale-105 active:scale-95 transition-all">
+                    Contact Us
+                </button>
+            </div>
+        </div>
+    </header>
+    <main>
+        <!-- Hero Section -->
+        <section class="relative min-h-[95vh] flex items-center overflow-hidden px-margin-desktop py-24">
+            <canvas id="data-stream-canvas" width="1280" height="972"></canvas>
+            <div class="max-w-container-max mx-auto grid lg:grid-cols-2 gap-20 items-center w-full relative z-10">
+                <div class="hero-content">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-label-md text-sm mb-8 opacity-0 translate-y-4 transition-all duration-700 delay-100"
+                        id="hero-badge" style="opacity: 1; transform: translateY(0px) scale(1);">
+                        <span class="relative flex h-2 w-2">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                        </span>
+                        FACEBOOK SOCMINT INTELLIGENCE TOOL
+                    </div>
+                    <h1 class="font-display-lg text-display-lg mb-8 leading-[1.1] tracking-tight opacity-0 translate-y-4 transition-all duration-700 delay-300"
+                        id="hero-title" style="opacity: 1; transform: translateY(0px) scale(1);">
+                        <span class="text-primary block">BIRDY-EDWARDS</span>
+                        <span class="text-secondary block">WRAITH </span>
+                    </h1>
+                    <p class="text-body-lg font-body-lg text-on-surface-variant max-w-xl mb-12 leading-relaxed min-h-[84px]"
+                        id="hero-typing-subtitle">
+                        <!-- Typing effect will populate this -->
+                    </p>
+                    <div class="flex flex-wrap gap-6 opacity-0 translate-y-4 transition-all duration-700 delay-500"
+                        id="hero-actions" style="opacity: 1; transform: translateY(0px) scale(1);">
+                        <a href="/start">
+                            <button
+                                class="magnetic-btn bg-primary text-on-primary px-10 py-5 font-bold text-label-md rounded-xl flex items-center gap-3 hover:shadow-[0_0_25px_rgba(157,92,255,0.5)] transition-all"
+                                style="transform: translate(0px, 0px);">
+                                <span class="material-symbols-outlined">search</span>
+                                Start Investigation
+                            </button>
+                        </a>
+                        <!--<button
+                            class="border border-outline/50 px-10 py-5 font-bold text-label-md rounded-xl text-on-surface hover:bg-surface-variant/50 transition-all hover:scale-105">
+                            Operational Specs
+                        </button>-->
+                    </div>
+                </div>
+                <div class="relative hidden lg:block opacity-0 scale-95 transition-all duration-1000 delay-700"
+                    id="hero-image-container" style="opacity: 1; transform: translateY(0px) scale(1);">
+                    <div class="relative z-0 transition-transform duration-500 ease-out will-change-transform"
+                        id="hero-image-parallax"
+                        style="transform: rotateY(6.64deg) rotateX(-68.53deg) translateY(34.265px);">
+                        <img alt="Wraith Tactical Overview"
+                            class="rounded-3xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] border border-primary/20 w-full h-auto object-cover"
+                            src="../icons/wraith.png">
+                        <div
+                            class="absolute inset-0 rounded-3xl bg-gradient-to-t from-background via-transparent to-transparent opacity-60">
+                        </div>
+                        <div
+                            class="absolute -top-6 -left-6 w-32 h-32 border-t-4 border-l-4 border-secondary/40 rounded-tl-2xl">
+                        </div>
+                        <div
+                            class="absolute -bottom-6 -right-6 w-32 h-32 border-b-4 border-right-4 border-primary/40 rounded-br-2xl">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Definition Section -->
+        <section class="py-24 px-margin-desktop bg-surface-container-low/30 scan-line-reveal active" id="about">
+            <div class="max-w-3xl mx-auto text-center animate-reveal active">
+                <div
+                    class="material-symbols-outlined text-secondary text-5xl mb-6 hover:scale-110 transition-transform cursor-help">
+                    visibility_off</div>
+                <h2 class="font-headline-lg text-headline-lg text-on-surface mb-8">What is a Wraith?</h2>
+                <p class="text-xl font-body-lg text-on-surface-variant leading-relaxed italic">
+                    "Wraith is a stealth SOCMINT platform engineered to silently collect, correlate, and analyze social intelligence—revealing hidden connections while remaining invisible."
+                </p>
+            </div>
+        </section>
+        <!-- Core Capabilities -->
+        <section class="py-32 px-margin-desktop" id="capabilities">
+            <div class="max-w-container-max mx-auto">
+                <div class="mb-20 animate-reveal active">
+                    <h2 class="font-headline-lg text-headline-lg text-secondary mb-4">Specific Capabilities</h2>
+                    <p class="text-on-surface-variant font-body-md text-body-lg max-w-2xl">Operational modules for
+                        high-fidelity Facebook data synthesis and threat assessment.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Capability Cards -->
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 100ms;">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">smart_toy</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Automated Data Gathering</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">Systematic autonomous extraction from
+                            target Facebook entities and profiles.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            ENG_CORE: V2.1</div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 200ms;">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">forum</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Per-Comment Analysis</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">Deep-level sentiment and linguistic
+                            auditing of individual user interactions.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            STATUS: ANALYZING</div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 300ms; transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1);">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">analytics</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Actor Scoring</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">Proprietary threat-matrix scoring for
+                            identified subjects and influence nodes.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            PRECISION: 99.8%</div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 400ms;">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">public</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">LLM Country ID</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">AI-powered origin detection based on
+                            dialect and cultural markers.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            LLM_CORE: ACTIVE</div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 500ms;">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">face</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">HOG Face Detection</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">High-fidelity Histogram of Oriented
+                            Gradients for biometric identification.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            MATCH: 0.04ms</div>
+                    </div>
+                    <div class="glass-panel p-10 rounded-2xl intel-card-bracket capability-card relative overflow-hidden animate-reveal active"
+                        style="transition-delay: 600ms;">
+                        <span
+                            class="material-symbols-outlined text-primary mb-6 text-4xl block group-hover:scale-110">hub</span>
+                        <h3 class="font-headline-md text-headline-md text-on-surface mb-4">Network Graphs</h3>
+                        <p class="text-on-surface-variant text-body-md mb-8">Visualizing co-interactor matrices and
+                            complex relationship structures.</p>
+                        <div
+                            class="font-code-sm text-code-sm text-secondary bg-black/40 px-3 py-1.5 rounded inline-block">
+                            NODES: MAP_SYNC</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Target Audience -->
+        <section class="py-32 px-margin-desktop bg-surface-container-lowest/50 scan-line-reveal active" id="audience">
+            <div class="max-w-container-max mx-auto">
+                <div class="mb-20 text-center animate-reveal active">
+                    <h2 class="font-headline-lg text-headline-lg text-primary mb-4">Target Audience</h2>
+                    <p class="text-on-surface-variant font-body-md text-body-lg">Restricted access protocol for
+                        authorized high-clearance intelligence units.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div
+                        class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">search</span> OSINT Investigators
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Profile attribution, network mapping, influence
+                            operation detection.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active"
+                        style="transition-delay: 100ms;">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">shield</span> Threat Intelligence Analysts
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Coordinated inauthentic behavior, actor scoring,
+                            country-of-origin profiling.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active"
+                        style="transition-delay: 200ms;">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">newspaper</span> Journalists &amp; Fact-Checkers
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Tracing disinformation campaign actors across
+                            posts.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active"
+                        style="transition-delay: 300ms;">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">security</span> Security Researchers
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Studying Facebook manipulation tactics at scale.
+                        </p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active"
+                        style="transition-delay: 400ms;">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">groups</span> Counter-Terrorism Analysts
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Mapping supporter networks around extremist
+                            content.</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-2xl hover:bg-primary/5 hover:-translate-y-2 transition-all animate-reveal active"
+                        style="transition-delay: 500ms;">
+                        <h4 class="font-bold text-secondary mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined">analytics</span> Political Researchers
+                        </h4>
+                        <p class="text-on-surface-variant text-body-md">Audience analysis, sentiment tracking,
+                            geopolitical actor identification.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Use Cases -->
+        <section class="py-32 px-margin-desktop" id="use-cases">
+            <div class="max-w-container-max mx-auto space-y-40">
+                <!-- Case 1 -->
+                <div class="flex flex-col md:flex-row gap-20 items-center animate-reveal scan-line-reveal active">
+                    <div class="w-full md:w-1/2 space-y-8">
+                        <div
+                            class="inline-block px-5 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold text-label-md tracking-widest">
+                            USE CASE 1</div>
+                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Influence Operation Detection</h2>
+                        <p class="text-body-lg text-on-surface-variant leading-relaxed">Identification of cross-post
+                            interactors, country distribution of support networks, and stance distribution analysis.</p>
+                        <div
+                            class="bg-primary/5 p-8 rounded-2xl border-l-4 border-primary hover:bg-primary/10 transition-colors">
+                            <div class="font-bold text-label-md text-primary mb-3 tracking-widest uppercase">OPERATIONAL
+                                FOCUS</div>
+                            <p class="font-code-sm text-on-surface/80 italic">"Commentors appearing across 5+ posts
+                                (cross-post interactors)
+                                Country distribution of the support network (e.g., 40% from one country despite the page
+                                claiming to be local)
+                                Stance distribution: 90% support_post from accounts with minimal posting history
+                                Co-commentor pairs who always appear together across multiple posts"</p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 group">
+                        <div
+                            class="relative rounded-3xl overflow-hidden shadow-2xl border border-outline/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                            <img alt="Influence Operation Analysis"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmvI5RIpFuARHBPhiFm26H70Bc1mdde2aYLeWYkZF5BpjA0X-xALGcjivb4aLyJJc_66B7k05X5udrEmYbVAZwwqnyCiRonLbyf31l5K1l2U2OUiC3s4vW00eEUMeI_SkZtI1kybYm6F2soVu2C5PfwnnruJgSLdvYa0pCuZJxBI5oHAMODZIqG7rtLbXonBji1BIdwkO_pZT9m2ZA_5Pi5EWZubaux8JtrF4aD6T6dnD5Ftc6I80Gzpu5EEY6daRHI-P6LmfBQI0">
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 2 -->
+                <div
+                    class="flex flex-col md:flex-row-reverse gap-20 items-center animate-reveal scan-line-reveal active">
+                    <div class="w-full md:w-1/2 space-y-8">
+                        <div
+                            class="inline-block px-5 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold text-label-md tracking-widest">
+                            USE CASE 2</div>
+                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Threat Actor Network Mapping</h2>
+                        <p class="text-body-lg text-on-surface-variant leading-relaxed">Mapping commentors by score,
+                            secondary profile scraping, and face clustering for identity verification.</p>
+                        <div
+                            class="bg-secondary/5 p-8 rounded-2xl border-l-4 border-secondary hover:bg-secondary/10 transition-colors">
+                            <div class="font-bold text-label-md text-secondary mb-3 tracking-widest uppercase">INTEL
+                                CAPABILITY</div>
+                            <p class="font-code-sm text-on-surface/80 italic">"All commentors by score, identifying
+                                Critical Voice tier actors
+                                Secondary profile scraping for the top 14 opponents: location, employer, education
+                                Face clustering to identify repeated appearance of specific individuals across event
+                                photos
+                                Country origin of hostile commentors by LLM analysis of their profile data"</p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 group">
+                        <div
+                            class="relative rounded-3xl overflow-hidden shadow-2xl border border-outline/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                            <img alt="Network Mapping"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110"
+                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7R4iTJ-rsi9hk6LZtF_yan-xn3w_vygv1M0MV781STNOaWE3Ysfne8mz-Pi6zToIVfMcXHS3XeGwWHrUYG_iHp9WA0qOtVWwdNl809MVcO1hgq7jGYIgxf2P6wSFzZb-bhmpW-662xK5sZg3IkVyT1MldASEXogFZiRvMCE677hxoYFSpM9z_5L5KbEWvIKDduEWaFOPtmhixEbdZ69MPBnuCI2ztMKeLi2jRIlBV-UazvH-oqlKb7vElJEcnCxZKWHRr1i7pHts">
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 3 -->
+                <div class="flex flex-col md:flex-row gap-20 items-center animate-reveal scan-line-reveal active">
+                    <div class="w-full md:w-1/2 space-y-8">
+                        <div
+                            class="inline-block px-5 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold text-label-md tracking-widest">
+                            USE CASE 3</div>
+                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Disinformation Campaign
+                            Attribution</h2>
+                        <p class="text-body-lg text-on-surface-variant leading-relaxed">Deconstruct narrative origins
+                            with language distribution analysis, top supporting country identification, and automated
+                            named entity extraction.</p>
+                        <div
+                            class="bg-primary/5 p-8 rounded-2xl border-l-4 border-primary hover:bg-primary/10 transition-colors">
+                            <div class="font-bold text-label-md text-primary mb-3 tracking-widest uppercase">REPORTING
+                                UNIT</div>
+                            <p class="font-code-sm text-on-surface/80 italic">"Language distribution of commentors
+                                (e.g., 60% Urdu despite English content)
+                                Top supporting country (from commentor_country LLM analysis)
+                                Named entity extraction from reel captions — organizations, people, places
+                                PDF threat report with all findings, suitable for publication or legal documentation"
+                            </p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 group">
+                        <div
+                            class="relative rounded-3xl overflow-hidden shadow-2xl border border-outline/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                            <img alt="Disinformation Attribution"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110"
+                                src="../icons/fake-news.png">
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 4 -->
+                <div
+                    class="flex flex-col md:flex-row-reverse gap-20 items-center animate-reveal scan-line-reveal active">
+                    <div class="w-full md:w-1/2 space-y-8">
+                        <div
+                            class="inline-block px-5 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold text-label-md tracking-widest">
+                            USE CASE 4</div>
+                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Counter-Terrorism Research</h2>
+                        <p class="text-body-lg text-on-surface-variant leading-relaxed">Utilizing image intelligence
+                            flags and stance analysis to identify extremist mobilization. Visualize recruitment paths
+                            via network graph clusters.</p>
+                        <div
+                            class="bg-secondary/5 p-8 rounded-2xl border-l-4 border-secondary hover:bg-secondary/10 transition-colors">
+                            <div class="font-bold text-label-md text-secondary mb-3 tracking-widest uppercase">TEMPORAL
+                                ANALYTICS</div>
+                            <p class="font-code-sm text-on-surface/80 italic">"Image intelligence flags posts containing
+                                weapons or political symbols
+                                Stance analysis identifies who is most actively amplifying content
+                                Network graph shows tight co-commentor clusters suggesting organized amplification
+                                Timeline chart shows spike in comment activity after specific events"</p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 group">
+                        <div
+                            class="relative rounded-3xl overflow-hidden shadow-2xl border border-outline/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                            <img alt="Counter-Terrorism Analysis"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110"
+                                src="../icons/counter-terrorism.png">
+                        </div>
+                    </div>
+                </div>
+                <!-- Case 5 -->
+                <div class="flex flex-col md:flex-row gap-20 items-center animate-reveal scan-line-reveal active">
+                    <div class="w-full md:w-1/2 space-y-8">
+                        <div
+                            class="inline-block px-5 py-1.5 rounded-full bg-secondary/10 border border-secondary/30 text-secondary font-bold text-label-md tracking-widest">
+                            USE CASE 5</div>
+                        <h2 class="font-headline-lg text-headline-lg text-on-surface">Verification of Eyewitness
+                            Evidence</h2>
+                        <p class="text-body-lg text-on-surface-variant leading-relaxed">Validate on-the-ground reports
+                            through face intelligence clustering and identity cross-referencing. Confirm or deny
+                            presence with biometric certainty.</p>
+                        <div
+                            class="bg-primary/5 p-8 rounded-2xl border-l-4 border-primary hover:bg-primary/10 transition-colors">
+                            <div class="font-bold text-label-md text-primary mb-3 tracking-widest uppercase">EVIDENCE</div>
+                            <p class="font-code-sm text-on-surface/80 italic">"A fact-checker needs to verify whether a
+                                person claiming to be at a location actually appears in photos from that location. Face
+                                intelligence clusters all detected faces across photos, enabling the investigator to
+                                confirm or deny presence without manual review of hundreds of images."</p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 group">
+                        <div
+                            class="relative rounded-3xl overflow-hidden shadow-2xl border border-outline/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                            <img alt="Eyewitness Verification"
+                                class="w-full h-[400px] object-cover transition-transform duration-700 group-hover:scale-110"
+                                src="../icons/witness.png">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="bg-surface-container-lowest border-t border-outline/10 w-full py-20 mt-20">
+        <div
+            class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-start gap-12">
+            <div class="space-y-6 max-w-lg animate-reveal active">
+                <div
+                    class="font-headline-md text-headline-md text-primary font-bold tracking-tighter hover:tracking-normal transition-all cursor-default">
+                    Birdy-Edwards-Wraith</div>
+                <p class="text-on-surface-variant font-body-md leading-relaxed">© 2026 Birdy-Edwards-Wraith. Classified
+                    Facebook SOCMINT Intelligence Platform. Operating under silent forensic protocols.</p>
+                <div
+                    class="p-6 bg-error/5 border border-error/20 rounded-xl text-error text-code-sm font-bold uppercase tracking-tight leading-normal hover:bg-error/10 transition-colors">
+                    NOTICE: NOT FOR surveillance of private individuals. Operational use strictly restricted to
+                    authorized government and corporate security entities.
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-x-16 gap-y-6 animate-reveal active">
+                <div class="space-y-4">
+                    <h4 class="text-secondary font-bold text-label-md uppercase tracking-widest mb-6">Legal</h4>
+                    <a class="block text-on-surface-variant hover:text-primary transition-all font-medium hover:translate-x-1"
+                        href="#">Disclaimer</a>
+                    <a class="block text-on-surface-variant hover:text-primary transition-all font-medium hover:translate-x-1"
+                        href="#">Privacy Policy</a>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-secondary font-bold text-label-md uppercase tracking-widest mb-6">Ops</h4>
+                    <a class="block text-on-surface-variant hover:text-primary transition-all font-medium hover:translate-x-1"
+                        href="#">Security</a>
+                    <a class="block text-on-surface-variant hover:text-primary transition-all font-medium hover:translate-x-1"
+                        href="#">Not For Warning</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Digital Boot / Loading Sequence
+        window.addEventListener('load', () => {
+            const progress = document.getElementById('loader-progress');
+            const preloader = document.getElementById('preloader');
+
+            setTimeout(() => {
+                progress.style.width = '100%';
+                setTimeout(() => {
+                    preloader.style.opacity = '0';
+                    setTimeout(() => {
+                        preloader.style.display = 'none';
+                        startHeroSequence();
+                    }, 500);
+                }, 800);
+            }, 300);
+        });
+
+        function startHeroSequence() {
+            if (prefersReducedMotion) {
+                document.getElementById('hero-badge').style.opacity = '1';
+                document.getElementById('hero-title').style.opacity = '1';
+                document.getElementById('hero-actions').style.opacity = '1';
+                document.getElementById('hero-image-container').style.opacity = '1';
+                document.getElementById('hero-typing-subtitle').innerText = "Birdy-Edwards Wraith is a fully offline, Docker-containerized SOCMINT (Social Media Intelligence) platform that turns public Facebook activity into structured threat intelligence. It collects posts, photos, reels, and comments from public profiles or specific post URLs, then runs an AI-powered analysis pipeline locally using Ollama — without a single byte leaving your machine.";
+                return;
+            }
+
+            const elements = ['hero-badge', 'hero-title', 'hero-actions', 'hero-image-container'];
+            elements.forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.opacity = '1';
+                        el.style.transform = 'translateY(0) scale(1)';
+                    }
+                }, 200 * i);
+            });
+
+            const subtitle = "Birdy-Edwards Wraith is a fully offline, Docker-containerized SOCMINT (Social Media Intelligence) platform that turns public Facebook activity into structured threat intelligence. It collects posts, photos, reels, and comments from public profiles or specific post URLs, then runs an AI-powered analysis pipeline locally using Ollama — without a single byte leaving your machine.";
+            const target = document.getElementById('hero-typing-subtitle');
+            let index = 0;
+
+            function type() {
+                if (index < subtitle.length) {
+                    target.innerHTML += subtitle.charAt(index);
+                    index++;
+                    setTimeout(type, 15);
                 }
-              });
-              setTimeout(() => { progress.style.display = 'none'; }, 3500);
             }
-            if (data.status === 'error') {
-              es.close();
-              status.className = 'mp-status mps-err';
-              status.textContent = data.msg || '❌ Pull failed';
-              btn.disabled = false;
+            setTimeout(type, 100);
+        }
+
+        // Data Stream Background Effect
+        const streamCanvas = document.getElementById('data-stream-canvas');
+        const sCtx = streamCanvas.getContext('2d');
+        let streamDots = [];
+
+        function initStream() {
+            streamCanvas.width = streamCanvas.parentElement.offsetWidth;
+            streamCanvas.height = streamCanvas.parentElement.offsetHeight;
+            streamDots = [];
+            for (let i = 0; i < 40; i++) {
+                streamDots.push({
+                    x: Math.random() * streamCanvas.width,
+                    y: Math.random() * streamCanvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: Math.random() * 2 + 0.5,
+                    size: Math.random() * 2 + 1
+                });
             }
-          } catch (e) { }
+        }
+
+        function drawStream() {
+            sCtx.clearRect(0, 0, streamCanvas.width, streamCanvas.height);
+            sCtx.fillStyle = '#d6baff';
+            streamDots.forEach(dot => {
+                sCtx.beginPath();
+                sCtx.arc(dot.x, dot.y, dot.size, 0, Math.PI * 2);
+                sCtx.fill();
+                dot.y += dot.vy;
+                dot.x += dot.vx;
+                if (dot.y > streamCanvas.height) dot.y = -10;
+                if (dot.x > streamCanvas.width) dot.x = 0;
+                if (dot.x < 0) dot.x = streamCanvas.width;
+            });
+            requestAnimationFrame(drawStream);
+        }
+        if (!prefersReducedMotion) {
+            initStream();
+            drawStream();
+            window.addEventListener('resize', initStream);
+        }
+
+        // Floating Background Dots
+        const canvas = document.getElementById('bg-effect');
+        const ctx = canvas.getContext('2d');
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const dots = [];
+        for (let i = 0; i < 60; i++) {
+            dots.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                speed: 0.3 + Math.random() * 0.7,
+                opacity: 0.1 + Math.random() * 0.3
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#d6baff';
+            dots.forEach(dot => {
+                ctx.globalAlpha = dot.opacity;
+                ctx.fillRect(dot.x, dot.y, 1, 1);
+                dot.y += dot.speed;
+                if (dot.y > canvas.height) dot.y = 0;
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+
+        // Reveal animations and scan-line triggers
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
         };
 
-        es.onerror = function () {
-          es.close();
-          status.className = 'mp-status mps-ok';
-          status.textContent = '✓ ' + mpSelected + ' applied';
-          active.textContent = mpSelected;
-          progress.style.display = 'none';
-        };
-      })
-      .catch(() => {
-        status.className = 'mp-status mps-err';
-        status.textContent = '❌ Network error';
-        btn.disabled = false;
-      });
-  }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
 
-  function deleteProfile(id, btn) {
-    event.preventDefault(); event.stopPropagation();
-    if (!confirm('Delete this profile investigation? This cannot be undone.')) return;
-    btn.textContent = '⏳'; btn.disabled = true;
-    fetch(`/api/delete/profile/${id}`, { method: 'POST' })
-      .then(r => r.json()).then(d => {
-        if (d.ok) { btn.closest('.recent-card').remove(); }
-        else { btn.textContent = '✕'; btn.disabled = false; alert('Error: ' + (d.error || 'failed')); }
-      }).catch(() => { btn.textContent = '✕'; btn.disabled = false; });
-  }
-  function deleteBatch(id, btn) {
-    event.preventDefault(); event.stopPropagation();
-    if (!confirm('Delete this batch investigation? This cannot be undone.')) return;
-    btn.textContent = '⏳'; btn.disabled = true;
-    fetch(`/api/delete/batch/${id}`, { method: 'POST' })
-      .then(r => r.json()).then(d => {
-        if (d.ok) { btn.closest('.recent-card').remove(); }
-        else { btn.textContent = '✕'; btn.disabled = false; alert('Error: ' + (d.error || 'failed')); }
-      }).catch(() => { btn.textContent = '✕'; btn.disabled = false; });
-  }
-</script>
-{% endblock %}
+        document.querySelectorAll('.animate-reveal, .scan-line-reveal').forEach(el => observer.observe(el));
+
+        // 3D Tilt Effect and Glow for cards
+        if (!prefersReducedMotion) {
+            document.querySelectorAll('.capability-card').forEach(card => {
+                card.addEventListener('mousemove', e => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const rotateX = (y - centerY) / 15;
+                    const rotateY = (centerX - x) / 15;
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+                });
+            });
+
+            // Magnetic Button Effect
+            const magBtn = document.querySelector('.magnetic-btn');
+            if (magBtn) {
+                document.addEventListener('mousemove', e => {
+                    const rect = magBtn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    const dist = Math.sqrt(x * x + y * y);
+                    if (dist < 100) {
+                        magBtn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                    } else {
+                        magBtn.style.transform = 'translate(0, 0)';
+                    }
+                });
+            }
+        }
+
+        // Parallax effect for hero image
+        const heroImage = document.getElementById('hero-image-parallax');
+        document.addEventListener('mousemove', (e) => {
+            if (window.innerWidth < 1024 || prefersReducedMotion) return;
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
+            if (heroImage) {
+                heroImage.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg) translateY(${yAxis * -0.5}px)`;
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>

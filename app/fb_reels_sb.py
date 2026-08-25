@@ -1,5 +1,7 @@
 from seleniumbase import SB
-import pickle, time, os, subprocess, json
+import pickle, os, subprocess, json
+import random
+import time
 
 if os.name != 'nt':
     try:
@@ -16,14 +18,17 @@ MAX_REELS    = 10
 OUTPUT_FILE  = "fb_reels.json"
 
 
+def human_delay(min_s=1.5, max_s=4.0):
+    time.sleep(random.uniform(min_s, max_s))
+
 def login(sb):
     sb.open("https://www.facebook.com")
-    time.sleep(3)
+    human_delay(2.0, 5.0)
     for c in pickle.load(open(COOKIE_FILE, "rb")):
         try: sb.driver.add_cookie(c)
         except: pass
     sb.driver.refresh()
-    time.sleep(5)
+    human_delay(2.0, 5.0)
     print("Logged in")
 
 
@@ -93,6 +98,36 @@ for (var i = 0; i < els.length; i++) {
 return window.scrollY;
 """
 
+CLICK_SEE_MORE_CAPTION_JS = """
+var containers = document.querySelectorAll('div.xu06os2.x1ok221b');
+for (var i = 0; i < containers.length; i++) {
+    var btns = containers[i].querySelectorAll('div[role="button"]');
+    for (var j = 0; j < btns.length; j++) {
+        if (btns[j].innerText.trim() === 'See more') {
+            btns[j].click();
+            return true;
+        }
+    }
+}
+return false;
+"""
+
+SCRAPE_REEL_CAPTION_JS = """
+var containers = document.querySelectorAll('div.xu06os2.x1ok221b');
+for (var i = 0; i < containers.length; i++) {
+    var inner = containers[i].querySelector(
+        'div.xdj266r.x14z9mp.xat24cr.x1lziwak.x1vvkbs.x126k92a'
+    );
+    if (inner) {
+        var text = inner.innerText || '';
+        // Remove trailing "See less" / "See more" artifacts
+        text = text.replace(/\\s*See less\\s*$/, '').replace(/\\s*See more\\s*$/, '').trim();
+        if (text.length > 0) return text;
+    }
+}
+return null;
+"""
+
 PANEL_TO_BOTTOM_JS = """
 var els = document.querySelectorAll('*');
 for (var i = 0; i < els.length; i++) {
@@ -153,7 +188,8 @@ return clicked;
 
 SCRAPE_COMMENTS_JS = """
 var profiles = document.querySelectorAll('div.x1rg5ohu');
-var seen = {};
+var results = [];
+var seenKeys = new Set();
 profiles.forEach(function(div) {
     var parent = div.parentElement;
     var isReply = false;
@@ -177,9 +213,6 @@ profiles.forEach(function(div) {
         url.includes('share')          || url.includes('/posts/')    ||
         url.includes('/photos/')       || url.includes('/videos/')   ||
         url.includes('/reel/')         || url.includes('/hashtag/')) return;
-
-    var key = url;
-    if (seen[key]) return;
 
     var text = '';
     var spans = div.querySelectorAll('div[dir="auto"] span, span[dir="auto"]');
@@ -232,10 +265,12 @@ profiles.forEach(function(div) {
             if (text) break;
         }
     }
-
-    seen[key] = { name: name, profile_url: url, comment_text: text || '[Non-text comment]' };
+    var key = url + '||' + (text || '[Non-text comment]');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    results.push({ name: name, profile_url: url, comment_text: text || '[Non-text comment]' });
 });
-return Object.values(seen);
+return results;
 """
 
 
@@ -247,7 +282,7 @@ def phase1_collect_reels(sb,PROFILE_URL=PROFILE_URL,MAX_REELS=MAX_REELS):
     reels_url = get_reels_url(PROFILE_URL)
     print(f"Opening: {reels_url}")
     sb.open(reels_url)
-    time.sleep(6)
+    human_delay(2.0, 5.0)
 
     reel_links = []
     seen       = set()
@@ -283,9 +318,9 @@ def phase1_collect_reels(sb,PROFILE_URL=PROFILE_URL,MAX_REELS=MAX_REELS):
         step_y    = current_y + 200
         while step_y <= target_y:
             sb.execute_script(f"(function(){{ window.scrollTo(0, {step_y}); }})()")
-            time.sleep(0.8)
+            human_delay(1.5, 2.5)
             step_y += 200
-        time.sleep(5)
+        human_delay(1.5, 5)
 
         scroll_n += 1
 
@@ -313,7 +348,7 @@ def scroll_panel(sb):
         clicked = sb.execute_script(f"(function(){{ {EXPAND_COMMENTS_JS} }})()") or 0
         if clicked:
             print(f"      [expand] clicked {clicked} new buttons — waiting for load...")
-            time.sleep(3)
+            human_delay(1.5, 3.5)
             cur_count = sb.execute_script(
                 "(function(){ return document.querySelectorAll('div.x1rg5ohu').length; })()"
             ) or 0
@@ -328,11 +363,11 @@ def scroll_panel(sb):
             continue
 
         new_top = sb.execute_script(f"(function(){{ {SCROLL_PANEL_JS} }})()") or 0
-        time.sleep(2)
+        human_delay(1.5, 2.5)
         clicked = sb.execute_script(f"(function(){{ {EXPAND_COMMENTS_JS} }})()") or 0
         if clicked:
             print(f"      [expand] clicked {clicked} new buttons after scroll...")
-            time.sleep(3)
+            human_delay(1.5, 3.5)
             no_new = 0
         else:
             no_new += 1
@@ -342,27 +377,41 @@ def scroll_panel(sb):
                 break
 
     sb.execute_script(f"(function(){{ {PANEL_TO_BOTTOM_JS} }})()")
-    time.sleep(2)
+    human_delay(1.5, 2.5)
 
 def phase2_scrape_reel(sb, reel_url, idx, total):
     print(f"\n  🎬 [{idx}/{total}] {reel_url}")
 
     sb.open(reel_url)
-    time.sleep(8)
+    human_delay(4.0, 8.0)
+    
+    # ── Scrape caption ──────────────────────────────────────
+    print("    [caption] Checking for caption...")
+    see_more_clicked = sb.execute_script(
+        f"(function(){{ {CLICK_SEE_MORE_CAPTION_JS} }})()"
+    )
+    if see_more_clicked:
+        print("    [caption] Clicked 'See more' — waiting for expand...")
+        human_delay(1.2, 2.5)
+
+    caption = sb.execute_script(
+        f"(function(){{ {SCRAPE_REEL_CAPTION_JS} }})()"
+    ) or ''
+    print(f"    [caption] {'Found: ' + caption[:60] + '…' if caption else 'Not found'}")
 
     # Click comment icon
     print("    [comments] Clicking comment icon...")
     clicked = sb.execute_script(f"(function(){{ {CLICK_COMMENT_ICON_JS} }})()")
     if not clicked:
         print("    Comment icon not found")
-    time.sleep(4)
+    human_delay(1.5, 3.5)
 
     # Switch to All comments
     print("    [comments] Clicking sort dropdown...")
     sb.execute_script(f"(function(){{ {CLICK_MOST_RELEVANT_JS} }})()")
-    time.sleep(3)
+    human_delay(1.5, 3.5)
     sb.execute_script(f"(function(){{ {CLICK_ALL_COMMENTS_JS} }})()")
-    time.sleep(3)
+    human_delay(1.5, 3.5)
 
     # Scroll panel
     print("    [comments] Scrolling comment panel...")
@@ -374,6 +423,7 @@ def phase2_scrape_reel(sb, reel_url, idx, total):
 
     return {
         'reel_url': reel_url,
+        'caption': caption, 
         'comments': comments
     }
 
@@ -385,7 +435,11 @@ def main(PROFILE_URL=PROFILE_URL,MAX_REELS=MAX_REELS):
             window_size="1280,900") as sb:
 
         login(sb)
-
+        print("  Warming up session...")
+        sb.open('https://www.facebook.com')
+        human_delay(3.0, 6.0)
+        sb.execute_script("(function(){ window.scrollBy(0, 400); })()")
+        human_delay(2.0, 4.0)
         # Phase 1
         reel_links = phase1_collect_reels(sb,PROFILE_URL,MAX_REELS)
 
@@ -404,7 +458,7 @@ def main(PROFILE_URL=PROFILE_URL,MAX_REELS=MAX_REELS):
                     'comments': [],
                     'error':    str(e)
                 })
-            time.sleep(3)
+            human_delay(4.0, 8.0)
 
     # Save
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

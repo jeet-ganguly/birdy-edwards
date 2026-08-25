@@ -3,11 +3,12 @@ import json
 import time
 import pickle
 import os
+import random
 
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 COOKIE_FILE = "fb_cookies.pkl"
 DB_FILE     = "socmint.db"
-OLLAMA_MODEL = "gemma3:4b"
+OLLAMA_MODEL = ""
 
 QUICK_SECTIONS = [
     "directory_personal_details",
@@ -35,6 +36,9 @@ CREATE TABLE IF NOT EXISTS commentor_country (
 
 
 #  FETCH COMMENTORS FROM DB
+
+def human_delay(min_s=1.5, max_s=4.0):
+    time.sleep(random.uniform(min_s, max_s))
 
 def fetch_all_commentors(con, main_profile_id):
     """Fetch all commentors for a given main profile — skips already identified."""
@@ -131,9 +135,9 @@ def get_comment_language(con, commentor_id):
     return None
 
 
-#  QUICK SCRAPE — 3 sections, 3 profiles parallel using multiprocessing
+#  QUICK SCRAPE — 3 sections, 2 profiles parallel using multiprocessing
 
-BATCH_SIZE = 3  # parallel browser sessions — safe on 8GB RAM
+BATCH_SIZE = 1  # parallel browser sessions — safe on 8GB RAM
 
 
 def _scrape_single_profile(args):
@@ -185,18 +189,18 @@ def _scrape_single_profile(args):
         with SB(uc=True, headless=False, xvfb=True, window_size="1024,768") as sb:
             sb.driver.set_page_load_timeout(15)  # max 15 sec per page
             sb.open("https://www.facebook.com")
-            time.sleep(3)
+            human_delay(2.0, 5.0)
             for c in pickle.load(open(cookie_file, "rb")):
                 try: sb.driver.add_cookie(c)
                 except: pass
             sb.driver.refresh()
-            time.sleep(5)
+            human_delay(2.0, 5.0)
 
             for section in sections:
                 url = get_section_url(purl, section)
                 try:
                     sb.open(url)
-                    time.sleep(4)
+                    human_delay(2.0, 5.0)
                     source = sb.get_page_source()
                     fields = parse_section(source)
                     all_fields.update(fields)
@@ -284,7 +288,7 @@ def scrape_personal_details_batch(commentor_list):
                     results[c['id']] = {'current_city': None, 'hometown': None,
                                         'employer': None, 'education': None}
 
-        time.sleep(2)  # brief pause between batches
+        time.sleep(5)  # brief pause between batches
 
     print(f"\n   Scraping complete — {len(results)}/{total} profiles done")
     return results
@@ -501,7 +505,7 @@ def _scrape_and_identify(con, commentor_list):
                     }
 
         scrape_batches += 1
-        time.sleep(2)
+        time.sleep(random.uniform(8.0, 12.0))
 
         # Flush to LLM every LLM_FLUSH_EVERY scrape batches
         if scrape_batches % LLM_FLUSH_EVERY == 0 or (i + BATCH_SIZE) >= total:
@@ -546,7 +550,7 @@ def _identify_and_save(con, commentor_list, personal_details):
             print(f" Unknown")
             
 
-def run_for_profile(profile_url, db_file=DB_FILE):
+def run_for_profile(profile_url, db_file=DB_FILE,top7_only=True):
     print(f"\n{'═'*65}")
     print(f"Commentor Country Detection — Profile")
     print(f"Profile : {profile_url}")
@@ -566,7 +570,15 @@ def run_for_profile(profile_url, db_file=DB_FILE):
 
     main_profile_id = row[0]
     commentor_list  = fetch_all_commentors(con, main_profile_id)
-    print(f"   {len(commentor_list)} unidentified commentors found")
+    if top7_only:
+        cur.execute("""
+            SELECT commentor_id FROM commentor_scores
+            WHERE main_profile_id = ?
+            ORDER BY total_score DESC LIMIT 7
+        """, (main_profile_id,))
+        top7_ids = {r[0] for r in cur.fetchall()}
+        commentor_list = [c for c in commentor_list if c['commentor_id'] in top7_ids]
+        print(f"   top7_only mode — {len(commentor_list)} commentors selected")
 
     if not commentor_list:
         print("   All commentors already identified")
@@ -580,7 +592,7 @@ def run_for_profile(profile_url, db_file=DB_FILE):
     print(f"\n Done → {db_file}")
 
 
-def run_for_batch(batch_id, db_file="socmint_manual.db"):
+def run_for_batch(batch_id, db_file="socmint_manual.db",top7_only=True):
     print(f"\n{'═'*65}")
     print(f"Commentor Country Detection — Batch")
     print(f"Batch ID : {batch_id}")
@@ -600,7 +612,15 @@ def run_for_batch(batch_id, db_file="socmint_manual.db"):
 
     print(f"   Label: {row[0]}")
     commentor_list = fetch_batch_commentors(con, batch_id)
-    print(f"   {len(commentor_list)} unidentified commentors found")
+    if top7_only:
+        cur.execute("""
+            SELECT commentor_id FROM batch_commentor_scores
+            WHERE batch_id = ?
+            ORDER BY total_score DESC LIMIT 7
+        """, (batch_id,))
+        top7_ids = {r[0] for r in cur.fetchall()}
+        commentor_list = [c for c in commentor_list if c['commentor_id'] in top7_ids]
+        print(f"   top7_only mode — {len(commentor_list)} commentors selected")
 
     if not commentor_list:
         print("   All commentors already identified")
@@ -613,6 +633,71 @@ def run_for_batch(batch_id, db_file="socmint_manual.db"):
     con.close()
     print(f"\n Done → {db_file}")
 
+def detect_single(commentor_id, db_file=None):
+    """
+    On-demand country detection for one commentor.
+    Called by the Detect button in the analysis dashboard.
+    Returns dict with 'country', 'confidence', 'basis' or None.
+    """
+    from commentor_country import (
+        get_comment_language, identify_country_llm,
+        save_country_identification
+    )
+    if db_file is None:
+        from app import DB_FILE
+        db_file = DB_FILE
+
+    import sqlite3
+    con = sqlite3.connect(db_file)
+    con.row_factory = sqlite3.Row
+    cur = con.cursor()
+
+    try:
+        # Fetch commentor basic info
+        cur.execute("""
+            SELECT c.id, c.name, c.profile_url,
+                   cc.current_city, cc.hometown, cc.employer, cc.education
+            FROM commentors c
+            LEFT JOIN commentor_country cc ON cc.commentor_id = c.id
+            WHERE c.id = ?
+        """, (commentor_id,))
+        row = cur.fetchone()
+        if not row:
+            con.close()
+            return None
+
+        name         = row['name'] or ''
+        current_city = row['current_city']
+        hometown     = row['hometown']
+        employer     = row['employer']
+        education    = row['education']
+        lang         = get_comment_language(con, commentor_id)
+
+        country, confidence, basis = identify_country_llm(
+            name, current_city, hometown, employer, education, lang
+        )
+
+        if country:
+            save_country_identification(
+                con, commentor_id,
+                current_city, hometown, employer, education,
+                country, confidence, basis
+            )
+            con.commit()
+            con.close()
+            return {
+                'country':    country,
+                'confidence': confidence,
+                'basis':      basis
+            }
+
+        con.close()
+        return None
+
+    except Exception as e:
+        print(f"detect_single error: {e}")
+        con.close()
+        return None
 
 if __name__ == "__main__":
     print("Commentor Country Detection")
